@@ -103,14 +103,18 @@ backend/
 ├── src/main/resources/
 │   └── db/migration/V5__transactions.sql    # restrições, FK de tipo, índice de pontas, RLS, grants
 ├── src/main/java/com/tostao/tostao_api/
-│   ├── transaction/                         # TransactionController, TransactionService, TransactionType
+│   ├── workspace/                           # CurrentUser (usuário da sessão, usado pelo aspecto e pelo serviço)
+│   ├── transaction/                         # TransactionController, TransactionService, TransactionType,
+│   │   │                                    # TransactionFilter, TransactionRules (regras puras, testadas
+│   │   │                                    # por teste unitário)
 │   │   └── dto/                             # CreateTransactionRequest, UpdateTransactionRequest,
 │   │                                        # TransactionResponse, TransactionPageResponse
 │   └── common/error/                        # TransactionNotFoundException, TransactionConflictException,
 │                                            # mapeamentos novos em ApiExceptionHandler (inclui o campo
 │                                            # nos erros de tipo de parâmetro de consulta)
 └── src/test/java/com/tostao/tostao_api/
-    ├── transaction/                         # CreateTransactionTest, TransferTest, ListTransactionsTest,
+    ├── transaction/                         # TransactionRulesTest (unitário), CreateTransactionTest,
+    │                                        # TransferTest, ListTransactionsTest,
     │                                        # TransactionPerformanceTest, UpdateTransactionTest,
     │                                        # DeleteTransactionTest, TransactionAccessTest, TransactionRlsTest,
     │                                        # TransactionSchemaTest, TransactionServiceFilterTest,

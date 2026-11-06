@@ -141,7 +141,7 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 ## 13. Quem criou
 
 - **Decisão**: `created_by` vem do usuário autenticado (o mesmo `sub` que o aspecto já lê do JWT, exposto ao
-  serviço por um método do `TenantSession` ou pelo `SecurityContext`), nunca do corpo. Não há coluna nem
+  serviço por `CurrentUser.id()`, que lê o `SecurityContext`), nunca do corpo. Não há coluna nem
   rota para alterá-lo (privilégio de `UPDATE` não inclui a coluna).
 
 ## 14. Testes
