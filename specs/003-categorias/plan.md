@@ -107,7 +107,8 @@ backend/
     ├── category/                            # DefaultCategoriesTest, ListCategoriesTest, CreateCategoryTest,
     │                                        # UpdateCategoryTest, ArchiveRestoreCategoryTest, CategoryAccessTest,
     │                                        # CategoryRlsTest, CategoryServiceFilterTest, CategoryConcurrencyTest,
-    │                                        # CategoryHierarchyDbTest
+    │                                        # CategoryHierarchyDbTest, CategoryPerformanceTest,
+    │                                        # DefaultCategoriesAtomicTest, CategoriesMigrationTest
     ├── auth/                                # + cadastro continua atômico e sem exceção para e-mail repetido
     └── support/                             # WorkspaceFixtures (+ insertCategory)
 ```
