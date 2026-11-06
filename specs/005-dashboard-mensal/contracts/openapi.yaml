@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Dashboard mensal e semanal
+  version: 0.5.0
+  description: >
+    Contrato da spec 005. A rota exige sessão (cookie tostao_session) e fica sob um workspace. Quem não é
+    membro do workspace recebe 404, igual a um workspace inexistente. Os três papéis (OWNER, EDITOR, VIEWER)
+    consultam. A rota é somente leitura. Valores monetários são sempre inteiros em centavos; receitas e
+    despesas saem positivas. Erros seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/dashboard:
+    get:
+      summary: Painel de um mês ou de uma semana do workspace
+      description: >
+        Informe `month` (AAAA-MM) ou `week` (AAAA-Www, semana ISO 8601, de segunda a domingo), nunca os dois.
+        Sem nenhum dos dois, vale o mês corrente no fuso de Brasília. Transferências e lançamentos excluídos
+        não entram nos totais, nos grupos nem na evolução diária.
+      operationId: getDashboard
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: month
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: '2026-11' }
+          description: Mês de 2000-01 a 2100-12
+        - name: week
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-W\d{2}$', example: '2026-W45' }
+          description: Semana ISO com ano de 2000 a 2100, de uma semana que exista nesse ano
+      responses:
+        '200':
+          description: O painel do período
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dashboard' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Mês ou semana inválido (formato, inexistente ou fora de 2000 a 2100), ou os dois informados juntos; o campo vem em errors[].field (month ou week)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace inexistente ou do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    PeriodType:
+      type: string
+      enum: [MONTH, WEEK]
+    Cents:
+      type: integer
+      format: int64
+      description: Valor em centavos, inteiro
+    Percent:
+      type: number
+      multipleOf: 0.01
+      description: Percentual com duas casas decimais, arredondado com metade para cima
+    PeriodInfo:
+      type: object
+      required: [type, id, startDate, endDate]
+      properties:
+        type: { $ref: '#/components/schemas/PeriodType' }
+        id: { type: string, example: '2026-W45' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+    Totals:
+      type: object
+      required: [incomeCents, expenseCents, resultCents]
+      properties:
+        incomeCents: { $ref: '#/components/schemas/Cents' }
+        expenseCents: { $ref: '#/components/schemas/Cents' }
+        resultCents:
+          $ref: '#/components/schemas/Cents'
+          description: Receitas menos despesas; negativo quando se gastou mais do que se ganhou
+    CategoryItem:
+      type: object
+      required: [categoryId, name, totalCents, percent]
+      properties:
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        totalCents: { $ref: '#/components/schemas/Cents' }
+        percent:
+          $ref: '#/components/schemas/Percent'
+          description: Sobre o total do tipo (receitas ou despesas)
+    CategoryGroup:
+      type: object
+      required: [categoryId, name, directCents, totalCents, percent, children]
+      properties:
+        categoryId:
+          type: [string, 'null']
+          format: uuid
+          description: Nulo no grupo "Sem categoria"
+        name: { type: string }
+        directCents:
+          $ref: '#/components/schemas/Cents'
+          description: O lançado direto na categoria principal
+        totalCents:
+          $ref: '#/components/schemas/Cents'
+          description: directCents mais o total de todas as subcategorias
+        percent:
+          $ref: '#/components/schemas/Percent'
+          description: Sobre o total do tipo
+        children:
+          type: array
+          description: Subcategorias usadas no período, do maior para o menor total
+          items: { $ref: '#/components/schemas/CategoryItem' }
+    DayPoint:
+      type: object
+      required: [date, incomeCents, expenseCents, balanceCents]
+      properties:
+        date: { type: string, format: date }
+        incomeCents: { $ref: '#/components/schemas/Cents' }
+        expenseCents: { $ref: '#/components/schemas/Cents' }
+        balanceCents:
+          $ref: '#/components/schemas/Cents'
+          description: Saldo total das contas ativas ao fim do dia
+    Change:
+      type: object
+      required: [previousCents, changeCents, changePercent]
+      properties:
+        previousCents: { $ref: '#/components/schemas/Cents' }
+        changeCents:
+          $ref: '#/components/schemas/Cents'
+          description: Valor do período menos o do período anterior
+        changePercent:
+          type: [number, 'null']
+          multipleOf: 0.01
+          description: Variação sobre o valor absoluto do período anterior; nulo quando ele é zero
+    Comparison:
+      type: object
+      required: [previousPeriod, income, expense, result]
+      properties:
+        previousPeriod: { $ref: '#/components/schemas/PeriodInfo' }
+        income: { $ref: '#/components/schemas/Change' }
+        expense: { $ref: '#/components/schemas/Change' }
+        result: { $ref: '#/components/schemas/Change' }
+    AccountBalance:
+      type: object
+      required: [id, name, type, balanceCents, openingBalanceCents, closingBalanceCents]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { type: string }
+        balanceCents:
+          $ref: '#/components/schemas/Cents'
+          description: Saldo de hoje (igual ao de GET /reports/balance)
+        openingBalanceCents:
+          $ref: '#/components/schemas/Cents'
+          description: Saldo no fim do dia anterior ao início do período
+        closingBalanceCents:
+          $ref: '#/components/schemas/Cents'
+          description: Saldo no fim do último dia do período
+    Balances:
+      type: object
+      required: [accounts, totalBalanceCents, openingTotalCents, closingTotalCents]
+      properties:
+        accounts:
+          type: array
+          description: Contas ativas, por nome
+          items: { $ref: '#/components/schemas/AccountBalance' }
+        totalBalanceCents: { $ref: '#/components/schemas/Cents' }
+        openingTotalCents: { $ref: '#/components/schemas/Cents' }
+        closingTotalCents: { $ref: '#/components/schemas/Cents' }
+    Dashboard:
+      type: object
+      required: [period, totals, incomeByCategory, expenseByCategory, daily, comparison, balances]
+      properties:
+        period: { $ref: '#/components/schemas/PeriodInfo' }
+        totals: { $ref: '#/components/schemas/Totals' }
+        incomeByCategory:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryGroup' }
+        expenseByCategory:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryGroup' }
+        daily:
+          type: array
+          description: Um item por dia do período, em ordem de calendário
+          items: { $ref: '#/components/schemas/DayPoint' }
+        comparison: { $ref: '#/components/schemas/Comparison' }
+        balances: { $ref: '#/components/schemas/Balances' }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string, example: 'week' }
+                  message: { type: string }
