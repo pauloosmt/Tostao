@@ -142,11 +142,11 @@ description: "Tarefas da feature 001-autenticacao-workspace"
 
 ### Tests for User Story 4
 
-- [ ] T036 [P] [US4] `TEST/user/MeEndpointTest.java`: 200 com `name`, `email` e `workspaces[].role`; o JSON não contém `password`, `passwordHash` nem `password_hash`; 401 sem sessão; a resposta tem `Cache-Control` com `no-store`; uma pessoa sem nenhuma associação (criada pelo `ownerJdbcClient`) recebe 200 com `workspaces: []`, e `GET /api/v1/workspaces/{wid}` de qualquer id devolve 404 para ela
+- [X] T036 [P] [US4] `TEST/user/MeEndpointTest.java`: 200 com `name`, `email` e `workspaces[].role`; o JSON não contém `password`, `passwordHash` nem `password_hash`; 401 sem sessão; a resposta tem `Cache-Control` com `no-store`; uma pessoa sem nenhuma associação (criada pelo `ownerJdbcClient`) recebe 200 com `workspaces: []`, e `GET /api/v1/workspaces/{wid}` de qualquer id devolve 404 para ela
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Criar `MAIN/user/MeController.java` com `GET /api/v1/me` usando o usuário autenticado e `MeService.load`
+- [X] T037 [US4] Criar `MAIN/user/MeController.java` com `GET /api/v1/me` usando o usuário autenticado e `MeService.load`
 
 **Checkpoint**: o front-end já tem o que precisa para abrir o app
 
