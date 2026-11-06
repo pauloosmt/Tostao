@@ -35,6 +35,11 @@ ligado em todas as tabelas.
 3. Senha errada e e-mail inexistente. Esperado: **401** com o mesmo corpo nos dois casos.
 4. `POST $BASE/auth/logout` seguido de `GET $BASE/me` sem o cookie. Esperado: **204** e depois **401**.
 
+5. Sair de todos os aparelhos: entrar duas vezes (`-c jarA.txt` e `-c jarB.txt`), `POST $BASE/auth/logout`
+   com `-b jarA.txt` e confirmar que `GET $BASE/me` com `jarB.txt` ainda dá **200**. Depois
+   `POST $BASE/auth/logout-all` com `-b jarA.txt` (**204**) e `GET $BASE/me` com `jarB.txt`
+   deve dar **401**. Um novo login volta a funcionar.
+
 ## 4. Isolamento (US3)
 
 1. Cadastrar uma segunda pessoa (`-c jar2.txt`) e anotar o `id` do workspace dela.

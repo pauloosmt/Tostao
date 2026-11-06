@@ -77,6 +77,19 @@ paths:
             Set-Cookie:
               description: Cookie tostao_session com Max-Age=0
               schema: { type: string }
+  /auth/logout-all:
+    post:
+      summary: Sai de todos os aparelhos (invalida todas as sessões da pessoa, inclusive a atual)
+      operationId: logoutAll
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204':
+          description: Todas as sessões invalidadas; o cookie do aparelho atual também é apagado
+          headers:
+            Set-Cookie:
+              description: Cookie tostao_session com Max-Age=0
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
   /me:
     get:
       summary: Dados do usuário autenticado e seus workspaces

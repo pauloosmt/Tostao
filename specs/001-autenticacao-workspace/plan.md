@@ -21,6 +21,7 @@ Abordagem técnica (decisões detalhadas em [research.md](research.md)):
   consulta. Toda consulta de serviço filtra também por `workspace_id`.
 - **Sessão**: JWT HS256 em cookie `HttpOnly`/`Secure`/`SameSite=Lax`, lido pelo Spring Security
   (resource server com resolvedor de cookie), renovado a cada requisição autenticada por um filtro.
+  Uma versão de sessão em `users` (claim `sv`) permite "sair de todos os aparelhos".
 - **Limite de tentativas**: tabela `login_attempts` persistida no Postgres, atualizada por upsert
   atômico, com bloqueio de 15 minutos após 5 falhas consecutivas.
 - **Escopo**: somente backend. As telas de cadastro e login fazem parte do roadmap de front-end, que é
