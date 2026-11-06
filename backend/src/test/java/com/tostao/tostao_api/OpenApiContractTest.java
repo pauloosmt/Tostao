@@ -36,6 +36,8 @@ class OpenApiContractTest {
 	private static final Path AUTH_CONTRACT = Path.of("..", "specs", "001-autenticacao-workspace", "contracts",
 			"openapi.yaml");
 	private static final Path ACCOUNTS_CONTRACT = Path.of("..", "specs", "002-contas", "contracts", "openapi.yaml");
+	private static final Path CATEGORIES_CONTRACT = Path.of("..", "specs", "003-categorias", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE = Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -89,9 +91,18 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void categoriesContractFileDeclaresTheExpectedRoutes() throws IOException {
+		assertThat(contractOperations(CATEGORIES_CONTRACT)).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/categories",
+				"/api/v1/workspaces/{wid}/categories/{id}",
+				"/api/v1/workspaces/{wid}/categories/{id}/archive",
+				"/api/v1/workspaces/{wid}/categories/{id}/restore");
+	}
+
+	@Test
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
-		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT)) {
+		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
@@ -105,6 +116,13 @@ class OpenApiContractTest {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/accounts/{id}'].delete").doesNotExist())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/accounts'].delete").doesNotExist());
+	}
+
+	@Test
+	void categoriesCanNeverBeDeleted() throws Exception {
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/categories/{id}'].delete").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/categories'].delete").doesNotExist());
 	}
 
 }
