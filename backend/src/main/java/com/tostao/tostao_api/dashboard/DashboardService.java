@@ -36,7 +36,7 @@ public class DashboardService {
 	 * Receita e despesa por dia (sem transferências e sem excluídos). Despesa sai positiva. A soma de
 	 * {@code bigint} no Postgres é {@code numeric}; volta a {@code bigint}.
 	 */
-	private static final String DAILY_SQL = """
+	static final String DAILY_SQL = """
 			select occurred_on,
 			       coalesce(sum(amount_cents) filter (where type = 'INCOME'), 0)::bigint as income,
 			       coalesce(-sum(amount_cents) filter (where type = 'EXPENSE'), 0)::bigint as expense
@@ -51,7 +51,7 @@ public class DashboardService {
 	 * ou o pai dela). Sem categoria, as colunas de categoria vêm nulas. Categorias arquivadas contam: nenhum
 	 * filtro de {@code archived}. A hierarquia tem só dois níveis, então o {@code coalesce} basta.
 	 */
-	private static final String CATEGORY_SQL = """
+	static final String CATEGORY_SQL = """
 			select t.type, root.id as root_id, root.name as root_name, c.id as cat_id, c.name as cat_name,
 			       sum(case t.type when 'EXPENSE' then -t.amount_cents else t.amount_cents end)::bigint as total
 			from transactions t
@@ -66,7 +66,7 @@ public class DashboardService {
 	 * Saldo por conta ativa: o saldo inicial e a soma dos lançamentos não excluídos até o dia anterior ao
 	 * início, até o fim do período e de todas as datas. Mesma regra do saldo da spec 002, com datas de corte.
 	 */
-	private static final String ACCOUNT_BALANCES_SQL = """
+	static final String ACCOUNT_BALANCES_SQL = """
 			select a.id, a.name, a.type, a.initial_balance_cents,
 			       coalesce(sum(t.amount_cents) filter (where t.occurred_on <  :start), 0)::bigint as before_start,
 			       coalesce(sum(t.amount_cents) filter (where t.occurred_on <= :end), 0)::bigint as until_end,
@@ -80,7 +80,7 @@ public class DashboardService {
 			""";
 
 	/** Movimento por dia das contas ativas no período (transferências incluídas), base do saldo diário. */
-	private static final String MOVEMENT_SQL = """
+	static final String MOVEMENT_SQL = """
 			select t.occurred_on, sum(t.amount_cents)::bigint as movement
 			from transactions t
 			join accounts a on a.id = t.account_id and a.workspace_id = t.workspace_id

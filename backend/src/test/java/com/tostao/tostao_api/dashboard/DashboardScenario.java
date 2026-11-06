@@ -50,6 +50,19 @@ record DashboardScenario(Fixture owner, UUID checking, UUID savings, UUID food, 
 		return new DashboardScenario(fx, checking, savings, food, market, salary);
 	}
 
+	/**
+	 * Impressão digital dos dados do workspace (todas as colunas de {@code transactions}, {@code accounts} e
+	 * {@code categories}), lida pela conexão do dono. Igual antes e depois = nada mudou.
+	 */
+	static String fingerprint(com.tostao.tostao_api.TestcontainersConfiguration.OwnerJdbc owner, UUID workspaceId) {
+		StringBuilder all = new StringBuilder();
+		for (String table : new String[] { "transactions", "accounts", "categories" }) {
+			all.append(owner.client().sql("select coalesce(md5(string_agg(x::text, ',' order by x.id)), 'vazio') from "
+					+ table + " x where x.workspace_id = :w").param("w", workspaceId).query(String.class).single());
+		}
+		return all.toString();
+	}
+
 	static String base(UUID workspaceId) {
 		return "/api/v1/workspaces/" + workspaceId + "/dashboard";
 	}
