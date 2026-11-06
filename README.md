@@ -62,6 +62,19 @@ curl -b jar.txt "$BASE/workspaces/$WID/transactions?size=20&page=1&from=2026-11-
 curl -b jar.txt -X DELETE $BASE/workspaces/$WID/transactions/<id>    # exclusão lógica; numa transferência exclui as duas pontas
 ```
 
+Dashboard (só leitura): o resumo de um mês ou de uma semana, com totais, grupos por categoria, evolução
+dia a dia, comparação com o período anterior e saldos. Sem parâmetro, vale o mês corrente.
+
+```bash
+curl -b jar.txt "$BASE/workspaces/$WID/dashboard"                   # mês corrente
+curl -b jar.txt "$BASE/workspaces/$WID/dashboard?month=2026-11"      # um mês (AAAA-MM)
+curl -b jar.txt "$BASE/workspaces/$WID/dashboard?week=2026-W45"      # uma semana ISO, de segunda a domingo
+```
+
+Despesas saem positivas e o resultado é receitas menos despesas. Transferências e lançamentos excluídos não
+contam. Mês e semana não podem ser pedidos juntos. Os saldos de abertura, de fechamento e por dia valem para
+as contas ativas.
+
 Categorias: o cadastro já traz o conjunto padrão (Alimentação, Moradia, Transporte, Saúde, Lazer, Educação,
 Salário e outras), com subcategorias.
 
