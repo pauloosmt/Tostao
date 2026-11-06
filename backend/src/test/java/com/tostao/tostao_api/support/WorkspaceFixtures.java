@@ -63,6 +63,20 @@ public class WorkspaceFixtures {
 				.param("a", archived).query(UUID.class).single();
 	}
 
+	/** Categoria principal (parentId nulo) ou subcategoria; o tipo da subcategoria tem de ser o do pai. */
+	public UUID insertCategory(UUID workspaceId, UUID parentId, String name, String kind, boolean archived) {
+		return owner.client().sql("""
+				insert into categories (workspace_id, parent_id, name, kind, archived)
+				values (:w, :p, :n, :k, :a) returning id""")
+				.param("w", workspaceId).param("p", parentId).param("n", name).param("k", kind)
+				.param("a", archived).query(UUID.class).single();
+	}
+
+	/** Copia o conjunto padrão para o workspace (o cadastro pela API já faz isso sozinho). */
+	public void seedDefaults(UUID workspaceId) {
+		owner.client().sql("select seed_default_categories(:w)").param("w", workspaceId).query().singleRow();
+	}
+
 	/** Lançamento de receita (valor positivo) ou despesa (valor negativo), opcionalmente excluído. */
 	public UUID insertTransaction(UUID workspaceId, UUID accountId, UUID userId, long amountCents, boolean deleted) {
 		return owner.client().sql("""
