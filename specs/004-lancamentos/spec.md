@@ -375,6 +375,9 @@ volta ao valor de antes.
 - Conta e categoria arquivadas continuam aparecendo nos lançamentos antigos, nos filtros e nos saldos da
   própria conta; só não aceitam novos usos.
 - Lançamentos idênticos são permitidos; não há detecção de duplicidade.
+- Filtrar por conta ou categoria que não existe (ou é de outro workspace) devolve uma página vazia, sem
+  "não encontrado" e sem revelar nada; "não encontrado" fica para quando a conta ou a categoria é usada
+  num lançamento.
 - Busca por texto é por trecho da descrição, sem diferenciar maiúsculas e minúsculas; não ignora acentos.
 - Depende da `001-autenticacao-workspace` (sessão, papéis e isolamento), da `002-contas` (contas, saldo
   calculado e arquivamento) e da `003-categorias` (categorias, tipo e arquivamento), além das regras da
