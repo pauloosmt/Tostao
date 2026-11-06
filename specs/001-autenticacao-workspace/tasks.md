@@ -174,8 +174,8 @@ description: "Tarefas da feature 001-autenticacao-workspace"
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T042 [P] Ligar o springdoc no ambiente local e conferir, em `TEST/OpenApiContractTest.java`, que as rotas e os esquemas gerados batem com `specs/001-autenticacao-workspace/contracts/openapi.yaml`; a UI do Swagger continua fechada (`denyAll`) fora do ambiente local
-- [ ] T043 [P] Atualizar `README.md` com as novas variáveis de ambiente e o roteiro de login local
+- [X] T042 [P] Ligar o springdoc no ambiente local e conferir, em `TEST/OpenApiContractTest.java`, que as rotas e os esquemas gerados batem com `specs/001-autenticacao-workspace/contracts/openapi.yaml`; a UI do Swagger continua fechada (`denyAll`) fora do ambiente local
+- [X] T043 [P] Atualizar `README.md` com as novas variáveis de ambiente e o roteiro de login local
 - [ ] T044 Rodar `cd backend && ./mvnw verify` e garantir todos os testes verdes
 - [ ] T045 Rodar o roteiro de `specs/001-autenticacao-workspace/quickstart.md` contra `docker compose up -d --build` e registrar a saída real de cada passo, incluindo recusa de partida com `COOKIE_SECURE=true` e segredo de desenvolvimento
 - [ ] T046 [P] Marcar a `001` como concluída no checklist da nota `D:\Paulo\Projetos\Tostão\Tostão.md`
