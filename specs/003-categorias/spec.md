@@ -30,9 +30,9 @@ as categorias padrão estão lá, com os tipos e as subcategorias definidos.
    subcategorias sob suas categorias.
 2. **Given** duas pessoas recém-cadastradas, **When** cada uma consulta suas categorias, **Then** cada
    uma vê somente as suas, e alterar uma categoria de uma não afeta a da outra.
-3. **Given** um workspace já existente antes desta funcionalidade, **When** a funcionalidade passa a
-   valer, **Then** esse workspace também recebe o conjunto padrão, sem duplicar categorias que ele já
-   tenha.
+3. **Given** um workspace já existente antes desta funcionalidade e ainda sem nenhuma categoria,
+   **When** a funcionalidade passa a valer, **Then** esse workspace também recebe o conjunto padrão; um
+   workspace que já tenha alguma categoria não recebe nem duplica nada.
 4. **Given** as categorias padrão de um workspace, **When** a pessoa as edita ou arquiva, **Then** elas
    se comportam como qualquer outra categoria: o padrão é só o ponto de partida, e nada é recriado
    depois.
@@ -222,8 +222,9 @@ aparece ao pedir as arquivadas e volta a valer depois de restaurada.
   Mercado e Restaurantes sob Alimentação; Aluguel e Contas de casa sob Moradia).
 - **FR-002**: O conjunto padrão MUST ser criado no mesmo ato do cadastro do workspace pessoal, de forma
   atômica: se a criação das categorias falhar, o cadastro inteiro MUST ser desfeito.
-- **FR-003**: Workspaces que já existiam antes desta funcionalidade MUST receber o conjunto padrão uma
-  única vez, sem duplicar categorias, e MUST NOT ser recriadas depois que a pessoa editar ou arquivar.
+- **FR-003**: Workspaces que já existiam antes desta funcionalidade e não têm nenhuma categoria MUST
+  receber o conjunto padrão uma única vez; os que já têm categorias MUST NOT receber nem duplicar nada.
+  As categorias padrão MUST NOT ser recriadas depois que a pessoa editar ou arquivar.
 - **FR-004**: As categorias padrão MUST ser categorias comuns do workspace: podem ser editadas e
   arquivadas como as demais, e não há distinção entre elas e as criadas pela pessoa.
 - **FR-005**: O sistema MUST permitir criar uma categoria principal informando nome e tipo (despesa ou
