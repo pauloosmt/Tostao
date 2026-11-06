@@ -38,6 +38,8 @@ class OpenApiContractTest {
 	private static final Path ACCOUNTS_CONTRACT = Path.of("..", "specs", "002-contas", "contracts", "openapi.yaml");
 	private static final Path CATEGORIES_CONTRACT = Path.of("..", "specs", "003-categorias", "contracts",
 			"openapi.yaml");
+	private static final Path TRANSACTIONS_CONTRACT = Path.of("..", "specs", "004-lancamentos", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE = Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -100,9 +102,29 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void transactionsContractFileDeclaresTheExpectedRoutes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(TRANSACTIONS_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/transactions",
+				"/api/v1/workspaces/{wid}/transactions/{id}");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions")).containsExactlyInAnyOrder("get", "post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions/{id}"))
+				.containsExactlyInAnyOrder("get", "put", "delete");
+	}
+
+	@Test
+	void transactionsAreDeletedOnlyLogicallyAndHaveNoRestoreRoute() throws Exception {
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions'].delete").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}'].delete").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}/restore']").doesNotExist());
+	}
+
+	@Test
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
-		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT)) {
+		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
