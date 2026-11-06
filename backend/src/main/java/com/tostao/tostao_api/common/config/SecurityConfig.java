@@ -30,13 +30,19 @@ class SecurityConfig {
 			SessionCookieFactory cookies, @Value("${springdoc.swagger-ui.enabled:false}") boolean docsEnabled)
 			throws Exception {
 		ProblemSecurityHandler problems = new ProblemSecurityHandler();
+		// A UI do Swagger precisa de scripts e estilos próprios: a CSP só é relaxada com a documentação
+		// ligada, o que só acontece no perfil local.
+		String cspPolicy = docsEnabled
+				? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+						+ "img-src 'self' data:; frame-ancestors 'none'"
+				: "default-src 'none'; frame-ancestors 'none'";
 		http
 				// CSRF desligado: o cookie de sessão é SameSite=Lax (ver constituição do projeto)
 				.csrf(AbstractHttpConfigurer::disable)
 				.cors(Customizer.withDefaults())
 				.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.headers(h -> h
-						.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'"))
+						.contentSecurityPolicy(csp -> csp.policyDirectives(cspPolicy))
 						.frameOptions(f -> f.deny())
 						.referrerPolicy(r -> r.policy(ReferrerPolicy.NO_REFERRER)))
 				.oauth2ResourceServer(o -> o
