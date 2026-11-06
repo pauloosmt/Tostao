@@ -33,8 +33,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(properties = { "springdoc.api-docs.enabled=true", "springdoc.swagger-ui.enabled=true" })
 class OpenApiContractTest {
 
-	private static final Path CONTRACT = Path.of("..", "specs", "001-autenticacao-workspace", "contracts",
+	private static final Path AUTH_CONTRACT = Path.of("..", "specs", "001-autenticacao-workspace", "contracts",
 			"openapi.yaml");
+	private static final Path ACCOUNTS_CONTRACT = Path.of("..", "specs", "002-contas", "contracts", "openapi.yaml");
 	private static final Pattern PATH_LINE = Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -42,11 +43,11 @@ class OpenApiContractTest {
 	MockMvc mvc;
 
 	/** Caminho (com o prefixo do servidor) para os métodos declarados no contrato. */
-	private static Map<String, List<String>> contractOperations() throws IOException {
+	private static Map<String, List<String>> contractOperations(Path contract) throws IOException {
 		Map<String, List<String>> operations = new LinkedHashMap<>();
 		String current = null;
 		boolean inPaths = false;
-		for (String line : Files.readAllLines(CONTRACT)) {
+		for (String line : Files.readAllLines(contract)) {
 			if (line.equals("paths:")) {
 				inPaths = true;
 				continue;
@@ -72,19 +73,38 @@ class OpenApiContractTest {
 	}
 
 	@Test
-	void contractFileDeclaresTheExpectedRoutes() throws IOException {
-		assertThat(contractOperations()).containsOnlyKeys("/api/v1/auth/register", "/api/v1/auth/login",
+	void authContractFileDeclaresTheExpectedRoutes() throws IOException {
+		assertThat(contractOperations(AUTH_CONTRACT)).containsOnlyKeys("/api/v1/auth/register", "/api/v1/auth/login",
 				"/api/v1/auth/logout", "/api/v1/auth/logout-all", "/api/v1/me", "/api/v1/workspaces/{wid}");
 	}
 
 	@Test
-	void everyOperationInTheContractExistsInTheGeneratedDocs() throws Exception {
+	void accountsContractFileDeclaresTheExpectedRoutes() throws IOException {
+		assertThat(contractOperations(ACCOUNTS_CONTRACT)).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/accounts",
+				"/api/v1/workspaces/{wid}/accounts/{id}",
+				"/api/v1/workspaces/{wid}/accounts/{id}/archive",
+				"/api/v1/workspaces/{wid}/accounts/{id}/restore",
+				"/api/v1/workspaces/{wid}/reports/balance");
+	}
+
+	@Test
+	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
-		for (var entry : contractOperations().entrySet()) {
-			for (String method : entry.getValue()) {
-				docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
+		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT)) {
+			for (var entry : contractOperations(contract).entrySet()) {
+				for (String method : entry.getValue()) {
+					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
+				}
 			}
 		}
+	}
+
+	@Test
+	void accountsCanNeverBeDeleted() throws Exception {
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/accounts/{id}'].delete").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/accounts'].delete").doesNotExist());
 	}
 
 }
