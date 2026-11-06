@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.account.dto.AccountResponse;
 import com.tostao.tostao_api.account.dto.CreateAccountRequest;
+import com.tostao.tostao_api.account.dto.UpdateAccountRequest;
+import com.tostao.tostao_api.common.error.AccountArchivedException;
 import com.tostao.tostao_api.common.error.AccountNameAlreadyExistsException;
 import com.tostao.tostao_api.common.error.AccountNotFoundException;
 import com.tostao.tostao_api.common.error.FieldValidationException;
@@ -95,6 +97,48 @@ public class AccountService {
 		return load(workspaceId, id);
 	}
 
+	/**
+	 * Edita nome, saldo inicial e dados do cartão de uma conta ativa. O tipo nunca muda. O nome em uso
+	 * por outra conta ativa é checado antes; a corrida residual de duas gravações simultâneas é barrada
+	 * pelo índice único e traduzida em 409 na borda web, depois do rollback.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public AccountResponse update(UUID workspaceId, UUID accountId, UpdateAccountRequest request) {
+		Current current = jdbc.sql("select type, archived from accounts where id = :id and workspace_id = :workspaceId")
+				.param("id", accountId)
+				.param("workspaceId", workspaceId)
+				.query((rs, i) -> new Current(AccountType.valueOf(rs.getString("type")), rs.getBoolean("archived")))
+				.optional()
+				.orElseThrow(AccountNotFoundException::new);
+		if (current.archived()) {
+			throw new AccountArchivedException();
+		}
+		if (request.type() != null && request.type() != current.type()) {
+			throw new FieldValidationException("type", "não pode ser mudado");
+		}
+		requireCardFieldsOnlyOnCards(current.type(), request.creditLimitCents(), request.closingDay(),
+				request.dueDay());
+		requireNameFree(workspaceId, request.name(), accountId);
+
+		jdbc.sql("""
+				update accounts
+				set name = :name, initial_balance_cents = :initial, credit_limit_cents = cast(:limit as bigint),
+				    closing_day = cast(:closing as smallint), due_day = cast(:due as smallint), updated_at = now()
+				where id = :id and workspace_id = :workspaceId
+				""")
+				.param("name", request.name())
+				.param("initial", request.initialBalanceCents())
+				.param("limit", request.creditLimitCents())
+				.param("closing", request.closingDay())
+				.param("due", request.dueDay())
+				.param("id", accountId)
+				.param("workspaceId", workspaceId)
+				.update();
+
+		return load(workspaceId, accountId);
+	}
+
 	/** Contas do workspace com o saldo de cada uma, por nome. Por padrão só as ativas. */
 	@WorkspaceScoped
 	@Transactional(readOnly = true)
@@ -118,6 +162,27 @@ public class AccountService {
 				.query(ROW_MAPPER)
 				.optional()
 				.orElseThrow(AccountNotFoundException::new);
+	}
+
+	/** Checagem prévia: outra conta ativa do workspace já usa este nome (sem diferenciar maiúsculas). */
+	private void requireNameFree(UUID workspaceId, String name, UUID exceptAccountId) {
+		boolean taken = jdbc.sql("""
+				select exists (
+				    select 1 from accounts
+				    where workspace_id = :workspaceId and lower(name) = lower(:name)
+				      and not archived and id <> :exceptId)
+				""")
+				.param("workspaceId", workspaceId)
+				.param("name", name)
+				.param("exceptId", exceptAccountId)
+				.query(Boolean.class)
+				.single();
+		if (taken) {
+			throw new AccountNameAlreadyExistsException();
+		}
+	}
+
+	private record Current(AccountType type, boolean archived) {
 	}
 
 	/** Limite e dias de fechamento e vencimento só existem em cartão de crédito. */

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tostao.tostao_api.account.dto.AccountResponse;
 import com.tostao.tostao_api.account.dto.CreateAccountRequest;
+import com.tostao.tostao_api.account.dto.UpdateAccountRequest;
 
 import jakarta.validation.Valid;
 
@@ -45,6 +47,12 @@ class AccountController {
 		AccountResponse created = accounts.create(workspaceId, request);
 		URI location = URI.create("/api/v1/workspaces/" + workspaceId + "/accounts/" + created.id());
 		return ResponseEntity.created(location).body(created);
+	}
+
+	@PutMapping("/{id}")
+	AccountResponse update(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID accountId,
+			@Valid @RequestBody UpdateAccountRequest request) {
+		return accounts.update(workspaceId, accountId, request);
 	}
 
 }
