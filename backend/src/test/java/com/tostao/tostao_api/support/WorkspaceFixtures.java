@@ -90,6 +90,42 @@ public class WorkspaceFixtures {
 				.param("u", userId).param("d", deleted).query(UUID.class).single();
 	}
 
+	/**
+	 * Receita ou despesa completa (com categoria, data e descrição), opcionalmente excluída. O valor chega
+	 * positivo e o sinal vem do tipo.
+	 */
+	public UUID insertLedgerTransaction(UUID workspaceId, UUID accountId, UUID userId, UUID categoryId, String type,
+			long absAmountCents, java.time.LocalDate date, String description, boolean deleted) {
+		long signed = "EXPENSE".equals(type) ? -absAmountCents : absAmountCents;
+		return owner.client().sql("""
+				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
+				                          description, created_by, deleted_at)
+				values (:w, :a, :c, :t, :m, :d, :s, :u, case when :x then now() else null end)
+				returning id""")
+				.param("w", workspaceId).param("a", accountId).param("c", categoryId).param("t", type)
+				.param("m", signed).param("d", date).param("s", description).param("u", userId)
+				.param("x", deleted).query(UUID.class).single();
+	}
+
+	/** Transferência completa: devolve {@code {idDaSaída, idDaEntrada}}, com o mesmo grupo. */
+	public UUID[] insertTransferPair(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents,
+			java.time.LocalDate date, String description) {
+		UUID group = UUID.randomUUID();
+		UUID out = insertLeg(workspaceId, fromAccount, userId, -cents, date, description, group);
+		UUID in = insertLeg(workspaceId, toAccount, userId, cents, date, description, group);
+		return new UUID[] { out, in };
+	}
+
+	private UUID insertLeg(UUID workspaceId, UUID accountId, UUID userId, long signedCents, java.time.LocalDate date,
+			String description, UUID group) {
+		return owner.client().sql("""
+				insert into transactions (workspace_id, account_id, type, amount_cents, occurred_on, description,
+				                          transfer_group_id, created_by)
+				values (:w, :a, 'TRANSFER', :m, :d, :s, :g, :u) returning id""")
+				.param("w", workspaceId).param("a", accountId).param("m", signedCents).param("d", date)
+				.param("s", description).param("g", group).param("u", userId).query(UUID.class).single();
+	}
+
 	/** Transferência: duas linhas com o mesmo grupo, saída negativa e entrada positiva. */
 	public void insertTransfer(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents) {
 		UUID group = UUID.randomUUID();
