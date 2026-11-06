@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.category.dto.CategoryResponse;
 import com.tostao.tostao_api.category.dto.CategoryTreeResponse;
+import com.tostao.tostao_api.category.dto.CreateCategoryRequest;
+import com.tostao.tostao_api.common.error.CategoryConflictException;
+import com.tostao.tostao_api.common.error.CategoryNameAlreadyExistsException;
 import com.tostao.tostao_api.common.error.CategoryNotFoundException;
 import com.tostao.tostao_api.common.error.FieldValidationException;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
@@ -45,6 +48,65 @@ public class CategoryService {
 
 	public CategoryService(JdbcClient jdbc) {
 		this.jdbc = jdbc;
+	}
+
+	/**
+	 * Cria uma categoria principal (com {@code kind}) ou uma subcategoria (com {@code parentId}, que herda o
+	 * tipo). Tudo é checado antes de gravar; o nome repetido entre irmãs ativas é decidido pela própria
+	 * inserção ({@code ON CONFLICT DO NOTHING}), sem exceção dentro da transação. A linha do pai fica
+	 * travada em modo compartilhado para que ele não seja arquivado enquanto a filha nasce.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public CategoryResponse create(UUID workspaceId, CreateCategoryRequest request) {
+		CategoryKind kind;
+		if (request.parentId() == null) {
+			if (request.kind() == null) {
+				throw new FieldValidationException("kind", "obrigatório para categoria principal");
+			}
+			kind = request.kind();
+		}
+		else {
+			Parent parent = jdbc.sql("""
+					select kind, parent_id, archived from categories
+					where id = :parentId and workspace_id = :workspaceId
+					for share
+					""")
+					.param("parentId", request.parentId())
+					.param("workspaceId", workspaceId)
+					.query((rs, i) -> new Parent(CategoryKind.valueOf(rs.getString("kind")),
+							rs.getObject("parent_id", UUID.class) != null, rs.getBoolean("archived")))
+					.optional()
+					.orElseThrow(CategoryNotFoundException::new);
+			if (parent.isSubcategory()) {
+				throw new FieldValidationException("parentId", "uma subcategoria não pode ter filhas");
+			}
+			if (parent.archived()) {
+				throw new CategoryConflictException("A categoria principal está arquivada");
+			}
+			if (request.kind() != null && request.kind() != parent.kind()) {
+				throw new FieldValidationException("kind", "deve ser igual ao da categoria principal");
+			}
+			kind = parent.kind();
+		}
+
+		UUID id = jdbc.sql("""
+				insert into categories (workspace_id, parent_id, name, kind, color, icon)
+				values (:workspaceId, :parentId, :name, :kind, :color, :icon)
+				on conflict do nothing
+				returning id
+				""")
+				.param("workspaceId", workspaceId)
+				.param("parentId", request.parentId())
+				.param("name", request.name())
+				.param("kind", kind.name())
+				.param("color", request.color())
+				.param("icon", request.icon())
+				.query(UUID.class)
+				.optional()
+				.orElseThrow(CategoryNameAlreadyExistsException::new);
+
+		return load(workspaceId, id);
 	}
 
 	/**
@@ -95,6 +157,9 @@ public class CategoryService {
 				.query(ROW_MAPPER)
 				.optional()
 				.orElseThrow(CategoryNotFoundException::new);
+	}
+
+	private record Parent(CategoryKind kind, boolean isSubcategory, boolean archived) {
 	}
 
 	private static CategoryKind parseKind(String kind) {
