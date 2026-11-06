@@ -74,16 +74,16 @@ description: "Tarefas da feature 001-autenticacao-workspace"
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] `TEST/auth/PasswordPolicyTest.java`: aceita 8 a 72 bytes UTF-8 com ao menos uma letra e um número; recusa 7 caracteres, só letras, só números e 73 bytes (inclusive acentos que passam de 72 bytes com menos de 72 caracteres)
-- [ ] T017 [P] [US1] `TEST/auth/EmailNormalizerTest.java`: `trim` e `toLowerCase(Locale.ROOT)`
-- [ ] T018 [P] [US1] `TEST/auth/RegisterTest.java` (Testcontainers + MockMvc): 201 com `Set-Cookie` `HttpOnly; SameSite=Lax; Path=/api`, corpo sem senha nem hash, sem o JWT (o valor do cookie não aparece em nenhum lugar do corpo nem em outro header) e com um workspace `OWNER`; 409 para e-mail repetido com maiúsculas diferentes; 400 com `errors[].field` para senha curta, e-mail inválido, nome vazio, nome com 101 caracteres, e-mail com 255 caracteres e campo extra `role`; duas chamadas simultâneas com o mesmo e-mail resultam em uma conta só e nenhum 500; conferência pelo `ownerJdbcClient` de que uma linha existe em `users`, `workspaces` e `workspace_members`
+- [X] T016 [P] [US1] `TEST/auth/PasswordPolicyTest.java`: aceita 8 a 72 bytes UTF-8 com ao menos uma letra e um número; recusa 7 caracteres, só letras, só números e 73 bytes (inclusive acentos que passam de 72 bytes com menos de 72 caracteres)
+- [X] T017 [P] [US1] `TEST/auth/EmailNormalizerTest.java`: `trim` e `toLowerCase(Locale.ROOT)`
+- [X] T018 [P] [US1] `TEST/auth/RegisterTest.java` (Testcontainers + MockMvc): 201 com `Set-Cookie` `HttpOnly; SameSite=Lax; Path=/api`, corpo sem senha nem hash, sem o JWT (o valor do cookie não aparece em nenhum lugar do corpo nem em outro header) e com um workspace `OWNER`; 409 para e-mail repetido com maiúsculas diferentes; 400 com `errors[].field` para senha curta, e-mail inválido, nome vazio, nome com 101 caracteres, e-mail com 255 caracteres e campo extra `role`; duas chamadas simultâneas com o mesmo e-mail resultam em uma conta só e nenhum 500; conferência pelo `ownerJdbcClient` de que uma linha existe em `users`, `workspaces` e `workspace_members`
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Criar `MAIN/auth/PasswordPolicy.java` (8 a 72 bytes UTF-8, ao menos uma letra e um número) e `MAIN/auth/EmailNormalizer.java`
-- [ ] T020 [P] [US1] Criar `MAIN/auth/dto/RegisterRequest.java` como `record` com Bean Validation: `name` obrigatório, 1 a 100 caracteres após `trim`; `email` obrigatório, formato válido, até 254 caracteres; `password` obrigatório, 8 a 72 bytes, validada por `PasswordPolicy`
-- [ ] T021 [US1] Criar `MAIN/auth/AuthService.java` com `register(RegisterRequest)`: normaliza o e-mail, gera o hash BCrypt custo 10, chama a função `register_user` por `JdbcClient` (retorno vazio vira `EmailAlreadyExistsException`), emite o token com `SessionTokenService` (`sessionVersion` 0) e devolve `MeResponse` via `MeService`; sem `@Transactional` abrangente e sem tentar-e-capturar exceção de banco
-- [ ] T022 [US1] Criar `MAIN/auth/AuthController.java` com `POST /api/v1/auth/register` (201, `Set-Cookie` pelo `SessionCookieFactory`, corpo `MeResponse`)
+- [X] T019 [P] [US1] Criar `MAIN/auth/PasswordPolicy.java` (8 a 72 bytes UTF-8, ao menos uma letra e um número) e `MAIN/auth/EmailNormalizer.java`
+- [X] T020 [P] [US1] Criar `MAIN/auth/dto/RegisterRequest.java` como `record` com Bean Validation: `name` obrigatório, 1 a 100 caracteres após `trim`; `email` obrigatório, formato válido, até 254 caracteres; `password` obrigatório, 8 a 72 bytes, validada por `PasswordPolicy`
+- [X] T021 [US1] Criar `MAIN/auth/AuthService.java` com `register(RegisterRequest)`: normaliza o e-mail, gera o hash BCrypt custo 10, chama a função `register_user` por `JdbcClient` (retorno vazio vira `EmailAlreadyExistsException`), emite o token com `SessionTokenService` (`sessionVersion` 0) e devolve `MeResponse` via `MeService`; sem `@Transactional` abrangente e sem tentar-e-capturar exceção de banco
+- [X] T022 [US1] Criar `MAIN/auth/AuthController.java` com `POST /api/v1/auth/register` (201, `Set-Cookie` pelo `SessionCookieFactory`, corpo `MeResponse`)
 
 **Checkpoint**: US1 funciona e é testável sozinha
 
