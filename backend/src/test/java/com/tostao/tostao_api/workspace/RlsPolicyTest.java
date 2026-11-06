@@ -153,7 +153,9 @@ class RlsPolicyTest {
 			setContext(c, userA, workspaceA);
 
 			int updated = st.executeUpdate("update accounts set name = 'hackeada' where workspace_id = '" + workspaceB + "'");
-			int deleted = st.executeUpdate("delete from transactions where workspace_id = '" + workspaceB + "'");
+			// DELETE foi revogado em transactions (V5): o isolamento é provado com uma coluna que ainda se atualiza
+			int deleted = st.executeUpdate(
+					"update transactions set description = 'hackeada' where workspace_id = '" + workspaceB + "'");
 
 			assertThat(updated).isZero();
 			assertThat(deleted).isZero();
