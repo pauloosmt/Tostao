@@ -29,8 +29,9 @@ class DashboardController {
 	 */
 	@GetMapping
 	DashboardResponse get(@PathVariable("wid") UUID workspaceId,
-			@RequestParam(name = "month", required = false) String month) {
-		Period period = Period.resolve(month, null, clock.instant());
+			@RequestParam(name = "month", required = false) String month,
+			@RequestParam(name = "week", required = false) String week) {
+		Period period = Period.resolve(month, week, clock.instant());
 		return dashboard.dashboard(workspaceId, period);
 	}
 
