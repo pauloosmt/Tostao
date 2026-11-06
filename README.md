@@ -51,6 +51,19 @@ curl -b jar.txt -X POST $BASE/workspaces/$WID/accounts/<id>/archive   # contas n
 
 Valores monetários são sempre inteiros em centavos (`100000` = R$ 1.000,00).
 
+Categorias: o cadastro já traz o conjunto padrão (Alimentação, Moradia, Transporte, Saúde, Lazer, Educação,
+Salário e outras), com subcategorias.
+
+```bash
+curl -b jar.txt $BASE/workspaces/$WID/categories                     # árvore: principais com subcategorias
+curl -b jar.txt "$BASE/workspaces/$WID/categories?kind=INCOME"       # só receitas (ou EXPENSE)
+curl -b jar.txt -H 'Content-Type: application/json' \
+  -d '{"name":"Pets","kind":"EXPENSE"}' $BASE/workspaces/$WID/categories           # categoria principal
+curl -b jar.txt -H 'Content-Type: application/json' \
+  -d '{"name":"Ração","parentId":"<id da Pets>"}' $BASE/workspaces/$WID/categories  # subcategoria (herda o tipo)
+curl -b jar.txt -X POST $BASE/workspaces/$WID/categories/<id>/archive   # arquivar uma principal arquiva as subcategorias
+```
+
 Com `SPRING_PROFILES_ACTIVE=local` (o padrão do Compose), a documentação da API fica em
 `http://127.0.0.1:8080/swagger-ui.html`.
 
