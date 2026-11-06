@@ -34,6 +34,11 @@ class AccountController {
 		return accounts.list(workspaceId, includeArchived);
 	}
 
+	@GetMapping("/{id}")
+	AccountResponse get(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID accountId) {
+		return accounts.get(workspaceId, accountId);
+	}
+
 	@PostMapping
 	ResponseEntity<AccountResponse> create(@PathVariable("wid") UUID workspaceId,
 			@Valid @RequestBody CreateAccountRequest request) {

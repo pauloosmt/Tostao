@@ -103,6 +103,13 @@ public class AccountService {
 		return jdbc.sql(sql).param("workspaceId", workspaceId).query(ROW_MAPPER).list();
 	}
 
+	/** Uma conta com o saldo calculado. Conta de outro workspace, ou inexistente, é "não encontrada". */
+	@WorkspaceScoped
+	@Transactional(readOnly = true)
+	public AccountResponse get(UUID workspaceId, UUID accountId) {
+		return load(workspaceId, accountId);
+	}
+
 	/** Carrega uma conta do workspace; a conta de outro workspace é "não encontrada". */
 	private AccountResponse load(UUID workspaceId, UUID accountId) {
 		return jdbc.sql(SELECT_WITH_BALANCE + "  and a.id = :accountId\n" + GROUP_AND_ORDER)
