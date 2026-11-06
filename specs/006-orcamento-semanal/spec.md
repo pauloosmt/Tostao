@@ -98,7 +98,7 @@ percentual e estado de cada limite, e o gasto fora de limite.
 
 Para não redigitar tudo toda segunda-feira, a pessoa copia os limites de uma semana para as semanas
 seguintes, de uma até muitas. A cópia só preenche o que ainda não tem limite: nunca sobrescreve um limite que
-a pessoa já definido ou ajustado.
+a pessoa já definiu ou ajustou.
 
 **Why this priority**: sem isso, planejar semana a semana vira trabalho repetitivo e a pessoa desiste. Mas o
 orçamento já entrega valor definindo limites um a um.
