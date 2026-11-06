@@ -58,7 +58,9 @@ login_attempts: (sem linha) --falha--> count=1 ... --5ª falha--> locked_until =
 - `tostao_app`: `LOGIN`, `NOSUPERUSER`, `NOBYPASSRLS`, `NOCREATEDB`, `NOCREATEROLE`; criada pela `V2`
   se ainda não existir, com senha do placeholder `${app_password}`.
 - `GRANT USAGE ON SCHEMA public`.
-- `SELECT` em `users`, `workspaces`, `workspace_members`.
+- `SELECT (id, name, email, created_at)` em `users`: a role nunca lê `password_hash` nem
+  `session_version` diretamente; só as funções acessam essas colunas.
+- `SELECT` em `workspaces` e `workspace_members`.
 - `SELECT, INSERT, UPDATE, DELETE` em `accounts`, `categories`, `transactions`.
 - Nada em `login_attempts` nem em `flyway_schema_history`. Nenhum `INSERT` direto em `users`, `workspaces`
   ou `workspace_members`: o cadastro passa só por `register_user`.

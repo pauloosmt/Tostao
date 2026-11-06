@@ -62,7 +62,7 @@ inexistente e senha errada abaixo de 100 ms em média (SC-006); toda tabela nova
 | III. Autenticação e rede | Cookie `HttpOnly`/`Secure`/`SameSite=Lax`, stateless, BCrypt, renovação por requisição, sem `Authorization`; CORS de uma origem com credenciais; CSP, `Referrer-Policy`, `X-Frame-Options`; `Cache-Control: no-store` | OK |
 | IV. Entrada validada, saída controlada | DTOs de entrada com Bean Validation e limites; DTOs de saída; consultas parametrizadas; erros em Problem Details sem detalhes internos | OK |
 | V. Dados financeiros confiáveis | Nenhum valor monetário nesta feature; schema só por `V2` nova (V1 intocada); UUID | OK |
-| VI. Sem tentativa e erro em transação | Existência de e-mail checada antes; cadastro usa `INSERT ... ON CONFLICT DO NOTHING` dentro da função, sem exceção; falhas de login contadas fora de qualquer transação que depois aborte | OK |
+| VI. Sem tentativa e erro em transação | a existência do e-mail é decidida pela própria inserção condicional (`INSERT ... ON CONFLICT DO NOTHING` dentro da função), sem exceção e sem tentar-e-capturar; falhas de login contadas fora de qualquer transação que depois aborte | OK |
 | VII. Simplicidade | Sem Redis nem biblioteca de rate limit; sem tabela de refresh token; sem entidades JPA (apenas `JdbcClient`) | OK |
 | VIII. Prova, não promessa | Testes unitários, de integração com Postgres real e de acesso cruzado; [quickstart.md](quickstart.md) com roteiro manual | OK |
 
