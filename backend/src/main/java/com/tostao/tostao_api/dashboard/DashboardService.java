@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.dashboard.DashboardRules.CategoryRow;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse;
+import com.tostao.tostao_api.dashboard.dto.DashboardResponse.AccountBalance;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Balances;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Change;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Comparison;
@@ -61,7 +62,37 @@ public class DashboardService {
 			group by t.type, root.id, root.name, c.id, c.name
 			""";
 
+	/**
+	 * Saldo por conta ativa: o saldo inicial e a soma dos lançamentos não excluídos até o dia anterior ao
+	 * início, até o fim do período e de todas as datas. Mesma regra do saldo da spec 002, com datas de corte.
+	 */
+	private static final String ACCOUNT_BALANCES_SQL = """
+			select a.id, a.name, a.type, a.initial_balance_cents,
+			       coalesce(sum(t.amount_cents) filter (where t.occurred_on <  :start), 0)::bigint as before_start,
+			       coalesce(sum(t.amount_cents) filter (where t.occurred_on <= :end), 0)::bigint as until_end,
+			       coalesce(sum(t.amount_cents), 0)::bigint as all_time
+			from accounts a
+			left join transactions t
+			       on t.account_id = a.id and t.workspace_id = a.workspace_id and t.deleted_at is null
+			where a.workspace_id = :workspaceId and not a.archived
+			group by a.id
+			order by lower(a.name), a.id
+			""";
+
+	/** Movimento por dia das contas ativas no período (transferências incluídas), base do saldo diário. */
+	private static final String MOVEMENT_SQL = """
+			select t.occurred_on, sum(t.amount_cents)::bigint as movement
+			from transactions t
+			join accounts a on a.id = t.account_id and a.workspace_id = t.workspace_id
+			where t.workspace_id = :workspaceId and t.deleted_at is null and not a.archived
+			  and t.occurred_on between :start and :end
+			group by t.occurred_on
+			""";
+
 	private record DayRow(LocalDate date, long income, long expense) {
+	}
+
+	private record MovementRow(LocalDate date, long movement) {
 	}
 
 	private record TypedRow(String type, CategoryRow row) {
@@ -101,10 +132,22 @@ public class DashboardService {
 				byDay.put(row.date(), row);
 			}
 		}
+		Balances balances = balances(workspaceId, period);
+		Map<LocalDate, Long> movementByDay = new HashMap<>();
+		jdbc.sql(MOVEMENT_SQL)
+				.param("workspaceId", workspaceId)
+				.param("start", period.start())
+				.param("end", period.end())
+				.query((rs, i) -> new MovementRow(rs.getObject("occurred_on", LocalDate.class), rs.getLong("movement")))
+				.list()
+				.forEach(row -> movementByDay.put(row.date(), row.movement()));
+		List<LocalDate> days = period.days();
+		List<Long> dailyBalances = DashboardRules.runningBalances(balances.openingTotalCents(), days, movementByDay);
 		List<DayPoint> daily = new ArrayList<>();
-		for (LocalDate day : period.days()) {
-			DayRow row = byDay.get(day);
-			daily.add(new DayPoint(day, row == null ? 0 : row.income(), row == null ? 0 : row.expense(), 0));
+		for (int i = 0; i < days.size(); i++) {
+			DayRow row = byDay.get(days.get(i));
+			daily.add(new DayPoint(days.get(i), row == null ? 0 : row.income(), row == null ? 0 : row.expense(),
+					dailyBalances.get(i)));
 		}
 		long result = Math.subtractExact(income, expense);
 		Comparison comparison = new Comparison(info(previous),
@@ -130,7 +173,37 @@ public class DashboardService {
 				DashboardRules.groups(expenseRows, expense),
 				daily,
 				comparison,
-				new Balances(List.of(), 0, 0, 0));
+				balances);
+	}
+
+	/**
+	 * Saldos das contas ativas: o de hoje, o de abertura (fim do dia anterior ao início) e o de fechamento
+	 * (fim do último dia), por conta e no total. Os totais são somados aqui com {@code addExact}, como no
+	 * relatório de saldos da spec 002.
+	 */
+	private Balances balances(UUID workspaceId, Period period) {
+		List<AccountBalance> accounts = jdbc.sql(ACCOUNT_BALANCES_SQL)
+				.param("workspaceId", workspaceId)
+				.param("start", period.start())
+				.param("end", period.end())
+				.query((rs, i) -> {
+					long initial = rs.getLong("initial_balance_cents");
+					return new AccountBalance(rs.getObject("id", UUID.class), rs.getString("name"),
+							rs.getString("type"),
+							Math.addExact(initial, rs.getLong("all_time")),
+							Math.addExact(initial, rs.getLong("before_start")),
+							Math.addExact(initial, rs.getLong("until_end")));
+				})
+				.list();
+		long current = 0;
+		long opening = 0;
+		long closing = 0;
+		for (AccountBalance account : accounts) {
+			current = Math.addExact(current, account.balanceCents());
+			opening = Math.addExact(opening, account.openingBalanceCents());
+			closing = Math.addExact(closing, account.closingBalanceCents());
+		}
+		return new Balances(accounts, current, opening, closing);
 	}
 
 	/** Variação do período sobre o anterior, em centavos e em percentual (nulo se o anterior é zero). */
