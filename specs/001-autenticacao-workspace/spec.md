@@ -52,8 +52,8 @@ a mesma área passa a ser recusada.
    autenticada e vê quem é e quais workspaces possui.
 2. **Given** e-mail inexistente ou senha errada, **When** a pessoa tenta entrar, **Then** a entrada é
    recusada com a mesma mensagem genérica nos dois casos, sem revelar se o e-mail existe.
-3. **Given** uma pessoa autenticada, **When** ela continua usando o app, **Then** a sessão se renova
-   enquanto houver uso e expira após um período sem uso.
+3. **Given** uma pessoa autenticada, **When** ela fecha o app e volta dias depois, **Then** continua
+   autenticada sem precisar entrar de novo, até sair pelo próprio perfil.
 4. **Given** uma pessoa autenticada, **When** ela sai, **Then** a sessão deixa de valer imediatamente e
    qualquer área protegida volta a exigir entrada.
 5. **Given** alguém sem sessão, **When** tenta acessar qualquer área protegida, **Then** o acesso é
@@ -182,7 +182,9 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 - **FR-009**: Em falha de entrada, o sistema MUST responder com a mesma mensagem genérica quando o e-mail
   não existe e quando a senha está errada, e o tempo de resposta não deve diferenciar os casos de forma
   evidente.
-- **FR-010**: A sessão MUST ser renovada a cada requisição autenticada e MUST expirar após 7 dias sem uso.
+- **FR-010**: A sessão MUST permanecer válida até a pessoa sair pelo perfil, sem exigir nova entrada por
+  inatividade. Como limite de segurança, ela é renovada a cada requisição autenticada e só deixa de valer
+  após 365 dias sem nenhum uso.
 - **FR-011**: O sistema MUST permitir sair, invalidando a sessão no navegador imediatamente; sair sem
   estar autenticada MUST responder com sucesso.
 - **FR-012**: O sistema MUST contar falhas consecutivas de entrada por conta e, ao atingir 5 falhas,
@@ -260,7 +262,8 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
   escopo desta funcionalidade.
 - Cada pessoa recebe exatamente um workspace pessoal no cadastro; criar workspaces adicionais, convidar
   outras pessoas e mudar papéis são funcionalidades da fase 3.
-- A sessão dura 7 dias sem uso e é renovada com o uso; um mesmo usuário pode ter sessões em vários
+- A pessoa fica autenticada até sair pelo perfil (sem expiração por inatividade no uso normal); só uma
+  ausência total de 365 dias encerra a sessão. Um mesmo usuário pode ter sessões em vários
   aparelhos ao mesmo tempo (celular e computador).
 - O bloqueio por tentativas falhas é por conta (e-mail normalizado), com 5 falhas e espera de 15
   minutos; limitar por endereço de origem fica fora do escopo, por depender da infraestrutura de hospedagem.
