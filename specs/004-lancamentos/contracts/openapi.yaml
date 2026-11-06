@@ -1,0 +1,291 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Lançamentos
+  version: 0.4.0
+  description: >
+    Contrato da spec 004. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um workspace.
+    Quem não é membro do workspace recebe 404, igual a um workspace inexistente. VIEWER só consulta
+    (403 nas demais operações). Valores monetários são sempre inteiros em centavos. A exclusão é lógica.
+    Erros seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/transactions:
+    get:
+      summary: Lista os lançamentos do workspace, do mais recente para o mais antigo, em páginas
+      operationId: listTransactions
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Data inicial, inclusiva
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Data final, inclusiva; não pode ser anterior à inicial
+        - name: accountId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: categoryId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: Categoria principal inclui as subcategorias dela
+        - name: type
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/TransactionType' }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 100 }
+          description: Trecho da descrição, sem diferenciar maiúsculas; % e _ valem literalmente
+      responses:
+        '200':
+          description: Uma página de lançamentos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransactionPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      summary: Cria uma receita, uma despesa ou uma transferência (duas pontas, atômica)
+      operationId: createTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTransaction' }
+      responses:
+        '201':
+          description: Lançamento criado (na transferência, a ponta de saída)
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+  /workspaces/{wid}/transactions/{id}:
+    get:
+      summary: Consulta um lançamento (ou uma ponta de transferência)
+      operationId: getTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: O lançamento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Edita um lançamento; numa transferência, as duas pontas mudam juntas (o tipo não muda)
+      operationId: updateTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTransaction' }
+      responses:
+        '200':
+          description: Lançamento atualizado (a ponta endereçada)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+    delete:
+      summary: Exclui o lançamento de forma lógica; numa transferência, exclui as duas pontas
+      operationId: deleteTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '204':
+          description: Excluído (permanece guardado, mas some das listas e do saldo)
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campos inválidos
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, lançamento, conta ou categoria inexistente (ou de outro workspace), ou workspace do qual a pessoa não é membro (indistinguíveis); lançamento excluído também
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ArchivedConflict:
+      description: A conta ou a categoria informada está arquivada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    TransactionType:
+      type: string
+      enum: [INCOME, EXPENSE, TRANSFER]
+    PositiveCents:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 1000000000000
+      description: Valor em centavos, sempre positivo e inteiro; o sinal vem do tipo
+    CreateTransaction:
+      type: object
+      additionalProperties: false
+      required: [type, accountId, amountCents, occurredOn, description]
+      properties:
+        type: { $ref: '#/components/schemas/TransactionType' }
+        accountId:
+          type: string
+          format: uuid
+          description: Conta do lançamento; na transferência, a conta de origem
+        destinationAccountId:
+          type: string
+          format: uuid
+          description: Só em TRANSFER; diferente de accountId
+        amountCents: { $ref: '#/components/schemas/PositiveCents' }
+        occurredOn: { type: string, format: date, description: Ano de 2000 a 2100 }
+        description: { type: string, minLength: 1, maxLength: 200 }
+        notes: { type: string, minLength: 1, maxLength: 1000 }
+        categoryId:
+          type: string
+          format: uuid
+          description: Obrigatório em INCOME e EXPENSE (do mesmo tipo, ativa); proibido em TRANSFER
+    UpdateTransaction:
+      type: object
+      additionalProperties: false
+      required: [accountId, amountCents, occurredOn, description]
+      properties:
+        type:
+          $ref: '#/components/schemas/TransactionType'
+          description: Opcional; se vier, tem que ser igual ao tipo atual
+        accountId:
+          type: string
+          format: uuid
+          description: Conta do lançamento; na transferência, a conta de origem
+        destinationAccountId:
+          type: string
+          format: uuid
+          description: Só em TRANSFER; diferente de accountId
+        amountCents: { $ref: '#/components/schemas/PositiveCents' }
+        occurredOn: { type: string, format: date }
+        description: { type: string, minLength: 1, maxLength: 200 }
+        notes: { type: string, minLength: 1, maxLength: 1000 }
+        categoryId: { type: string, format: uuid }
+    Transaction:
+      type: object
+      required: [id, accountId, type, amountCents, occurredOn, description, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/TransactionType' }
+        amountCents:
+          type: integer
+          format: int64
+          description: Com sinal — receita e entrada positivas, despesa e saída negativas
+        occurredOn: { type: string, format: date }
+        description: { type: string }
+        notes: { type: string, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
+        transferGroupId: { type: string, format: uuid, nullable: true }
+        counterpartAccountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Na transferência, a conta da outra ponta
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    TransactionPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Transaction' }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
