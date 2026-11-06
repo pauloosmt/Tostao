@@ -1,9 +1,31 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: postgres:17
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: tostao
+      POSTGRES_USER: tostao
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tostao_dev}
     ports:
-      - '5432'
+      - '127.0.0.1:5442:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tostao -d tostao']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/tostao
+      DB_USER: tostao
+      DB_PASSWORD: ${DB_PASSWORD:-tostao_dev}
+    ports:
+      - '127.0.0.1:8080:8080'
+
+volumes:
+  pgdata:
