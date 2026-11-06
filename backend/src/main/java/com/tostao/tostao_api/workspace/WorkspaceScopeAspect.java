@@ -8,13 +8,9 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import com.tostao.tostao_api.common.error.InsufficientRoleException;
-import com.tostao.tostao_api.common.error.UnauthenticatedException;
 import com.tostao.tostao_api.common.error.WorkspaceNotFoundException;
 
 /**
@@ -39,11 +35,7 @@ public class WorkspaceScopeAspect {
 	@Around("@annotation(scoped) && args(workspaceId, ..)")
 	public Object enterWorkspace(ProceedingJoinPoint joinPoint, WorkspaceScoped scoped, UUID workspaceId)
 			throws Throwable {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (!(authentication instanceof JwtAuthenticationToken jwt)) {
-			throw new UnauthenticatedException();
-		}
-		UUID userId = UUID.fromString(jwt.getToken().getSubject());
+		UUID userId = CurrentUser.id();
 
 		tenant.enterUser(userId);
 		String role = jdbc.sql("""
