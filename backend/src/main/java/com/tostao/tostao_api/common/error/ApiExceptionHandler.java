@@ -110,6 +110,21 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem(HttpStatus.CONFLICT, "Conta arquivada", ex.getMessage());
 	}
 
+	@ExceptionHandler(CategoryNotFoundException.class)
+	ResponseEntity<ProblemDetail> categoryNotFound(CategoryNotFoundException ex) {
+		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
+	}
+
+	@ExceptionHandler(CategoryNameAlreadyExistsException.class)
+	ResponseEntity<ProblemDetail> categoryNameAlreadyExists(CategoryNameAlreadyExistsException ex) {
+		return problem(HttpStatus.CONFLICT, "Nome de categoria já em uso", ex.getMessage());
+	}
+
+	@ExceptionHandler(CategoryConflictException.class)
+	ResponseEntity<ProblemDetail> categoryConflict(CategoryConflictException ex) {
+		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
+	}
+
 	@ExceptionHandler(FieldValidationException.class)
 	ResponseEntity<ProblemDetail> fieldValidation(FieldValidationException ex) {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
@@ -122,6 +137,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	/**
 	 * Corrida residual de nome de conta: duas gravações simultâneas passaram pela checagem prévia e o
 	 * índice único barrou a segunda. Chega aqui só depois do rollback, fora de qualquer transação.
+	 * Vale para o nome de conta e para o nome de categoria entre irmãs ativas.
 	 */
 	@ExceptionHandler(DuplicateKeyException.class)
 	ResponseEntity<ProblemDetail> duplicateKey(DuplicateKeyException ex) {
@@ -129,6 +145,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		if (message != null && message.contains("accounts_active_name_key")) {
 			return problem(HttpStatus.CONFLICT, "Nome de conta já em uso",
 					new AccountNameAlreadyExistsException().getMessage());
+		}
+		if (message != null && (message.contains("categories_active_root_name_key")
+				|| message.contains("categories_active_child_name_key"))) {
+			return problem(HttpStatus.CONFLICT, "Nome de categoria já em uso",
+					new CategoryNameAlreadyExistsException().getMessage());
 		}
 		throw ex;
 	}
