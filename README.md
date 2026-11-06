@@ -51,6 +51,17 @@ curl -b jar.txt -X POST $BASE/workspaces/$WID/accounts/<id>/archive   # contas n
 
 Valores monetários são sempre inteiros em centavos (`100000` = R$ 1.000,00).
 
+Lançamentos (o valor vai sempre positivo, em centavos; o tipo dá o sinal):
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"type":"EXPENSE","accountId":"<conta>","amountCents":10000,
+  "occurredOn":"2026-11-05","description":"Mercado","categoryId":"<categoria de despesa>"}' $BASE/workspaces/$WID/transactions
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"type":"TRANSFER","accountId":"<origem>","destinationAccountId":"<destino>",
+  "amountCents":30000,"occurredOn":"2026-11-06","description":"Reserva"}' $BASE/workspaces/$WID/transactions   # duas pontas, atômica
+curl -b jar.txt "$BASE/workspaces/$WID/transactions?size=20&page=1&from=2026-11-01&to=2026-11-30&type=EXPENSE&q=mercado"
+curl -b jar.txt -X DELETE $BASE/workspaces/$WID/transactions/<id>    # exclusão lógica; numa transferência exclui as duas pontas
+```
+
 Categorias: o cadastro já traz o conjunto padrão (Alimentação, Moradia, Transporte, Saúde, Lazer, Educação,
 Salário e outras), com subcategorias.
 
