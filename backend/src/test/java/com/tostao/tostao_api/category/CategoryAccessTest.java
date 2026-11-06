@@ -3,6 +3,7 @@ package com.tostao.tostao_api.category;
 import static com.tostao.tostao_api.support.AuthSupport.session;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -92,6 +94,43 @@ class CategoryAccessTest {
 
 		mvc.perform(get(base(mine.workspaceId()) + "/" + foreign).cookie(session(mine.token())))
 				.andExpect(status().isNotFound());
+	}
+
+	private MvcResult createAs(Fixture who, UUID workspaceId, String json) throws Exception {
+		return mvc.perform(post(base(workspaceId)).cookie(session(who.token()))
+				.contentType(MediaType.APPLICATION_JSON).content(json)).andReturn();
+	}
+
+	private long count(UUID workspaceId) {
+		return owner.client().sql("select count(*) from categories where workspace_id = :w").param("w", workspaceId)
+				.query(Long.class).single();
+	}
+
+	@Test
+	void creatingRequiresOwnerOrEditorAndMembership() throws Exception {
+		Fixture ownerFx = fixtures().workspaceWithOwner();
+		Fixture viewer = fixtures().addMember(ownerFx.workspaceId(), "VIEWER");
+		Fixture editor = fixtures().addMember(ownerFx.workspaceId(), "EDITOR");
+		Fixture stranger = fixtures().workspaceWithOwner();
+		UUID foreignParent = fixtures().insertCategory(stranger.workspaceId(), null, "Alheia", "EXPENSE", false);
+		String body = "{\"name\":\"Nova\",\"kind\":\"EXPENSE\"}";
+		long before = count(ownerFx.workspaceId());
+
+		MvcResult asStranger = createAs(stranger, ownerFx.workspaceId(), body);
+		MvcResult missing = createAs(stranger, UUID.randomUUID(), body);
+		assertThat(asStranger.getResponse().getStatus()).isEqualTo(404);
+		assertThat(withoutInstance(asStranger)).isEqualTo(withoutInstance(missing));
+		assertThat(createAs(viewer, ownerFx.workspaceId(), body).getResponse().getStatus()).isEqualTo(403);
+		assertThat(count(ownerFx.workspaceId())).isEqualTo(before);
+
+		assertThat(createAs(editor, ownerFx.workspaceId(), body).getResponse().getStatus()).isEqualTo(201);
+		assertThat(createAs(ownerFx, ownerFx.workspaceId(), "{\"name\":\"Do dono\",\"kind\":\"INCOME\"}")
+				.getResponse().getStatus()).isEqualTo(201);
+		assertThat(createAs(ownerFx, ownerFx.workspaceId(),
+				"{\"name\":\"Filha\",\"parentId\":\"%s\"}".formatted(foreignParent)).getResponse().getStatus())
+				.isEqualTo(404);
+		assertThat(mvc.perform(post(base(ownerFx.workspaceId())).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andReturn().getResponse().getStatus()).isEqualTo(401);
 	}
 
 	@Test
