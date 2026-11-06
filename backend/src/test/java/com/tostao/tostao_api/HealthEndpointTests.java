@@ -31,8 +31,11 @@ class HealthEndpointTests {
 	}
 
 	@Test
-	void everythingElseIsClosed() throws Exception {
-		mvc.perform(get("/api/v1/workspaces")).andExpect(status().isForbidden());
+	void everythingElseRequiresASession() throws Exception {
+		mvc.perform(get("/api/v1/workspaces"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(header().doesNotExist("WWW-Authenticate"))
+				.andExpect(jsonPath("$.status").value(401));
 	}
 
 }
