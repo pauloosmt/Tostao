@@ -34,7 +34,7 @@
 - Nenhuma marcação de esclarecimento: as escolhas com mais de uma leitura possível foram resolvidas por
   padrão e registradas em Assumptions. As que mais mudam o desenho da API:
   1. Despesas saem como valor positivo; resultado = receitas − despesas.
-  2. Saldos do painel são os de hoje (regra da spec 002), não os do fim do mês escolhido.
+  2. O saldo "atual" é o de hoje (regra da spec 002), independente do período escolhido.
   3. Mês corrente no fuso de Brasília; sem fuso por workspace nesta fase.
   4. Variação percentual sobre o valor absoluto do período anterior; vazia quando o anterior é zero.
   5. Saldos do período: o atual (spec 002), o de abertura, o de fechamento e o saldo total ao fim de cada dia,
