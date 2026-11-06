@@ -97,16 +97,16 @@ description: "Tarefas da feature 001-autenticacao-workspace"
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] `TEST/auth/LoginLogoutTest.java`: login correto devolve 200 e cookie, sem o JWT no corpo; e-mail inexistente e senha errada devolvem 401 com corpo idêntico; e-mail com maiúsculas e espaços entra normalmente; requisição autenticada devolve novo `Set-Cookie` (renovação); logout devolve 204 com `Max-Age=0`; logout sem sessão devolve 204; `Authorization: Bearer <jwt válido>` sem cookie devolve 401; cookie adulterado devolve 401, nunca 500; o `exp` do token é de cerca de 365 dias e o token leva a claim `sv`; o logout comum não invalida a sessão de outro aparelho (segunda sessão continua com 200)
-- [ ] T024 [P] [US2] `TEST/auth/LogoutAllTest.java`: com duas sessões da mesma pessoa, `POST /api/v1/auth/logout-all` devolve 204 com `Max-Age=0` e a outra sessão passa a receber 401 em `/api/v1/me`; um novo login depois funciona com 200; `logout-all` sem sessão devolve 401; a sessão de outra pessoa não é afetada; confere pelo `ownerJdbcClient` que `session_version` subiu exatamente 1
-- [ ] T025 [P] [US2] `TEST/auth/LoginTimingTest.java`: a diferença média de tempo entre e-mail inexistente e senha errada, em ao menos 20 tentativas de cada, fica abaixo de 100 ms
+- [X] T023 [P] [US2] `TEST/auth/LoginLogoutTest.java`: login correto devolve 200 e cookie, sem o JWT no corpo; e-mail inexistente e senha errada devolvem 401 com corpo idêntico; e-mail com maiúsculas e espaços entra normalmente; requisição autenticada devolve novo `Set-Cookie` (renovação); logout devolve 204 com `Max-Age=0`; logout sem sessão devolve 204; `Authorization: Bearer <jwt válido>` sem cookie devolve 401; cookie adulterado devolve 401, nunca 500; o `exp` do token é de cerca de 365 dias e o token leva a claim `sv`; o logout comum não invalida a sessão de outro aparelho (segunda sessão continua com 200)
+- [X] T024 [P] [US2] `TEST/auth/LogoutAllTest.java`: com duas sessões da mesma pessoa, `POST /api/v1/auth/logout-all` devolve 204 com `Max-Age=0` e a outra sessão passa a receber 401 em `/api/v1/me`; um novo login depois funciona com 200; `logout-all` sem sessão devolve 401; a sessão de outra pessoa não é afetada; confere pelo `ownerJdbcClient` que `session_version` subiu exatamente 1
+- [X] T025 [P] [US2] `TEST/auth/LoginTimingTest.java`: a diferença média de tempo entre e-mail inexistente e senha errada, em ao menos 20 tentativas de cada, fica abaixo de 100 ms
 
 ### Implementation for User Story 2
 
-- [ ] T026 [P] [US2] Criar `MAIN/auth/dto/LoginRequest.java` (`email` obrigatório até 254 caracteres, `password` obrigatória até 72 bytes)
-- [ ] T027 [US2] Em `MAIN/auth/AuthService.java`, adicionar `login(LoginRequest)`: normaliza o e-mail, chama `find_user_for_login`, compara a senha com BCrypt (se o e-mail não existe, compara com um hash fictício calculado na partida, para o custo ser igual), lança `InvalidCredentialsException` na falha, emite o token com a `session_version` devolvida por `find_user_for_login` e devolve `MeResponse`; falha de senha é retorno normal, nunca exceção dentro de transação
-- [ ] T028 [US2] Em `MAIN/auth/AuthController.java`, adicionar `POST /api/v1/auth/login` (200 com cookie e `MeResponse`) e `POST /api/v1/auth/logout` (204 com o cookie vazio de `Max-Age=0`, também sem sessão)
-- [ ] T029 [US2] Em `MAIN/auth/AuthService.java` adicionar `logoutAll(UUID userId)` chamando `revoke_sessions` por `JdbcClient`, e em `MAIN/auth/AuthController.java` o `POST /api/v1/auth/logout-all` (autenticado, 204 com o cookie vazio de `Max-Age=0`)
+- [X] T026 [P] [US2] Criar `MAIN/auth/dto/LoginRequest.java` (`email` obrigatório até 254 caracteres, `password` obrigatória até 72 bytes)
+- [X] T027 [US2] Em `MAIN/auth/AuthService.java`, adicionar `login(LoginRequest)`: normaliza o e-mail, chama `find_user_for_login`, compara a senha com BCrypt (se o e-mail não existe, compara com um hash fictício calculado na partida, para o custo ser igual), lança `InvalidCredentialsException` na falha, emite o token com a `session_version` devolvida por `find_user_for_login` e devolve `MeResponse`; falha de senha é retorno normal, nunca exceção dentro de transação
+- [X] T028 [US2] Em `MAIN/auth/AuthController.java`, adicionar `POST /api/v1/auth/login` (200 com cookie e `MeResponse`) e `POST /api/v1/auth/logout` (204 com o cookie vazio de `Max-Age=0`, também sem sessão)
+- [X] T029 [US2] Em `MAIN/auth/AuthService.java` adicionar `logoutAll(UUID userId)` chamando `revoke_sessions` por `JdbcClient`, e em `MAIN/auth/AuthController.java` o `POST /api/v1/auth/logout-all` (autenticado, 204 com o cookie vazio de `Max-Age=0`)
 
 **Checkpoint**: US1 e US2 funcionam; a pessoa cadastra, sai e volta a entrar
 
