@@ -39,6 +39,18 @@ curl -b jar.txt -X POST $BASE/auth/logout     # sai deste aparelho
 curl -b jar.txt -X POST $BASE/auth/logout-all # sai de todos os aparelhos
 ```
 
+Contas (substitua `$WID` pelo `id` do workspace que veio em `/me`):
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' \
+  -d '{"name":"Nubank","type":"CHECKING","initialBalanceCents":100000}' $BASE/workspaces/$WID/accounts
+curl -b jar.txt $BASE/workspaces/$WID/accounts                 # contas ativas com o saldo de cada uma
+curl -b jar.txt $BASE/workspaces/$WID/reports/balance          # saldo por conta e total
+curl -b jar.txt -X POST $BASE/workspaces/$WID/accounts/<id>/archive   # contas não se apagam, só se arquivam
+```
+
+Valores monetários são sempre inteiros em centavos (`100000` = R$ 1.000,00).
+
 Com `SPRING_PROFILES_ACTIVE=local` (o padrão do Compose), a documentação da API fica em
 `http://127.0.0.1:8080/swagger-ui.html`.
 
