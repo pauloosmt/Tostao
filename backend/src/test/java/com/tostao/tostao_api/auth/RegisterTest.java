@@ -95,6 +95,20 @@ class RegisterTest {
 	}
 
 	@Test
+	void leavesThePersonalWorkspaceWithItsDefaultCategories() throws Exception {
+		String email = email();
+		register(json("Cida", email, PASSWORD));
+
+		long categories = owner.client().sql("""
+				select count(*) from categories c
+				join workspace_members m on m.workspace_id = c.workspace_id
+				join users u on u.id = m.user_id
+				where u.email = :e""").param("e", email).query(Long.class).single();
+
+		assertThat(categories).isPositive();
+	}
+
+	@Test
 	void createsExactlyOneUserWorkspaceAndMembership() throws Exception {
 		String email = email();
 		register(json("Bia", email, PASSWORD));
