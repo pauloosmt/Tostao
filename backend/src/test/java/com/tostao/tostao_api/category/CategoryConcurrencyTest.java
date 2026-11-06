@@ -77,6 +77,40 @@ class CategoryConcurrencyTest {
 				.param("w", fx.workspaceId()).query(Long.class).single()).isEqualTo(1);
 	}
 
+	/** Arquivar a principal enquanto se cria subcategorias sob ela nunca deixa filha ativa sob pai arquivado. */
+	@Test
+	void archivingARootWhileCreatingChildrenNeverLeavesAnActiveChildUnderAnArchivedRoot() throws Exception {
+		Fixture fx = fixtures().workspaceWithOwner();
+		String base = "/api/v1/workspaces/" + fx.workspaceId() + "/categories";
+		ExecutorService pool = Executors.newFixedThreadPool(4);
+		try {
+			for (int round = 0; round < 20; round++) {
+				UUID root = fixtures().insertCategory(fx.workspaceId(), null, "Raiz " + round, "EXPENSE", false);
+				List<Callable<Integer>> jobs = new ArrayList<>();
+				jobs.add(() -> mvc.perform(post(base + "/" + root + "/archive").cookie(session(fx.token())))
+						.andReturn().getResponse().getStatus());
+				for (int i = 0; i < 3; i++) {
+					String json = "{\"name\":\"Filha %d\",\"parentId\":\"%s\"}".formatted(i, root);
+					jobs.add(() -> mvc.perform(post(base).cookie(session(fx.token()))
+							.contentType(MediaType.APPLICATION_JSON).content(json)).andReturn().getResponse()
+							.getStatus());
+				}
+				for (Future<Integer> f : pool.invokeAll(jobs)) {
+					assertThat(f.get()).isIn(200, 201, 409);
+				}
+			}
+		}
+		finally {
+			pool.shutdownNow();
+		}
+
+		long orphans = owner.client().sql("""
+				select count(*) from categories c join categories p on p.id = c.parent_id
+				where c.workspace_id = :w and not c.archived and p.archived""")
+				.param("w", fx.workspaceId()).query(Long.class).single();
+		assertThat(orphans).isZero();
+	}
+
 	@Test
 	void eightSimultaneousSubcategoriesWithTheSameNameCreateExactlyOne() throws Exception {
 		Fixture fx = fixtures().workspaceWithOwner();
