@@ -27,8 +27,7 @@ services:
       DB_MIGRATION_USER: tostao
       DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:-tostao_dev}
       DB_URL: jdbc:postgresql://postgres:5432/tostao
-      DB_USER: tostao
-      DB_PASSWORD: ${DB_MIGRATION_PASSWORD:-tostao_dev}
+      DB_USER: tostao_app
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:-tostao_app_dev}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-dev-only-0123456789}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
