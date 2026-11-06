@@ -145,6 +145,75 @@ public class CategoryService {
 	}
 
 	/**
+	 * Arquiva a categoria, preservando todos os seus dados e lançamentos. Arquivar uma principal arquiva
+	 * também, na mesma transação, as subcategorias ativas dela. Idempotente: só escreve quando o estado
+	 * muda. O {@code UPDATE} da principal vem primeiro porque pede o bloqueio da linha do pai, o que
+	 * serializa com a criação e a restauração de subcategorias.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public CategoryResponse archive(UUID workspaceId, UUID categoryId) {
+		CategoryResponse current = load(workspaceId, categoryId);
+		if (current.archived()) {
+			return current;
+		}
+		jdbc.sql("""
+				update categories set archived = true
+				where id = :id and workspace_id = :workspaceId and not archived
+				""")
+				.param("id", categoryId)
+				.param("workspaceId", workspaceId)
+				.update();
+		if (current.parentId() == null) {
+			jdbc.sql("""
+					update categories set archived = true
+					where parent_id = :id and workspace_id = :workspaceId and not archived
+					""")
+					.param("id", categoryId)
+					.param("workspaceId", workspaceId)
+					.update();
+		}
+		return load(workspaceId, categoryId);
+	}
+
+	/**
+	 * Restaura uma categoria arquivada; nunca restaura as subcategorias. Idempotente. Uma subcategoria só
+	 * volta com a principal ativa (409), e o nome não pode estar em uso por uma irmã ativa (409); a corrida
+	 * residual é barrada pelos índices únicos e traduzida depois do rollback.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public CategoryResponse restore(UUID workspaceId, UUID categoryId) {
+		CategoryResponse current = load(workspaceId, categoryId);
+		if (!current.archived()) {
+			return current;
+		}
+		if (current.parentId() != null) {
+			boolean parentArchived = jdbc.sql("""
+					select archived from categories
+					where id = :parentId and workspace_id = :workspaceId
+					for share
+					""")
+					.param("parentId", current.parentId())
+					.param("workspaceId", workspaceId)
+					.query(Boolean.class)
+					.single();
+			if (parentArchived) {
+				throw new CategoryConflictException("Restaure antes a categoria principal");
+			}
+		}
+		requireNameFree(workspaceId, current.name(), current);
+		jdbc.sql("""
+				update categories set archived = false
+				where id = :id and workspace_id = :workspaceId and archived
+				""")
+				.param("id", categoryId)
+				.param("workspaceId", workspaceId)
+				.update();
+		return load(workspaceId, categoryId);
+	}
+
+	/**
 	 * Checagem prévia: outra categoria ativa irmã já usa este nome (sem diferenciar maiúsculas). São irmãs as
 	 * subcategorias do mesmo pai e as principais do mesmo tipo.
 	 */

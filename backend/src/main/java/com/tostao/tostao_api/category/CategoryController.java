@@ -44,6 +44,16 @@ class CategoryController {
 		return categories.get(workspaceId, categoryId);
 	}
 
+	@PostMapping("/{id}/archive")
+	CategoryResponse archive(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID categoryId) {
+		return categories.archive(workspaceId, categoryId);
+	}
+
+	@PostMapping("/{id}/restore")
+	CategoryResponse restore(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID categoryId) {
+		return categories.restore(workspaceId, categoryId);
+	}
+
 	@PutMapping("/{id}")
 	CategoryResponse update(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID categoryId,
 			@Valid @RequestBody UpdateCategoryRequest request) {
