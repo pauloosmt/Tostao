@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Painel de um workspace, somente leitura, por mês ou por semana (a pessoa escolhe um dos dois, para acompanhar o mês inteiro ou semana a semana). Para o período escolhido (padrão: o mês corrente) mostra o total de receitas, o total de despesas e o resultado (receitas menos despesas), em centavos inteiros; receitas e despesas agrupadas por categoria principal, com o total de cada subcategoria dentro dela e o percentual sobre o total do tipo, do maior para o menor; a evolução diária (receita e despesa por dia do mês); a comparação com o período anterior, o mês ou a semana anterior (variação em centavos e em percentual); e o saldo atual por conta e o saldo total (cálculo da spec 002). Transferências não entram nos totais nem nos grupos por categoria; lançamentos excluídos não contam; contas e categorias arquivadas continuam contando nos lançamentos antigos; lançamento sem categoria aparece num grupo 'Sem categoria'. O mês e a semana vêm da data de ocorrência, sem fuso. A semana vai de segunda a domingo. Mês ou semana inválidos, fora do intervalo aceito (2000 a 2100) ou pedidos juntos são recusados. OWNER, EDITOR e VIEWER leem; isolamento por workspace nas duas camadas; não-membro recebe 'não encontrado'. Todos os números vêm de uma única leitura consistente. Com 20.000 lançamentos, responde em menos de 1 segundo. Sem novas gravações. Segue o padrão das specs 002-contas, 003-categorias e 004-lancamentos."
+**Input**: User description: "Painel de um workspace, somente leitura, por mês ou por semana (a pessoa escolhe um dos dois, para acompanhar o mês inteiro ou semana a semana). Para o período escolhido (padrão: o mês corrente) mostra o total de receitas, o total de despesas e o resultado (receitas menos despesas), em centavos inteiros; receitas e despesas agrupadas por categoria principal, com o total de cada subcategoria dentro dela e o percentual sobre o total do tipo, do maior para o menor; a evolução diária (receita e despesa por dia do mês); a comparação com o período anterior, o mês ou a semana anterior (variação em centavos e em percentual); e os saldos por conta e o total: o de hoje (cálculo da spec 002), o de abertura e o de fechamento do período, e o saldo ao fim de cada dia. Transferências não entram nos totais nem nos grupos por categoria; lançamentos excluídos não contam; contas e categorias arquivadas continuam contando nos lançamentos antigos; lançamento sem categoria aparece num grupo 'Sem categoria'. O mês e a semana vêm da data de ocorrência, sem fuso. A semana vai de segunda a domingo. Mês ou semana inválidos, fora do intervalo aceito (2000 a 2100) ou pedidos juntos são recusados. OWNER, EDITOR e VIEWER leem; isolamento por workspace nas duas camadas; não-membro recebe 'não encontrado'. Todos os números vêm de uma única leitura consistente. Com 20.000 lançamentos, responde em menos de 1 segundo. Sem novas gravações. Segue o padrão das specs 002-contas, 003-categorias e 004-lancamentos."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -152,28 +152,47 @@ anterior.
 
 ---
 
-### User Story 5 - Ver o saldo atual das contas no painel (Priority: P2)
+### User Story 5 - Ver os saldos no painel: o de hoje e o do período (Priority: P2)
 
-No mesmo painel a pessoa vê o saldo atual de cada conta ativa e o saldo total do workspace, para ter numa
-só tela o resultado do mês e o dinheiro que ela tem hoje.
+No mesmo painel a pessoa vê o saldo atual de cada conta ativa e o saldo total do workspace, e também como
+o dinheiro estava no começo e no fim do período escolhido, e dia a dia: saldo de abertura (antes do primeiro
+dia), saldo de fechamento (ao fim do último dia) e o saldo total ao fim de cada dia. Assim, no
+acompanhamento semana a semana, ela vê com quanto entrou e com quanto saiu de cada semana.
 
-**Why this priority**: junta a foto do mês com a foto do patrimônio, mas esses saldos já existem em
-consulta própria (spec 002); aqui só são reunidos.
+**Why this priority**: junta a foto do período com a foto do patrimônio. O saldo atual já existe em
+consulta própria (spec 002) e aqui só é reunido; o saldo de abertura, o de fechamento e o diário são
+leituras novas, calculadas pela mesma regra, mas numa data de corte.
 
-**Independent Test**: conferir que os saldos do painel são idênticos, conta a conta e no total, aos da
-consulta de saldos da spec 002, feita no mesmo instante.
+**Independent Test**: conferir que o saldo atual do painel é idêntico, conta a conta e no total, ao da
+consulta de saldos da spec 002; e que, com lançamentos conhecidos, a abertura, o fechamento e o saldo de
+cada dia batem com a conta feita à mão.
 
 **Acceptance Scenarios**:
 
-1. **Given** contas com lançamentos, **When** a pessoa consulta o painel, **Then** vê o saldo de cada conta
-   ativa e o total, calculados pela mesma regra da spec 002 (saldo inicial mais lançamentos não excluídos,
-   de qualquer data).
-2. **Given** o mês escolhido no passado, **When** a pessoa consulta, **Then** os saldos mostram a situação
-   atual, não a do fim daquele mês.
-3. **Given** uma conta arquivada, **When** a pessoa consulta, **Then** ela segue a regra da spec 002 para
-   contas arquivadas na consulta de saldos.
-4. **Given** uma transferência, **When** a pessoa consulta, **Then** os saldos das duas contas refletem a
-   transferência e o saldo total não muda.
+1. **Given** contas com lançamentos, **When** a pessoa consulta o painel, **Then** vê o saldo atual de cada
+   conta ativa e o total, calculados pela mesma regra da spec 002 (saldo inicial mais lançamentos não
+   excluídos, de qualquer data).
+2. **Given** um mês ou uma semana no passado, **When** a pessoa consulta, **Then** o saldo atual mostra a
+   situação de hoje, e o saldo de abertura e o de fechamento mostram a situação nas datas do período.
+3. **Given** um período, **When** a pessoa consulta, **Then** o saldo de abertura de cada conta ativa é o
+   saldo inicial somado aos lançamentos não excluídos com data anterior ao primeiro dia do período, e o de
+   fechamento é o saldo inicial somado aos lançamentos não excluídos com data até o último dia, inclusive.
+   O total de cada um segue a mesma regra do saldo total da spec 002.
+4. **Given** um período, **When** a pessoa consulta, **Then** cada dia da evolução traz o saldo total ao fim
+   daquele dia, e o saldo do último dia é igual ao saldo de fechamento; o do dia anterior ao primeiro é o
+   de abertura.
+5. **Given** uma semana ou um mês que termina no futuro, **When** a pessoa consulta, **Then** o fechamento e
+   os saldos diários contam também lançamentos com data futura dentro do período (todo lançamento conta como
+   efetivado), e a resposta não distingue o que já passou.
+6. **Given** uma transferência entre duas contas ativas dentro do período, **When** a pessoa consulta,
+   **Then** o saldo de cada conta muda no dia dela e o saldo total do dia não muda.
+7. **Given** uma conta arquivada, **When** a pessoa consulta, **Then** ela segue a regra da spec 002 para
+   contas arquivadas (fica fora do saldo total e da lista de saldos), também nos saldos de abertura, de
+   fechamento e diários.
+8. **Given** um lançamento excluído, **When** a pessoa consulta, **Then** ele não conta em nenhum saldo,
+   inclusive nos de datas passadas.
+9. **Given** uma data de corte antes de qualquer lançamento, **When** a pessoa consulta, **Then** o saldo é o
+   saldo inicial das contas.
 
 ---
 
@@ -284,8 +303,9 @@ campo indicado.
   falhar quando o total do tipo for zero (nesse caso não há grupos). A soma dos totais dos grupos de um tipo
   MUST ser exatamente igual ao total do tipo, em centavos.
 - **FR-010**: A evolução diária MUST trazer um item para cada dia do período (os dias do mês, ou os sete da
-  semana), em ordem de calendário, com a receita e a despesa do dia (zero nos dias sem movimento). A soma dos
-  dias MUST ser igual aos totais do período.
+  semana), em ordem de calendário, com a receita e a despesa do dia (zero nos dias sem movimento) e o saldo
+  total ao fim do dia (FR-012). A soma das receitas e a das despesas dos dias MUST ser igual aos totais do
+  período.
 - **FR-011**: A comparação com o período anterior (o mês anterior, ou a semana anterior) MUST trazer, para
   receitas, despesas e resultado: o valor do período anterior, a variação em centavos (período escolhido
   menos período anterior) e a variação em percentual sobre o valor absoluto do período anterior, com duas
@@ -295,6 +315,12 @@ campo indicado.
 - **FR-012**: O painel MUST trazer o saldo atual de cada conta ativa e o saldo total do workspace, pela mesma
   regra da spec 002 (saldo inicial mais os lançamentos não excluídos, de qualquer data), independentemente
   do mês ou da semana escolhidos, e esses números MUST ser idênticos aos da consulta de saldos da spec 002.
+  O painel MUST trazer também, pela mesma regra e só para contas ativas: o saldo de abertura (saldo inicial
+  mais lançamentos não excluídos com data anterior ao primeiro dia do período) e o saldo de fechamento
+  (saldo inicial mais lançamentos não excluídos com data até o último dia, inclusive), de cada conta e no
+  total; e o saldo total ao fim de cada dia do período. O saldo do último dia MUST ser igual ao de
+  fechamento. Lançamentos com data futura dentro do período contam, e o saldo MUST NUNCA ser guardado: é
+  calculado a cada consulta.
 - **FR-013**: Todos os números do painel (totais, grupos, evolução, comparação e saldos) MUST vir de uma
   única leitura consistente: uma consulta nunca mistura dados de antes e de depois de uma gravação feita por
   outra pessoa ao mesmo tempo.
@@ -321,7 +347,9 @@ campo indicado.
 - **Totais do período**: receitas, despesas e resultado, em centavos.
 - **Grupo de categoria**: categoria principal (ou "Sem categoria") com total, percentual e subcategorias
   usadas, de um dos tipos (receita ou despesa).
-- **Dia da evolução**: data, receita do dia e despesa do dia.
+- **Dia da evolução**: data, receita do dia, despesa do dia e saldo total ao fim do dia.
+- **Saldos do período**: por conta ativa e no total, o saldo atual (de hoje), o de abertura e o de
+  fechamento do período; sempre calculados, nunca guardados.
 - **Comparação**: para cada total, valor do período anterior, variação em centavos e variação em percentual.
 - **Lançamento, Conta e Categoria** (specs 004, 002 e 003): as fontes dos números; o painel só os lê.
 - **Papel**: o que a pessoa pode fazer no workspace (OWNER, EDITOR ou VIEWER), definido na spec 001.
@@ -341,7 +369,13 @@ campo indicado.
 - **SC-004**: Em 100% dos testes, o painel e uma contagem independente feita no teste (por categoria, por dia
   e por período anterior) coincidem, para mês e para semana, em dados gerados aleatoriamente com semente
   fixa, incluindo lançamentos nos limites do período, em categorias arquivadas e sem categoria.
-- **SC-005**: Em 100% dos testes, os saldos do painel são idênticos aos da consulta de saldos da spec 002.
+- **SC-005**: Em 100% dos testes, os saldos atuais do painel são idênticos aos da consulta de saldos da
+  spec 002.
+- **SC-013**: Em 100% dos testes, o saldo de abertura, o de fechamento e o saldo ao fim de cada dia batem,
+  em centavos exatos, com uma conta independente feita no teste (saldo inicial mais lançamentos não
+  excluídos até a data de corte), para mês e para semana, em dados aleatórios com semente fixa; o saldo do
+  último dia é igual ao de fechamento; e uma transferência entre contas ativas nunca muda o saldo total de
+  nenhum dia.
 - **SC-006**: Em 100% dos testes de isolamento, tentativas de consultar o painel de um workspace do qual a
   pessoa não é membro recebem a mesma resposta de um workspace inexistente, e os números de um workspace
   nunca incluem dados de outro.
@@ -379,9 +413,18 @@ campo indicado.
   funcionalidade.
 - A variação percentual usa o valor absoluto do período anterior como base, para o sinal da variação sempre
   indicar o sentido da mudança (subiu ou desceu), inclusive no resultado, que pode ser negativo.
-- Os saldos do painel são os de hoje, de qualquer data de lançamento, como na spec 002; saldo no fim de um
-  mês passado e histórico de saldo ficam para depois.
-- Conta arquivada nos saldos do painel segue o que a spec 002 já faz na consulta de saldos.
+- O saldo atual do painel é o de hoje, de qualquer data de lançamento, como na spec 002. Os saldos de
+  abertura, de fechamento e diário são o mesmo cálculo com data de corte; não exigem tabela nem coluna nova,
+  e não há histórico guardado.
+- A conta não tem data de abertura: o saldo inicial vale em qualquer data de corte, mesmo antes de a conta
+  ter sido cadastrada. Contas arquivadas ficam fora dos saldos do painel (como no saldo total da spec 002),
+  considerando o estado de hoje, não o da época.
+- O saldo do dia não distingue passado de futuro: um lançamento com data futura dentro do período já entra,
+  porque o produto trata todo lançamento como efetivado até existir o estado "pendente" (fase 2).
+- Orçamento e meta por semana (ou por mês) não fazem parte desta funcionalidade, porque exigem cadastro e
+  gravação de dados e esta funcionalidade só lê. Eles são da fase 2 (orçamento e metas); registrei que a
+  periodicidade semanal deve ser prevista no desenho deles, e a visão semanal e os totais por categoria daqui
+  são a base para comparar o realizado com o planejado.
 - O grupo "Sem categoria" existe porque o banco aceita receita ou despesa sem categoria (importação da fase
   3); pelo serviço da spec 004 toda receita e despesa tem categoria, então hoje o grupo costuma não aparecer.
 - Moeda única (BRL). Gráficos, exportação, orçamento e metas (fases 2 a 4) e o estado "pendente" do

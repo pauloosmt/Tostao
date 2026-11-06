@@ -37,7 +37,9 @@
   2. Saldos do painel são os de hoje (regra da spec 002), não os do fim do mês escolhido.
   3. Mês corrente no fuso de Brasília; sem fuso por workspace nesta fase.
   4. Variação percentual sobre o valor absoluto do período anterior; vazia quando o anterior é zero.
-  5. Visão semanal opcional (`week`), de segunda a domingo (ISO 8601), no lugar do mês; os dois juntos são
+  5. Saldos do período: o atual (spec 002), o de abertura, o de fechamento e o saldo total ao fim de cada dia,
+     só leitura e calculados; orçamento e meta por semana ficam para a fase 2 (precisam gravar dados).
+  6. Visão semanal opcional (`week`), de segunda a domingo (ISO 8601), no lugar do mês; os dois juntos são
      recusados; sem nenhum, vale o mês corrente.
 - Também decididos por padrão: transferências ignoradas em totais, grupos e evolução; grupo "Sem categoria"
   só quando existirem lançamentos sem categoria; sem filtros por conta ou categoria; percentuais com duas
