@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tostao.tostao_api.category.dto.CategoryResponse;
 import com.tostao.tostao_api.category.dto.CategoryTreeResponse;
 import com.tostao.tostao_api.category.dto.CreateCategoryRequest;
+import com.tostao.tostao_api.category.dto.UpdateCategoryRequest;
 import com.tostao.tostao_api.common.error.CategoryConflictException;
 import com.tostao.tostao_api.common.error.CategoryNameAlreadyExistsException;
 import com.tostao.tostao_api.common.error.CategoryNotFoundException;
@@ -107,6 +108,64 @@ public class CategoryService {
 				.orElseThrow(CategoryNameAlreadyExistsException::new);
 
 		return load(workspaceId, id);
+	}
+
+	/**
+	 * Edita nome, cor e ícone de uma categoria ativa. O tipo e a categoria principal nunca mudam. O nome em
+	 * uso por uma irmã ativa é checado antes; a corrida residual de duas gravações simultâneas é barrada
+	 * pelos índices únicos e traduzida em 409 na borda web, depois do rollback.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public CategoryResponse update(UUID workspaceId, UUID categoryId, UpdateCategoryRequest request) {
+		CategoryResponse current = load(workspaceId, categoryId);
+		if (current.archived()) {
+			throw new CategoryConflictException("A categoria está arquivada; restaure-a antes de editar");
+		}
+		if (request.kind() != null && request.kind() != current.kind()) {
+			throw new FieldValidationException("kind", "não pode ser mudado");
+		}
+		if (request.parentId() != null && !request.parentId().equals(current.parentId())) {
+			throw new FieldValidationException("parentId", "não pode ser mudado");
+		}
+		requireNameFree(workspaceId, request.name(), current);
+
+		jdbc.sql("""
+				update categories set name = :name, color = :color, icon = :icon
+				where id = :id and workspace_id = :workspaceId
+				""")
+				.param("name", request.name())
+				.param("color", request.color())
+				.param("icon", request.icon())
+				.param("id", categoryId)
+				.param("workspaceId", workspaceId)
+				.update();
+
+		return load(workspaceId, categoryId);
+	}
+
+	/**
+	 * Checagem prévia: outra categoria ativa irmã já usa este nome (sem diferenciar maiúsculas). São irmãs as
+	 * subcategorias do mesmo pai e as principais do mesmo tipo.
+	 */
+	private void requireNameFree(UUID workspaceId, String name, CategoryResponse category) {
+		String siblings = category.parentId() == null
+				? "parent_id is null and kind = :kind"
+				: "parent_id = :parentId";
+		var statement = jdbc.sql("""
+				select exists (
+				    select 1 from categories
+				    where workspace_id = :workspaceId and lower(name) = lower(:name)
+				      and not archived and id <> :exceptId and\s""" + siblings + ")")
+				.param("workspaceId", workspaceId)
+				.param("name", name)
+				.param("exceptId", category.id());
+		statement = category.parentId() == null
+				? statement.param("kind", category.kind().name())
+				: statement.param("parentId", category.parentId());
+		if (statement.query(Boolean.class).single()) {
+			throw new CategoryNameAlreadyExistsException();
+		}
 	}
 
 	/**

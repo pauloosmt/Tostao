@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tostao.tostao_api.category.dto.CategoryResponse;
 import com.tostao.tostao_api.category.dto.CategoryTreeResponse;
 import com.tostao.tostao_api.category.dto.CreateCategoryRequest;
+import com.tostao.tostao_api.category.dto.UpdateCategoryRequest;
 
 import jakarta.validation.Valid;
 
@@ -40,6 +42,12 @@ class CategoryController {
 	@GetMapping("/{id}")
 	CategoryResponse get(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID categoryId) {
 		return categories.get(workspaceId, categoryId);
+	}
+
+	@PutMapping("/{id}")
+	CategoryResponse update(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID categoryId,
+			@Valid @RequestBody UpdateCategoryRequest request) {
+		return categories.update(workspaceId, categoryId, request);
 	}
 
 	@PostMapping
