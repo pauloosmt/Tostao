@@ -1,8 +1,8 @@
 # Data Model: Autenticação e Workspace
 
 As tabelas `users`, `workspaces` e `workspace_members` já existem na `V1`. Esta feature acrescenta a
-migration **`V2__auth_rls.sql`** (a `V1` não é editada) com a tabela `login_attempts`, a role de
-aplicação, as políticas de RLS e as funções estreitas.
+migration **`V2__auth_rls.sql`** (a `V1` não é editada) com a tabela `login_attempts`, a coluna
+`users.session_version`, a role de aplicação, as políticas de RLS e as funções estreitas.
 
 ## Entidades
 
@@ -15,6 +15,7 @@ aplicação, as políticas de RLS e as funções estreitas.
 | `password_hash` | hash BCrypt custo 10; nunca sai do banco para a API |
 | `name` | 1 a 100 caracteres, sem espaços só nas pontas |
 | `created_at` | preenchido pelo banco |
+| `session_version` | **novo na V2**: `INTEGER NOT NULL DEFAULT 0`; sobe 1 ao "sair de todos os aparelhos" e invalida os tokens anteriores |
 
 ### Workspace (`workspaces`, existente)
 
@@ -40,7 +41,9 @@ somente as funções abaixo a leem e escrevem.
 
 ### Sessão
 
-Não é entidade de banco. É o JWT no cookie: `sub` = id do usuário, `iat`, `exp` (365 dias, renovado a cada requisição autenticada).
+Não é entidade de banco. É o JWT no cookie: `sub` = id do usuário, `sv` = `users.session_version` no
+momento da emissão, `iat`, `exp` (365 dias, renovado a cada requisição autenticada). O token só vale
+enquanto `sv` for igual à versão atual do usuário.
 
 ## Transições de estado
 
@@ -93,6 +96,8 @@ Todas pertencem ao dono do schema (que ignora RLS por ser dono), usam
 | `login_lockout_status(email)` | e-mail | `locked_until` ou nulo | Retorna nulo se o bloqueio já venceu |
 | `record_login_failure(email)` | e-mail | `locked_until` ou nulo | Upsert atômico: soma 1, recomeça se o bloqueio venceu, bloqueia por 15 min ao chegar em 5; apaga linhas com mais de 24 h sem bloqueio |
 | `reset_login_attempts(email)` | e-mail | nada | Remove a linha após login bem-sucedido |
+| `session_version_of(user_id)` | UUID do usuário | inteiro, ou nulo se o usuário não existe | Consultada a cada requisição autenticada pelo validador do token; também devolve a versão atual para emitir tokens |
+| `revoke_sessions(user_id)` | UUID do usuário | a nova versão | Soma 1 a `session_version` do próprio usuário; é a ação "sair de todos os aparelhos" |
 
 ## Validações de entrada (aplicadas na API, antes do banco)
 

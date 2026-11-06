@@ -14,18 +14,22 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 
 ## 2. Renovação e expiração
 
-- **Decisão**: o JWT leva `sub` (id do usuário), `iat` e `exp` (365 dias). Um filtro posterior à
+- **Decisão**: o JWT leva `sub` (id do usuário), `sv` (versão de sessão), `iat` e `exp` (365 dias). Um filtro posterior à
   autenticação emite um novo token e um novo `Set-Cookie` a cada requisição autenticada (janela
   deslizante de 1 ano). Na prática a pessoa só sai pelo perfil: o logout apaga o cookie com `Max-Age=0`.
 - **Motivo**: cumpre FR-010 e FR-011 sem tabela de refresh token (o escopo já a descartou). Não há `exp`
   infinito porque um JWT sem validade nunca poderia ser invalidado por tempo.
-- **Limite conhecido**: sem estado no servidor, um token copiado (por exemplo, de um celular perdido)
-  continua válido até expirar, mesmo depois do logout. Com sessão de 1 ano o risco cresce. A spec define o
-  logout como invalidação no navegador (FR-011) e o risco é aceito por ora; o caminho para encerrá-lo é
-  uma coluna `session_version` em `users` conferida no decodificador, que permitiria "sair de todos os
-  aparelhos".
-- **Alternativas**: tabela de sessões (estado, mais uma tabela, e o escopo já a descartou); token de
-  acesso curto mais refresh (complexidade sem ganho nesta escala).
+- **Revogação (FR-025)**: a coluna `users.session_version` (inteiro, começa em 0) vai no token como `sv`.
+  Um `OAuth2TokenValidator` no decodificador compara `sv` com o valor atual do banco a cada requisição,
+  pela função `session_version_of(user_id)`; valor diferente, ou usuário inexistente, vira 401. "Sair de
+  todos os aparelhos" chama `revoke_sessions(user_id)`, que soma 1 à versão e invalida todos os tokens
+  anteriores de uma vez. O logout comum só apaga o cookie do aparelho atual e não mexe na versão, para
+  não deslogar os outros aparelhos.
+- **Custo**: uma consulta curta por requisição autenticada (chave primária, uma coluna), aceitável na
+  escala do projeto. Sem cache, para a revogação valer na próxima requisição.
+- **Alternativas**: tabela de sessões por aparelho (permitiria listar e revogar uma a uma, mas é estado
+  e telas além do necessário); lista de tokens revogados (cresce sem limite); token de acesso curto mais
+  refresh (complexidade sem ganho nesta escala).
 
 ## 3. Atributos e nome do cookie
 
@@ -81,9 +85,10 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 
 ## 8. Funções `SECURITY DEFINER`
 
-- **Decisão**: cinco funções estreitas, todas com `SET search_path = public, pg_temp`, `REVOKE ... FROM
+- **Decisão**: sete funções estreitas, todas com `SET search_path = public, pg_temp`, `REVOKE ... FROM
   PUBLIC` e `GRANT EXECUTE` só para `tostao_app`: `register_user`, `find_user_for_login`,
-  `login_lockout_status`, `record_login_failure` e `reset_login_attempts`. Ver
+  `login_lockout_status`, `record_login_failure`, `reset_login_attempts`, `session_version_of` e
+  `revoke_sessions`. Ver
   [data-model.md](data-model.md).
 - **Motivo**: são as únicas operações que precisam enxergar linhas sem workspace definido (FR-020).
   Rodam como o dono das tabelas, então não dependem de `BYPASSRLS` nem de desligar políticas.
