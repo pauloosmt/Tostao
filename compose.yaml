@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: tostao
       POSTGRES_USER: tostao
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-tostao_dev}
+      POSTGRES_PASSWORD: ${DB_MIGRATION_PASSWORD:-tostao_dev}
     ports:
       - '127.0.0.1:5442:5432'
     volumes:
@@ -21,9 +21,18 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: local
+      # Flyway conecta como dono do schema; a aplicação conecta como tostao_app (sem BYPASSRLS)
+      DB_MIGRATION_URL: jdbc:postgresql://postgres:5432/tostao
+      DB_MIGRATION_USER: tostao
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:-tostao_dev}
       DB_URL: jdbc:postgresql://postgres:5432/tostao
       DB_USER: tostao
-      DB_PASSWORD: ${DB_PASSWORD:-tostao_dev}
+      DB_PASSWORD: ${DB_MIGRATION_PASSWORD:-tostao_dev}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-tostao_app_dev}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-dev-only-0123456789}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     ports:
       - '127.0.0.1:8080:8080'
 
