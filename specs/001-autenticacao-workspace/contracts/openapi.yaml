@@ -120,7 +120,7 @@ components:
   headers:
     SessionCookie:
       description: >
-        tostao_session=<jwt>; HttpOnly; SameSite=Lax; Path=/api; Max-Age=604800
+        tostao_session=<jwt>; HttpOnly; SameSite=Lax; Path=/api; Max-Age=31536000
         (Secure quando COOKIE_SECURE=true). Reemitido a cada requisição autenticada.
       schema: { type: string }
   responses:

@@ -40,7 +40,7 @@ somente as funções abaixo a leem e escrevem.
 
 ### Sessão
 
-Não é entidade de banco. É o JWT no cookie: `sub` = id do usuário, `iat`, `exp` (7 dias).
+Não é entidade de banco. É o JWT no cookie: `sub` = id do usuário, `iat`, `exp` (365 dias, renovado a cada requisição autenticada).
 
 ## Transições de estado
 

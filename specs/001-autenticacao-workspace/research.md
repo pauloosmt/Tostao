@@ -14,20 +14,23 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 
 ## 2. Renovação e expiração
 
-- **Decisão**: o JWT leva `sub` (id do usuário), `iat` e `exp` (7 dias). Um filtro posterior à
+- **Decisão**: o JWT leva `sub` (id do usuário), `iat` e `exp` (365 dias). Um filtro posterior à
   autenticação emite um novo token e um novo `Set-Cookie` a cada requisição autenticada (janela
-  deslizante). O logout apaga o cookie com `Max-Age=0`.
-- **Motivo**: cumpre FR-010 e FR-011 sem tabela de refresh token (o escopo já a descartou).
-- **Limite conhecido**: sem estado no servidor, um token copiado continua válido até expirar mesmo depois
-  do logout. A spec define o logout como invalidação no navegador (FR-011), e o risco é aceito para um
-  app pessoal. Se isso mudar, o caminho é uma coluna `session_version` em `users` conferida no decodificador.
+  deslizante de 1 ano). Na prática a pessoa só sai pelo perfil: o logout apaga o cookie com `Max-Age=0`.
+- **Motivo**: cumpre FR-010 e FR-011 sem tabela de refresh token (o escopo já a descartou). Não há `exp`
+  infinito porque um JWT sem validade nunca poderia ser invalidado por tempo.
+- **Limite conhecido**: sem estado no servidor, um token copiado (por exemplo, de um celular perdido)
+  continua válido até expirar, mesmo depois do logout. Com sessão de 1 ano o risco cresce. A spec define o
+  logout como invalidação no navegador (FR-011) e o risco é aceito por ora; o caminho para encerrá-lo é
+  uma coluna `session_version` em `users` conferida no decodificador, que permitiria "sair de todos os
+  aparelhos".
 - **Alternativas**: tabela de sessões (estado, mais uma tabela, e o escopo já a descartou); token de
   acesso curto mais refresh (complexidade sem ganho nesta escala).
 
 ## 3. Atributos e nome do cookie
 
 - **Decisão**: nome `tostao_session`; `HttpOnly`; `Secure` controlado por `COOKIE_SECURE`; `SameSite=Lax`;
-  `Path=/api` (o navegador só o envia para a API); `Max-Age` de 7 dias. Construído com `ResponseCookie`.
+  `Path=/api` (o navegador só o envia para a API); `Max-Age` de 365 dias (renovado a cada uso). Construído com `ResponseCookie`.
 - **Motivo**: segue a constituição (princípio III) e o desenho do rewrite na Vercel, que mantém o
   navegador sempre no mesmo domínio.
 
