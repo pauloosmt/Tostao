@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Categorias
+  version: 0.3.0
+  description: >
+    Contrato da spec 003. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um workspace.
+    Quem não é membro do workspace recebe 404, igual a um workspace inexistente. VIEWER só consulta
+    (403 nas demais operações). Categorias não se apagam, só se arquivam. Erros seguem Problem Details
+    (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/categories:
+    get:
+      summary: Lista as categorias principais do workspace, cada uma com as suas subcategorias
+      operationId: listCategories
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: kind
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/CategoryKind' }
+          description: Só as categorias deste tipo
+        - name: includeArchived
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: Inclui as categorias arquivadas
+      responses:
+        '200':
+          description: Principais ordenadas por nome (sem diferenciar maiúsculas), com subcategorias na mesma ordem
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CategoryTree' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      summary: Cria uma categoria principal (com kind) ou uma subcategoria (com parentId)
+      operationId: createCategory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategory' }
+      responses:
+        '201':
+          description: Categoria criada
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Nome já usado por irmã ativa, ou categoria principal arquivada
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /workspaces/{wid}/categories/{id}:
+    get:
+      summary: Consulta uma categoria
+      operationId: getCategory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: A categoria
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Edita nome, cor e ícone de uma categoria ativa (tipo e categoria principal não mudam)
+      operationId: updateCategory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/CategoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategory' }
+      responses:
+        '200':
+          description: Categoria atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Nome já usado por irmã ativa, ou categoria arquivada
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /workspaces/{wid}/categories/{id}/archive:
+    post:
+      summary: Arquiva a categoria; se for principal, arquiva também as subcategorias ativas (idempotente)
+      operationId: archiveCategory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: Categoria arquivada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/categories/{id}/restore:
+    post:
+      summary: Restaura uma categoria arquivada; não restaura as subcategorias (idempotente)
+      operationId: restoreCategory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: Categoria ativa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Nome já usado por irmã ativa, ou categoria principal da subcategoria arquivada
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campos inválidos
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, categoria ou categoria principal inexistente, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CategoryKind:
+      type: string
+      enum: [INCOME, EXPENSE]
+    Color:
+      type: string
+      pattern: '^#[0-9A-Fa-f]{6}$'
+      example: '#1A9E5C'
+    CreateCategory:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        kind:
+          $ref: '#/components/schemas/CategoryKind'
+          description: Obrigatório sem parentId; com parentId, se vier, tem que ser igual ao do pai
+        parentId:
+          type: string
+          format: uuid
+          description: Cria uma subcategoria sob esta principal ativa
+        color: { $ref: '#/components/schemas/Color' }
+        icon: { type: string, minLength: 1, maxLength: 40 }
+    UpdateCategory:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        kind:
+          $ref: '#/components/schemas/CategoryKind'
+          description: Opcional; se vier, tem que ser igual ao atual
+        parentId:
+          type: string
+          format: uuid
+          description: Opcional; se vier, tem que ser igual ao atual
+        color: { $ref: '#/components/schemas/Color' }
+        icon: { type: string, minLength: 1, maxLength: 40 }
+    Category:
+      type: object
+      required: [id, name, kind, archived, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        kind: { $ref: '#/components/schemas/CategoryKind' }
+        parentId: { type: string, format: uuid, nullable: true }
+        color: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        archived: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    CategoryTree:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          required: [subcategories]
+          properties:
+            subcategories:
+              type: array
+              items: { $ref: '#/components/schemas/Category' }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
