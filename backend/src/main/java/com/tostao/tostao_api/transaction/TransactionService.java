@@ -2,6 +2,7 @@ package com.tostao.tostao_api.transaction;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.RowMapper;
@@ -71,7 +72,7 @@ public class TransactionService {
 	public TransactionResponse create(UUID workspaceId, CreateTransactionRequest request) {
 		TransactionRules.requireDateInRange(request.occurredOn());
 		if (request.type() == TransactionType.TRANSFER) {
-			throw new FieldValidationException("type", "transferência ainda não disponível");
+			return createTransfer(workspaceId, request);
 		}
 
 		if (request.destinationAccountId() != null) {
@@ -83,26 +84,57 @@ public class TransactionService {
 		requireUsableAccount(workspaceId, request.accountId());
 		requireUsableCategory(workspaceId, request.categoryId(), request.type());
 
-		UUID id = jdbc.sql("""
+		UUID id = insertRow(workspaceId, request.accountId(), request.categoryId(), request.type(),
+				TransactionRules.signedAmount(request.type(), request.amountCents()), request, null);
+		return load(workspaceId, id);
+	}
+
+	/**
+	 * Transferência: duas pontas ligadas por um grupo, gravadas na mesma transação. As duas contas são
+	 * travadas em ordem de id (evita impasse entre transferências opostas) e conferidas antes de gravar.
+	 */
+	private TransactionResponse createTransfer(UUID workspaceId, CreateTransactionRequest request) {
+		if (request.destinationAccountId() == null) {
+			throw new FieldValidationException("destinationAccountId", "obrigatório para transferência");
+		}
+		if (request.destinationAccountId().equals(request.accountId())) {
+			throw new FieldValidationException("destinationAccountId", "deve ser diferente da conta de origem");
+		}
+		if (request.categoryId() != null) {
+			throw new FieldValidationException("categoryId", "transferência não tem categoria");
+		}
+		requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
+
+		UUID group = UUID.randomUUID();
+		long[] legs = TransactionRules.transferLegs(request.amountCents());
+		UUID outflow = insertRow(workspaceId, request.accountId(), null, TransactionType.TRANSFER, legs[0], request,
+				group);
+		insertRow(workspaceId, request.destinationAccountId(), null, TransactionType.TRANSFER, legs[1], request,
+				group);
+		return load(workspaceId, outflow);
+	}
+
+	private UUID insertRow(UUID workspaceId, UUID accountId, UUID categoryId, TransactionType type, long signedCents,
+			CreateTransactionRequest request, UUID transferGroupId) {
+		return jdbc.sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
-				                          description, notes, created_by)
+				                          description, notes, transfer_group_id, created_by)
 				values (:workspaceId, :accountId, :categoryId, :type, :amount, :occurredOn, :description, :notes,
-				        :createdBy)
+				        :transferGroupId, :createdBy)
 				returning id
 				""")
 				.param("workspaceId", workspaceId)
-				.param("accountId", request.accountId())
-				.param("categoryId", request.categoryId())
-				.param("type", request.type().name())
-				.param("amount", TransactionRules.signedAmount(request.type(), request.amountCents()))
+				.param("accountId", accountId)
+				.param("categoryId", categoryId)
+				.param("type", type.name())
+				.param("amount", signedCents)
 				.param("occurredOn", request.occurredOn())
 				.param("description", request.description())
 				.param("notes", request.notes())
+				.param("transferGroupId", transferGroupId)
 				.param("createdBy", CurrentUser.id())
 				.query(UUID.class)
 				.single();
-
-		return load(workspaceId, id);
 	}
 
 	/** Um lançamento vigente do workspace. Excluído, de outro workspace ou inexistente é "não encontrado". */
@@ -131,6 +163,28 @@ public class TransactionService {
 				.optional()
 				.orElseThrow(AccountNotFoundException::new);
 		if (archived) {
+			throw new TransactionConflictException("A conta está arquivada");
+		}
+	}
+
+	/** As duas contas existem no workspace e estão ativas; travadas em modo compartilhado, em ordem de id. */
+	private void requireUsableAccounts(UUID workspaceId, UUID first, UUID second) {
+		record Row(UUID id, boolean archived) {
+		}
+		List<Row> rows = jdbc.sql("""
+				select id, archived from accounts
+				where workspace_id = :workspaceId and id in (:ids)
+				order by id
+				for share
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", List.of(first, second))
+				.query((rs, i) -> new Row(rs.getObject("id", UUID.class), rs.getBoolean("archived")))
+				.list();
+		if (rows.size() != 2) {
+			throw new AccountNotFoundException();
+		}
+		if (rows.stream().anyMatch(Row::archived)) {
 			throw new TransactionConflictException("A conta está arquivada");
 		}
 	}
