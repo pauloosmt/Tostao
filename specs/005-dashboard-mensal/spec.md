@@ -279,7 +279,7 @@ campo indicado.
 - **FR-002**: O sistema MUST aceitar meses de 2000-01 a 2100-12 e semanas ISO cujo ano esteja entre 2000 e
   2100, e MUST recusar, indicando o campo do mês ou da semana, o que estiver em outro formato, for um mês ou
   uma semana inexistente (como a semana 53 de um ano com 52) ou estiver fora desse intervalo. Pedir mês e
-  semana ao mesmo tempo MUST ser recusado indicando os campos.
+  semana ao mesmo tempo MUST ser recusado indicando o erro e nomeando os dois parâmetros.
 - **FR-003**: O painel MUST trazer o total de receitas, o total de despesas e o resultado do período, todos
   em centavos inteiros. Receitas e despesas MUST sair como valores positivos; o resultado MUST ser receitas
   menos despesas e pode ser negativo.
