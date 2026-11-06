@@ -1,13 +1,16 @@
 package com.tostao.tostao_api.auth;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.tostao.tostao_api.auth.dto.LoginRequest;
 import com.tostao.tostao_api.auth.dto.RegisterRequest;
 import com.tostao.tostao_api.common.error.EmailAlreadyExistsException;
+import com.tostao.tostao_api.common.error.InvalidCredentialsException;
 import com.tostao.tostao_api.user.MeResponse;
 import com.tostao.tostao_api.user.MeService;
 
@@ -23,6 +26,8 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final SessionTokenService tokens;
 	private final MeService meService;
+	/** Hash fictício: e-mail inexistente também paga o custo do BCrypt, para o tempo não denunciar. */
+	private final String dummyHash;
 
 	public AuthService(JdbcClient jdbc, PasswordEncoder passwordEncoder, SessionTokenService tokens,
 			MeService meService) {
@@ -30,6 +35,7 @@ public class AuthService {
 		this.passwordEncoder = passwordEncoder;
 		this.tokens = tokens;
 		this.meService = meService;
+		this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
 	}
 
 	/**
@@ -49,6 +55,41 @@ public class AuthService {
 
 		MeResponse me = meService.load(userId);
 		return new AuthResult(me, tokens.issue(userId, 0));
+	}
+
+	/**
+	 * Entrada com e-mail e senha. Falha de senha é retorno normal (exceção de domínio, sem transação
+	 * aberta), com a mesma resposta para e-mail inexistente e senha errada.
+	 */
+	public AuthResult login(LoginRequest request) {
+		var user = jdbc.sql("select id, password_hash, session_version from find_user_for_login(:email)")
+				.param("email", request.email())
+				.query((rs, i) -> new LoginUser(rs.getObject("id", UUID.class), rs.getString("password_hash"),
+						rs.getInt("session_version")))
+				.optional();
+
+		boolean tooLongForBcrypt = request.password().getBytes(StandardCharsets.UTF_8).length > PasswordPolicy.MAX_BYTES;
+		String hash = user.map(LoginUser::passwordHash).orElse(dummyHash);
+		boolean passwordMatches = !tooLongForBcrypt && passwordEncoder.matches(request.password(), hash);
+		if (tooLongForBcrypt) {
+			// paga o mesmo custo de uma verificação real
+			passwordEncoder.matches("senha-fictícia-1", dummyHash);
+		}
+		if (user.isEmpty() || !passwordMatches) {
+			throw new InvalidCredentialsException();
+		}
+
+		LoginUser found = user.get();
+		MeResponse me = meService.load(found.id());
+		return new AuthResult(me, tokens.issue(found.id(), found.sessionVersion()));
+	}
+
+	/** "Sair de todos os aparelhos": soma 1 à versão e invalida todos os tokens anteriores. */
+	public void logoutAll(UUID userId) {
+		jdbc.sql("select revoke_sessions(:id)").param("id", userId).query(Integer.class).single();
+	}
+
+	private record LoginUser(UUID id, String passwordHash, int sessionVersion) {
 	}
 
 }
