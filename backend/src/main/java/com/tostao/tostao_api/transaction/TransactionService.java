@@ -2,12 +2,15 @@ package com.tostao.tostao_api.transaction;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.category.CategoryKind;
@@ -17,6 +20,7 @@ import com.tostao.tostao_api.common.error.FieldValidationException;
 import com.tostao.tostao_api.common.error.TransactionConflictException;
 import com.tostao.tostao_api.common.error.TransactionNotFoundException;
 import com.tostao.tostao_api.transaction.dto.CreateTransactionRequest;
+import com.tostao.tostao_api.transaction.dto.TransactionPageResponse;
 import com.tostao.tostao_api.transaction.dto.TransactionResponse;
 import com.tostao.tostao_api.workspace.CurrentUser;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
@@ -135,6 +139,89 @@ public class TransactionService {
 				.param("createdBy", CurrentUser.id())
 				.query(UUID.class)
 				.single();
+	}
+
+	/**
+	 * Uma página de lançamentos vigentes, do mais recente para o mais antigo, com os filtros combinados com
+	 * "e". A página e a contagem saem da mesma leitura consistente ({@code REPEATABLE READ}), então o total
+	 * e a página nunca discordam sob escrita simultânea. Texto, datas e ids vão sempre como parâmetros.
+	 */
+	@WorkspaceScoped
+	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+	public TransactionPageResponse list(UUID workspaceId, TransactionFilter filter) {
+		if (filter.page() < 1) {
+			throw new FieldValidationException("page", "deve ser 1 ou mais");
+		}
+		if (filter.size() < 1 || filter.size() > TransactionFilter.MAX_SIZE) {
+			throw new FieldValidationException("size", "deve ser de 1 a " + TransactionFilter.MAX_SIZE);
+		}
+		if (filter.q() != null && filter.q().length() > TransactionFilter.MAX_TEXT) {
+			throw new FieldValidationException("q", "deve ter no máximo " + TransactionFilter.MAX_TEXT + " caracteres");
+		}
+		if (filter.from() != null && filter.to() != null && filter.from().isAfter(filter.to())) {
+			throw new FieldValidationException("from", "não pode ser depois da data final");
+		}
+
+		StringBuilder conditions = new StringBuilder();
+		Map<String, Object> params = new HashMap<>();
+		params.put("workspaceId", workspaceId);
+		if (filter.from() != null) {
+			conditions.append("  and t.occurred_on >= :from\n");
+			params.put("from", filter.from());
+		}
+		if (filter.to() != null) {
+			conditions.append("  and t.occurred_on <= :to\n");
+			params.put("to", filter.to());
+		}
+		if (filter.accountId() != null) {
+			conditions.append("  and t.account_id = :accountId\n");
+			params.put("accountId", filter.accountId());
+		}
+		if (filter.categoryId() != null) {
+			conditions.append("""
+					  and (t.category_id = :categoryId
+					       or t.category_id in (select c.id from categories c
+					                            where c.parent_id = :categoryId and c.workspace_id = :workspaceId))
+					""");
+			params.put("categoryId", filter.categoryId());
+		}
+		if (filter.type() != null) {
+			conditions.append("  and t.type = :type\n");
+			params.put("type", filter.type().name());
+		}
+		if (filter.q() != null && !filter.q().isEmpty()) {
+			conditions.append("  and lower(t.description) like lower(:pattern) escape '\\'\n");
+			params.put("pattern", TransactionRules.likePattern(filter.q()));
+		}
+
+		long totalItems = jdbc.sql("""
+				select count(*) from transactions t
+				where t.workspace_id = :workspaceId and t.deleted_at is null
+				""" + conditions)
+				.params(params)
+				.query(Long.class)
+				.single();
+
+		Map<String, Object> pageParams = new HashMap<>(params);
+		pageParams.put("size", filter.size());
+		pageParams.put("offset", (long) (filter.page() - 1) * filter.size());
+		List<TransactionResponse> items = jdbc.sql(SELECT + conditions + """
+				order by t.occurred_on desc, t.created_at desc, t.id desc
+				limit :size offset :offset
+				""")
+				.params(pageParams)
+				.query(ROW_MAPPER)
+				.list();
+
+		return new TransactionPageResponse(items, filter.page(), filter.size(), totalItems,
+				TransactionRules.totalPages(totalItems, filter.size()));
+	}
+
+	/** Um lançamento vigente do workspace. Excluído, de outro workspace ou inexistente é "não encontrado". */
+	@WorkspaceScoped
+	@Transactional(readOnly = true)
+	public TransactionResponse get(UUID workspaceId, UUID transactionId) {
+		return load(workspaceId, transactionId);
 	}
 
 	/** Um lançamento vigente do workspace. Excluído, de outro workspace ou inexistente é "não encontrado". */
