@@ -2,7 +2,9 @@ package com.tostao.tostao_api.dashboard;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -15,6 +17,7 @@ import com.tostao.tostao_api.dashboard.dto.DashboardResponse;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Balances;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Change;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Comparison;
+import com.tostao.tostao_api.dashboard.dto.DashboardResponse.DayPoint;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.PeriodInfo;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Totals;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
@@ -82,14 +85,32 @@ public class DashboardService {
 						rs.getLong("expense")))
 				.list();
 
+		// As linhas cobrem o período anterior e o atual, que são contíguos: tudo antes do início é "anterior".
 		long income = 0;
 		long expense = 0;
+		long previousIncome = 0;
+		long previousExpense = 0;
+		Map<LocalDate, DayRow> byDay = new HashMap<>();
 		for (DayRow row : rows) {
-			if (!row.date().isBefore(period.start())) {
+			if (row.date().isBefore(period.start())) {
+				previousIncome = Math.addExact(previousIncome, row.income());
+				previousExpense = Math.addExact(previousExpense, row.expense());
+			} else {
 				income = Math.addExact(income, row.income());
 				expense = Math.addExact(expense, row.expense());
+				byDay.put(row.date(), row);
 			}
 		}
+		List<DayPoint> daily = new ArrayList<>();
+		for (LocalDate day : period.days()) {
+			DayRow row = byDay.get(day);
+			daily.add(new DayPoint(day, row == null ? 0 : row.income(), row == null ? 0 : row.expense(), 0));
+		}
+		long result = Math.subtractExact(income, expense);
+		Comparison comparison = new Comparison(info(previous),
+				change(income, previousIncome),
+				change(expense, previousExpense),
+				change(result, Math.subtractExact(previousIncome, previousExpense)));
 
 		List<TypedRow> categoryRows = jdbc.sql(CATEGORY_SQL)
 				.param("workspaceId", workspaceId)
@@ -104,12 +125,18 @@ public class DashboardService {
 
 		return new DashboardResponse(
 				info(period),
-				new Totals(income, expense, Math.subtractExact(income, expense)),
+				new Totals(income, expense, result),
 				DashboardRules.groups(incomeRows, income),
 				DashboardRules.groups(expenseRows, expense),
-				List.of(),
-				new Comparison(info(previous), new Change(0, 0, null), new Change(0, 0, null), new Change(0, 0, null)),
+				daily,
+				comparison,
 				new Balances(List.of(), 0, 0, 0));
+	}
+
+	/** Variação do período sobre o anterior, em centavos e em percentual (nulo se o anterior é zero). */
+	private static Change change(long current, long previous) {
+		long delta = Math.subtractExact(current, previous);
+		return new Change(previous, delta, DashboardRules.changePercent(delta, previous));
 	}
 
 	private static List<CategoryRow> rowsOf(List<TypedRow> rows, String type) {
