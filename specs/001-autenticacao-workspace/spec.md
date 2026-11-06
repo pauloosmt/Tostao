@@ -152,12 +152,14 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 - E-mail com espaços nas pontas ou letras maiúsculas: tratado como o mesmo e-mail normalizado, tanto no
   cadastro quanto na entrada.
 - Sessão expirada ou adulterada: tratada como ausência de sessão, nunca como erro do servidor.
-- Entrada com sessão ainda válida: é aceita normalmente e substitui a sessão anterior.
+- Entrada com sessão ainda válida: é aceita normalmente e substitui só o cookie daquele aparelho; as
+  sessões de outros aparelhos continuam válidas.
 - Corpo da requisição com campos extras (por exemplo, tentar informar papel ou identificador de
   workspace no cadastro): campos não permitidos são ignorados ou recusados, nunca aceitos.
 - Texto muito longo em nome, e-mail ou senha: recusado com limite explícito, sem derrubar o sistema.
-- Pessoa membro de nenhum workspace por falha de dados: o sistema trata como estado inválido e não
-  concede acesso a nada.
+- Pessoa membro de nenhum workspace por falha de dados: a consulta dos próprios dados responde com lista
+  de workspaces vazia (para o app poder mostrar o erro), e qualquer rota de workspace responde como
+  não encontrado; nenhum dado é acessado.
 - Sair sem estar autenticada: responde com sucesso sem efeito colateral.
 - Aparelho perdido ou roubado: a pessoa entra em outro aparelho e escolhe sair de todos, e a sessão do
   aparelho perdido deixa de valer, mesmo sem ela ter acesso a ele.
@@ -180,8 +182,9 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 - **FR-005**: Ao concluir um cadastro, o sistema MUST criar, de forma atômica, a conta, um workspace
   pessoal e a associação da pessoa a esse workspace com o papel OWNER; se qualquer etapa falhar, nada
   MUST ser gravado.
-- **FR-006**: O sistema MUST verificar se o e-mail já existe antes de tentar criar a conta, em vez de
-  depender de tentar gravar e tratar a falha.
+- **FR-006**: O sistema MUST decidir se o e-mail já existe como parte da própria criação da conta, sem
+  depender de capturar uma falha de banco depois de tentar gravar; e-mail já existente resulta em recusa
+  normal, sem erro interno.
 - **FR-007**: O sistema MUST permitir entrar com e-mail e senha e, em caso de sucesso, estabelecer uma
   sessão que o navegador envia automaticamente, sem que o código do front-end precise lidar com a
   credencial da sessão.
@@ -247,8 +250,9 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 
 ### Measurable Outcomes
 
-- **SC-001**: Uma pessoa nova cria a conta e chega ao estado "autenticada, com workspace pessoal" em menos
-  de 1 minuto, em uma única tela de cadastro.
+- **SC-001**: Uma pessoa nova cria a conta e chega ao estado "autenticada, com workspace pessoal" com uma
+  única requisição de cadastro, sem nenhum passo adicional (a tela de cadastro é entregue no roadmap de
+  front-end).
 - **SC-002**: Em 100% dos testes de isolamento, tentativas de ler ou alterar dados de outro workspace são
   recusadas, para todas as rotas de dados existentes.
 - **SC-003**: Com a proteção de uma das duas camadas de isolamento removida de propósito em teste, 100%
