@@ -139,6 +139,45 @@ public class AccountService {
 		return load(workspaceId, accountId);
 	}
 
+	/**
+	 * Arquiva a conta, preservando todos os seus dados e lançamentos. Idempotente: só escreve quando o
+	 * estado muda, então repetir a ação não toca em {@code updated_at}.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public AccountResponse archive(UUID workspaceId, UUID accountId) {
+		jdbc.sql("""
+				update accounts set archived = true, updated_at = now()
+				where id = :id and workspace_id = :workspaceId and not archived
+				""")
+				.param("id", accountId)
+				.param("workspaceId", workspaceId)
+				.update();
+		return load(workspaceId, accountId);
+	}
+
+	/**
+	 * Restaura uma conta arquivada. Idempotente. Se outra conta ativa já usa o nome, a restauração é
+	 * recusada (409); a corrida residual é barrada pelo índice único e traduzida depois do rollback.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public AccountResponse restore(UUID workspaceId, UUID accountId) {
+		AccountResponse current = load(workspaceId, accountId);
+		if (!current.archived()) {
+			return current;
+		}
+		requireNameFree(workspaceId, current.name(), accountId);
+		jdbc.sql("""
+				update accounts set archived = false, updated_at = now()
+				where id = :id and workspace_id = :workspaceId and archived
+				""")
+				.param("id", accountId)
+				.param("workspaceId", workspaceId)
+				.update();
+		return load(workspaceId, accountId);
+	}
+
 	/** Contas do workspace com o saldo de cada uma, por nome. Por padrão só as ativas. */
 	@WorkspaceScoped
 	@Transactional(readOnly = true)

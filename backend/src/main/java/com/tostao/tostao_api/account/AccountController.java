@@ -55,4 +55,14 @@ class AccountController {
 		return accounts.update(workspaceId, accountId, request);
 	}
 
+	@PostMapping("/{id}/archive")
+	AccountResponse archive(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID accountId) {
+		return accounts.archive(workspaceId, accountId);
+	}
+
+	@PostMapping("/{id}/restore")
+	AccountResponse restore(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID accountId) {
+		return accounts.restore(workspaceId, accountId);
+	}
+
 }
