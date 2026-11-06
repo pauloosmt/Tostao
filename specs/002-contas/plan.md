@@ -96,12 +96,13 @@ backend/
 │   ├── report/                              # BalanceReportController, BalanceReportResponse
 │   ├── workspace/                           # WorkspaceScoped (+ write), WorkspaceScopeAspect (+ papel)
 │   └── common/error/                        # InsufficientRoleException, AccountNotFoundException,
-│                                            # AccountNameAlreadyExistsException, FieldValidationException,
+│                                            # AccountNameAlreadyExistsException, AccountArchivedException, FieldValidationException,
 │                                            # e novos mapeamentos em ApiExceptionHandler
 └── src/test/java/com/tostao/tostao_api/
     ├── account/                             # CreateAccountTest, ListAndBalanceTest, UpdateAccountTest,
     │                                        # ArchiveRestoreTest, AccountAccessTest, AccountRlsTest,
-    │                                        # BalancePerformanceTest
+    │                                        # AccountServiceFilterTest, BalancePerformanceTest
+    ├── workspace/                           # WorkspaceRoleAspectTest
     ├── report/                              # BalanceReportTest
     └── support/                             # WorkspaceFixtures (usuários, papéis, tokens, lançamentos)
 ```
