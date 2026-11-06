@@ -148,9 +148,9 @@ description: "Tarefas da feature 002-contas"
 
 - [X] T026 [P] Em `TEST/OpenApiContractTest.java`, passar a conferir também `specs/002-contas/contracts/openapi.yaml` contra o `/v3/api-docs` (todas as operações do contrato existem) e acrescentar a asserção de que o caminho `/api/v1/workspaces/{wid}/accounts/{id}` não declara o método `delete`
 - [X] T027 [P] Acrescentar ao `README.md` um exemplo de `curl` para criar uma conta e consultar `reports/balance`
-- [ ] T028 Rodar `cd backend && ./mvnw verify` e garantir todos os testes verdes, os da 001 inclusive
-- [ ] T029 Rodar o roteiro de `specs/002-contas/quickstart.md` contra `docker compose up -d --build` (a V3 roda sobre o banco que já tem V1 e V2) e registrar a saída real de cada passo; limpar os dados de teste do banco local depois
-- [ ] T030 [P] Marcar a `002-contas` como concluída no checklist da nota `D:\Paulo\Projetos\Tostão\Tostão.md`
+- [X] T028 Rodar `cd backend && ./mvnw verify` e garantir todos os testes verdes, os da 001 inclusive
+- [X] T029 Rodar o roteiro de `specs/002-contas/quickstart.md` contra `docker compose up -d --build` (a V3 roda sobre o banco que já tem V1 e V2) e registrar a saída real de cada passo; limpar os dados de teste do banco local depois
+- [X] T030 [P] Marcar a `002-contas` como concluída no checklist da nota `D:\Paulo\Projetos\Tostão\Tostão.md`
 
 ---
 
