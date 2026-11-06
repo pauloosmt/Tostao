@@ -160,13 +160,13 @@ description: "Tarefas da feature 001-autenticacao-workspace"
 
 ### Tests for User Story 5
 
-- [ ] T038 [P] [US5] `TEST/auth/LoginThrottleTest.java`: cinco falhas seguidas e a sexta tentativa, com a senha certa, devolve 429 com `Retry-After`; e-mail inexistente se comporta igual (mesmo 401 nas falhas e mesmo 429 no limite); login bem-sucedido abaixo do limite zera o contador (confere pelo `ownerJdbcClient` que a linha sumiu); com `locked_until` movido para o passado pelo `ownerJdbcClient`, o login correto volta a funcionar e uma nova falha recomeça a contagem em 1; o estado está no banco, então persiste sem depender da memória do processo; 20 tentativas concorrentes com falha não contam menos que 5
+- [X] T038 [P] [US5] `TEST/auth/LoginThrottleTest.java`: cinco falhas seguidas e a sexta tentativa, com a senha certa, devolve 429 com `Retry-After`; e-mail inexistente se comporta igual (mesmo 401 nas falhas e mesmo 429 no limite); login bem-sucedido abaixo do limite zera o contador (confere pelo `ownerJdbcClient` que a linha sumiu); com `locked_until` movido para o passado pelo `ownerJdbcClient`, o login correto volta a funcionar e uma nova falha recomeça a contagem em 1; o estado está no banco, então persiste sem depender da memória do processo; 20 tentativas concorrentes com falha não contam menos que 5
 
 ### Implementation for User Story 5
 
-- [ ] T039 [P] [US5] Criar `MAIN/auth/LoginThrottle.java` com `remainingLockSeconds(String email)`, `recordFailure(String email)` e `reset(String email)`, cada um uma chamada curta e independente às funções `login_lockout_status`, `record_login_failure` e `reset_login_attempts` por `JdbcClient`
-- [ ] T040 [US5] Em `MAIN/auth/AuthService.java`, integrar o `LoginThrottle` ao `login`: checar o bloqueio antes de verificar a senha (lança `TooManyAttemptsException` com os segundos restantes), registrar falha em credencial inválida (inclusive e-mail inexistente) e zerar o contador em sucesso
-- [ ] T041 [US5] Em `MAIN/common/error/ApiExceptionHandler.java`, mapear `TooManyAttemptsException` para 429 com o header `Retry-After` em segundos
+- [X] T039 [P] [US5] Criar `MAIN/auth/LoginThrottle.java` com `remainingLockSeconds(String email)`, `recordFailure(String email)` e `reset(String email)`, cada um uma chamada curta e independente às funções `login_lockout_status`, `record_login_failure` e `reset_login_attempts` por `JdbcClient`
+- [X] T040 [US5] Em `MAIN/auth/AuthService.java`, integrar o `LoginThrottle` ao `login`: checar o bloqueio antes de verificar a senha (lança `TooManyAttemptsException` com os segundos restantes), registrar falha em credencial inválida (inclusive e-mail inexistente) e zerar o contador em sucesso
+- [X] T041 [US5] Em `MAIN/common/error/ApiExceptionHandler.java`, mapear `TooManyAttemptsException` para 429 com o header `Retry-After` em segundos
 
 **Checkpoint**: as cinco user stories funcionam; o limite de tentativas protege o login
 
