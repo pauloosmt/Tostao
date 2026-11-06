@@ -36,7 +36,9 @@
   1. Despesas saem como valor positivo; resultado = receitas − despesas.
   2. Saldos do painel são os de hoje (regra da spec 002), não os do fim do mês escolhido.
   3. Mês corrente no fuso de Brasília; sem fuso por workspace nesta fase.
-  4. Variação percentual sobre o valor absoluto do mês anterior; vazia quando o anterior é zero.
+  4. Variação percentual sobre o valor absoluto do período anterior; vazia quando o anterior é zero.
+  5. Visão semanal opcional (`week`), de segunda a domingo (ISO 8601), no lugar do mês; os dois juntos são
+     recusados; sem nenhum, vale o mês corrente.
 - Também decididos por padrão: transferências ignoradas em totais, grupos e evolução; grupo "Sem categoria"
   só quando existirem lançamentos sem categoria; sem filtros por conta ou categoria; percentuais com duas
   casas decimais.

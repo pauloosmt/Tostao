@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Painel mensal de um workspace, somente leitura. Para o mês escolhido (padrão: o mês corrente) mostra o total de receitas, o total de despesas e o resultado (receitas menos despesas), em centavos inteiros; receitas e despesas agrupadas por categoria principal, com o total de cada subcategoria dentro dela e o percentual sobre o total do tipo, do maior para o menor; a evolução diária (receita e despesa por dia do mês); a comparação com o mês anterior (variação em centavos e em percentual); e o saldo atual por conta e o saldo total (cálculo da spec 002). Transferências não entram nos totais nem nos grupos por categoria; lançamentos excluídos não contam; contas e categorias arquivadas continuam contando nos lançamentos antigos; lançamento sem categoria aparece num grupo 'Sem categoria'. O mês vem da data de ocorrência, sem fuso. Mês inválido ou fora de 2000-01..2100-12 é recusado. OWNER, EDITOR e VIEWER leem; isolamento por workspace nas duas camadas; não-membro recebe 'não encontrado'. Todos os números vêm de uma única leitura consistente. Com 20.000 lançamentos, responde em menos de 1 segundo. Sem novas gravações. Segue o padrão das specs 002-contas, 003-categorias e 004-lancamentos."
+**Input**: User description: "Painel de um workspace, somente leitura, por mês ou por semana (a pessoa escolhe um dos dois, para acompanhar o mês inteiro ou semana a semana). Para o período escolhido (padrão: o mês corrente) mostra o total de receitas, o total de despesas e o resultado (receitas menos despesas), em centavos inteiros; receitas e despesas agrupadas por categoria principal, com o total de cada subcategoria dentro dela e o percentual sobre o total do tipo, do maior para o menor; a evolução diária (receita e despesa por dia do mês); a comparação com o período anterior, o mês ou a semana anterior (variação em centavos e em percentual); e o saldo atual por conta e o saldo total (cálculo da spec 002). Transferências não entram nos totais nem nos grupos por categoria; lançamentos excluídos não contam; contas e categorias arquivadas continuam contando nos lançamentos antigos; lançamento sem categoria aparece num grupo 'Sem categoria'. O mês e a semana vêm da data de ocorrência, sem fuso. A semana vai de segunda a domingo. Mês ou semana inválidos, fora do intervalo aceito (2000 a 2100) ou pedidos juntos são recusados. OWNER, EDITOR e VIEWER leem; isolamento por workspace nas duas camadas; não-membro recebe 'não encontrado'. Todos os números vêm de uma única leitura consistente. Com 20.000 lançamentos, responde em menos de 1 segundo. Sem novas gravações. Segue o padrão das specs 002-contas, 003-categorias e 004-lancamentos."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -111,7 +111,48 @@ dia, a presença dos dias sem movimento e a variação de cada total em relaçã
 
 ---
 
-### User Story 4 - Ver o saldo atual das contas no painel (Priority: P2)
+### User Story 4 - Acompanhar semana a semana (Priority: P2)
+
+Em vez do mês inteiro, a pessoa escolhe uma semana (de segunda a domingo) e vê tudo o que o painel mensal
+mostra, só que para aqueles sete dias: receitas, despesas e resultado, grupos por categoria, evolução dia a
+dia e comparação com a semana anterior. Assim acompanha o ritmo de gastos semana a semana, sem esperar o mês
+fechar. Uma semana pode atravessar dois meses, e o painel dela conta só os sete dias, onde quer que caiam.
+
+**Why this priority**: o mês inteiro chega tarde para corrigir o rumo; a semana mostra cedo se os gastos
+estão fugindo do ritmo. Reaproveita todo o cálculo do painel mensal, mudando só o intervalo de datas.
+
+**Independent Test**: com lançamentos espalhados por duas semanas seguidas (uma delas atravessando a virada
+do mês), consultar cada semana e conferir totais, grupos, os sete dias e a variação em relação à semana
+anterior.
+
+**Acceptance Scenarios**:
+
+1. **Given** lançamentos em várias semanas, **When** a pessoa consulta uma semana, **Then** os totais de
+   receitas, despesas e resultado, os grupos por categoria e as subcategorias contam só os lançamentos de
+   segunda a domingo daquela semana, ambos os dias incluídos, pelas mesmas regras do painel mensal
+   (transferências fora, excluídos fora, arquivadas contam, "Sem categoria", percentuais).
+2. **Given** uma semana, **When** a pessoa consulta, **Then** a evolução traz sete itens, de segunda a
+   domingo, com a receita e a despesa de cada dia, e a soma dos dias é igual aos totais da semana.
+3. **Given** uma semana que atravessa a virada do mês (por exemplo, de 26/10 a 01/11), **When** a pessoa
+   consulta, **Then** o painel conta os sete dias, dos dois meses, e mostra o período com as datas de início
+   e de fim.
+4. **Given** a semana anterior, **When** a pessoa consulta, **Then** recebe a comparação com ela (valor
+   anterior, variação em centavos e em percentual, vazio quando o anterior é zero), com as mesmas regras da
+   comparação mensal.
+5. **Given** uma semana sem lançamentos, **When** a pessoa consulta, **Then** recebe totais zerados e os sete
+   dias em zero, sem erro.
+6. **Given** a consulta por semana, **When** a pessoa a faz, **Then** os saldos das contas e o total são os
+   mesmos da consulta mensal: o saldo de hoje, não o do fim da semana.
+7. **Given** uma semana mal escrita, inexistente (por exemplo, a semana 53 de um ano que só tem 52) ou fora do
+   intervalo aceito, **When** a pessoa consulta, **Then** a consulta é recusada indicando o campo da semana.
+8. **Given** mês e semana informados ao mesmo tempo, **When** a pessoa consulta, **Then** a consulta é
+   recusada indicando que só um dos dois pode ser pedido.
+9. **Given** nenhuma semana informada, **When** a pessoa consulta, **Then** o painel é o do mês, como antes:
+   a visão semanal só existe quando é pedida.
+
+---
+
+### User Story 5 - Ver o saldo atual das contas no painel (Priority: P2)
 
 No mesmo painel a pessoa vê o saldo atual de cada conta ativa e o saldo total do workspace, para ter numa
 só tela o resultado do mês e o dinheiro que ela tem hoje.
@@ -136,7 +177,7 @@ consulta de saldos da spec 002, feita no mesmo instante.
 
 ---
 
-### User Story 5 - Só quem é do workspace vê, e só o dele (Priority: P1)
+### User Story 6 - Só quem é do workspace vê, e só o dele (Priority: P1)
 
 OWNER, EDITOR e VIEWER consultam o painel. Quem não é membro do workspace recebe a mesma resposta de um
 workspace que não existe. O painel nunca mostra números de outro workspace.
@@ -162,10 +203,10 @@ primeira, consultar o painel de cada um e conferir respostas e números.
 
 ---
 
-### User Story 6 - Pedir um mês inválido (Priority: P3)
+### User Story 7 - Pedir um mês inválido (Priority: P3)
 
 A pessoa informa um mês mal escrito ou fora do intervalo aceito e recebe um erro claro, em vez de um painel
-errado ou de uma falha interna.
+errado ou de uma falha interna. O mesmo vale para a semana (ver a história da visão semanal).
 
 **Why this priority**: protege contra erro de digitação e de integração, mas não é o caminho principal.
 
@@ -198,49 +239,62 @@ campo indicado.
   estouro.
 - Empate de totais entre grupos: ordem estável, por nome e depois por identificador, para a resposta ser
   igual em consultas repetidas.
-- Parâmetro de mês repetido ou campos extras na consulta: recusados ou ignorados de forma previsível, sem
-  erro interno.
+- Parâmetro de mês ou de semana repetido, ou campos extras na consulta: recusados ou ignorados de forma
+  previsível, sem erro interno.
+- Semana que atravessa a virada de mês ou de ano (por exemplo, de 29/12 a 04/01): conta os sete dias, sem
+  separar por mês; a numeração da semana segue o padrão ISO 8601 (semana 1 é a que contém a primeira
+  quinta-feira do ano), então o ano da semana pode diferir do ano das datas.
+- Semana cujos dias caem em parte fora do intervalo de datas aceito nos lançamentos (2000-01-01 a
+  2100-12-31): é aceita e os dias sem lançamento possível contam zero.
+- Pedir mês e semana juntos: recusado, para não haver dois períodos concorrentes na mesma resposta.
 - Workspace sem contas ou sem lançamentos: painel zerado, sem erro.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: O sistema MUST oferecer uma consulta de painel mensal, somente leitura, sob o workspace, que
-  recebe opcionalmente o mês no formato ano-mês. Sem o mês, MUST usar o mês corrente na data de hoje no
-  fuso de Brasília.
-- **FR-002**: O sistema MUST aceitar meses de 2000-01 a 2100-12 e MUST recusar, indicando o campo do mês, o
-  que estiver em outro formato, for um mês inexistente ou estiver fora desse intervalo.
-- **FR-003**: O painel MUST trazer o total de receitas, o total de despesas e o resultado do mês, todos em
-  centavos inteiros. Receitas e despesas MUST sair como valores positivos; o resultado MUST ser receitas
+- **FR-001**: O sistema MUST oferecer uma consulta de painel, somente leitura, sob o workspace, para um
+  período que pode ser um mês (formato ano-mês) ou uma semana (formato de semana ISO, ano e número da
+  semana). A pessoa MUST poder pedir um dos dois, nunca os dois juntos. Sem nenhum dos dois, MUST usar o mês
+  corrente na data de hoje no fuso de Brasília.
+- **FR-002**: O sistema MUST aceitar meses de 2000-01 a 2100-12 e semanas ISO cujo ano esteja entre 2000 e
+  2100, e MUST recusar, indicando o campo do mês ou da semana, o que estiver em outro formato, for um mês ou
+  uma semana inexistente (como a semana 53 de um ano com 52) ou estiver fora desse intervalo. Pedir mês e
+  semana ao mesmo tempo MUST ser recusado indicando os campos.
+- **FR-003**: O painel MUST trazer o total de receitas, o total de despesas e o resultado do período, todos
+  em centavos inteiros. Receitas e despesas MUST sair como valores positivos; o resultado MUST ser receitas
   menos despesas e pode ser negativo.
-- **FR-004**: Um lançamento MUST pertencer ao mês pela sua data de ocorrência (só a data, sem fuso), do
-  primeiro ao último dia do mês, ambos incluídos.
+- **FR-004**: Um lançamento MUST pertencer ao período pela sua data de ocorrência (só a data, sem fuso). O
+  mês vai do primeiro ao último dia do mês; a semana vai da segunda-feira ao domingo, numerada pelo padrão
+  ISO 8601. Os dois limites MUST ser incluídos. A resposta MUST informar o tipo do período (mês ou semana) e
+  as datas de início e de fim dele.
 - **FR-005**: Transferências MUST NÃO entrar nos totais, nos grupos por categoria nem na evolução diária.
   Lançamentos excluídos logicamente MUST NÃO contar em nenhum número do painel. Lançamentos em contas ou
   categorias arquivadas MUST contar normalmente.
 - **FR-006**: O painel MUST trazer, separadamente para receitas e para despesas, os grupos por categoria
-  principal usados no mês. Cada grupo MUST trazer a categoria, o total (a soma do lançado direto na principal
+  principal usados no período. Cada grupo MUST trazer a categoria, o total (a soma do lançado direto na principal
   com o de todas as suas subcategorias) e o percentual sobre o total do tipo; e as subcategorias usadas no
-  mês dentro dele, cada uma com categoria, total e percentual sobre o total do tipo.
+  período dentro dele, cada uma com categoria, total e percentual sobre o total do tipo.
 - **FR-007**: Grupos e subcategorias MUST vir ordenados do maior para o menor total, com desempate estável
-  por nome e depois por identificador. Categorias sem lançamento no mês MUST NÃO aparecer.
+  por nome e depois por identificador. Categorias sem lançamento no período MUST NÃO aparecer.
 - **FR-008**: Lançamentos de receita ou despesa sem categoria MUST aparecer num grupo "Sem categoria" do
   tipo, sem identificador de categoria, contando no total do tipo e nos percentuais. O grupo MUST aparecer
-  só se existirem tais lançamentos no mês.
+  só se existirem tais lançamentos no período.
 - **FR-009**: Os percentuais MUST ser calculados sobre o total do tipo, com duas casas decimais, e MUST NÃO
   falhar quando o total do tipo for zero (nesse caso não há grupos). A soma dos totais dos grupos de um tipo
   MUST ser exatamente igual ao total do tipo, em centavos.
-- **FR-010**: A evolução diária MUST trazer um item para cada dia do mês, em ordem de calendário, com a
-  receita e a despesa do dia (zero nos dias sem movimento). A soma dos dias MUST ser igual aos totais do mês.
-- **FR-011**: A comparação com o mês anterior MUST trazer, para receitas, despesas e resultado: o valor do
-  mês anterior, a variação em centavos (mês escolhido menos mês anterior) e a variação em percentual sobre o
-  valor absoluto do mês anterior, com duas casas decimais. Quando o valor do mês anterior for zero, o
-  percentual MUST vir vazio ("não aplicável"). Para o primeiro mês aceito, o mês anterior MUST ser tratado
-  como sem lançamentos.
+- **FR-010**: A evolução diária MUST trazer um item para cada dia do período (os dias do mês, ou os sete da
+  semana), em ordem de calendário, com a receita e a despesa do dia (zero nos dias sem movimento). A soma dos
+  dias MUST ser igual aos totais do período.
+- **FR-011**: A comparação com o período anterior (o mês anterior, ou a semana anterior) MUST trazer, para
+  receitas, despesas e resultado: o valor do período anterior, a variação em centavos (período escolhido
+  menos período anterior) e a variação em percentual sobre o valor absoluto do período anterior, com duas
+  casas decimais. Quando o valor do período anterior for zero, o percentual MUST vir vazio ("não
+  aplicável"). O período anterior MUST ser calculado do mesmo jeito, mesmo quando o que o precede está fora
+  do intervalo de datas aceito nos lançamentos (nesse caso ele só não tem lançamentos).
 - **FR-012**: O painel MUST trazer o saldo atual de cada conta ativa e o saldo total do workspace, pela mesma
   regra da spec 002 (saldo inicial mais os lançamentos não excluídos, de qualquer data), independentemente
-  do mês escolhido, e esses números MUST ser idênticos aos da consulta de saldos da spec 002.
+  do mês ou da semana escolhidos, e esses números MUST ser idênticos aos da consulta de saldos da spec 002.
 - **FR-013**: Todos os números do painel (totais, grupos, evolução, comparação e saldos) MUST vir de uma
   única leitura consistente: uma consulta nunca mistura dados de antes e de depois de uma gravação feita por
   outra pessoa ao mesmo tempo.
@@ -260,13 +314,15 @@ campo indicado.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Painel mensal**: visão calculada de um workspace para um mês; não é guardada. Reúne totais, grupos por
-  categoria, evolução diária, comparação com o mês anterior e saldos.
-- **Totais do mês**: receitas, despesas e resultado, em centavos.
+- **Painel**: visão calculada de um workspace para um período, mês ou semana; não é guardada. Reúne totais,
+  grupos por categoria, evolução diária, comparação com o período anterior e saldos.
+- **Período**: um mês (do dia 1 ao último) ou uma semana ISO (de segunda a domingo), com datas de início e de
+  fim.
+- **Totais do período**: receitas, despesas e resultado, em centavos.
 - **Grupo de categoria**: categoria principal (ou "Sem categoria") com total, percentual e subcategorias
   usadas, de um dos tipos (receita ou despesa).
 - **Dia da evolução**: data, receita do dia e despesa do dia.
-- **Comparação**: para cada total, valor do mês anterior, variação em centavos e variação em percentual.
+- **Comparação**: para cada total, valor do período anterior, variação em centavos e variação em percentual.
 - **Lançamento, Conta e Categoria** (specs 004, 002 e 003): as fontes dos números; o painel só os lê.
 - **Papel**: o que a pessoa pode fazer no workspace (OWNER, EDITOR ou VIEWER), definido na spec 001.
 
@@ -274,16 +330,17 @@ campo indicado.
 
 ### Measurable Outcomes
 
-- **SC-001**: Em 100% dos testes, receitas, despesas e resultado do mês batem, em centavos exatos, com a
-  soma dos lançamentos não excluídos de receita e despesa daquele mês, depois de qualquer sequência de
+- **SC-001**: Em 100% dos testes, receitas, despesas e resultado do mês e da semana batem, em centavos
+  exatos, com a soma dos lançamentos não excluídos de receita e despesa daquele período, depois de qualquer
+  sequência de
   criações, edições e exclusões (inclusive somas como R$ 0,10 + R$ 0,20 = R$ 0,30).
 - **SC-002**: Em 100% dos testes, transferências (criadas, editadas ou excluídas) não alteram nenhum total,
   grupo ou dia do painel, mas alteram os saldos das contas envolvidas e mantêm o saldo total.
 - **SC-003**: Em 100% dos testes, a soma dos totais dos grupos de cada tipo é igual ao total do tipo e a soma
-  dos dias da evolução é igual aos totais do mês, em centavos exatos.
+  dos dias da evolução é igual aos totais do período (mês ou semana), em centavos exatos.
 - **SC-004**: Em 100% dos testes, o painel e uma contagem independente feita no teste (por categoria, por dia
-  e por mês anterior) coincidem em dados gerados aleatoriamente com semente fixa, incluindo lançamentos nos
-  limites do mês, em categorias arquivadas e sem categoria.
+  e por período anterior) coincidem, para mês e para semana, em dados gerados aleatoriamente com semente
+  fixa, incluindo lançamentos nos limites do período, em categorias arquivadas e sem categoria.
 - **SC-005**: Em 100% dos testes, os saldos do painel são idênticos aos da consulta de saldos da spec 002.
 - **SC-006**: Em 100% dos testes de isolamento, tentativas de consultar o painel de um workspace do qual a
   pessoa não é membro recebem a mesma resposta de um workspace inexistente, e os números de um workspace
@@ -291,12 +348,16 @@ campo indicado.
 - **SC-007**: Com a proteção de uma das duas camadas de isolamento removida de propósito em teste, 100% das
   tentativas de ler dados de outro workspace pelo painel continuam recusadas ou vazias pela outra camada.
 - **SC-008**: O painel de um workspace com 20.000 lançamentos responde em menos de 1 segundo, para o mês
-  corrente e para um mês qualquer.
+  corrente, para um mês qualquer e para uma semana qualquer.
 - **SC-009**: Em 100% dos testes de consistência, uma consulta feita enquanto outra pessoa grava lançamentos
   nunca devolve números que contradigam entre si (por exemplo, soma dos grupos diferente do total).
 - **SC-010**: Em 100% dos testes, consultar o painel não altera nenhum dado do workspace.
 - **SC-011**: Em 100% dos testes de validação, meses malformados, inexistentes ou fora de 2000-01..2100-12
   são recusados indicando o campo, e um mês válido sem lançamentos devolve o painel zerado.
+- **SC-012**: Em 100% dos testes da visão semanal, semanas mal escritas, inexistentes ou fora do intervalo
+  são recusadas indicando o campo da semana; mês e semana pedidos juntos são recusados; semanas que
+  atravessam a virada de mês e de ano (como de 29/12 a 04/01) contam exatamente os sete dias; e uma semana
+  válida sem lançamentos devolve o painel zerado com sete dias.
 
 ## Assumptions
 
@@ -309,7 +370,14 @@ campo indicado.
   tem fuso próprio.
 - Percentual com duas casas decimais, arredondado de forma comum (metade para cima); por isso a soma dos
   percentuais de um tipo pode diferir de 100% em centésimos. Os totais em centavos nunca são arredondados.
-- A variação percentual usa o valor absoluto do mês anterior como base, para o sinal da variação sempre
+- A semana vai de segunda a domingo e é numerada pelo padrão ISO 8601 (semana 1 contém a primeira quinta-feira
+  do ano), pedida no formato ano-W-número (por exemplo, 2026-W45). Foi escolhida a segunda-feira como início
+  por ser o padrão internacional; se a pessoa preferir domingo, é uma mudança de regra a decidir antes do
+  plano. Quem quer a semana corrente envia o identificador dela; só o mês tem padrão no servidor.
+- A visão semanal mostra os mesmos blocos da mensal (totais, grupos, evolução diária de sete dias, comparação
+  com a semana anterior e saldos); não há visão por quinzena, trimestre ou intervalo livre nesta
+  funcionalidade.
+- A variação percentual usa o valor absoluto do período anterior como base, para o sinal da variação sempre
   indicar o sentido da mudança (subiu ou desceu), inclusive no resultado, que pode ser negativo.
 - Os saldos do painel são os de hoje, de qualquer data de lançamento, como na spec 002; saldo no fim de um
   mês passado e histórico de saldo ficam para depois.
