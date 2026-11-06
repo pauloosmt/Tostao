@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -57,6 +58,15 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Recurso não encontrado");
 			problem.setTitle("Não encontrado");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+		}
+		// parâmetro de consulta com tipo errado (data, número, UUID, enum): 400 apontando o parâmetro
+		if (ex instanceof MethodArgumentTypeMismatchException mismatch
+				&& mismatch.getParameter().hasParameterAnnotation(RequestParam.class)) {
+			ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+					"Um ou mais campos são inválidos");
+			problem.setTitle("Requisição inválida");
+			problem.setProperty("errors", List.of(new FieldProblem(mismatch.getName(), "valor inválido")));
+			return ResponseEntity.badRequest().body(problem);
 		}
 		return super.handleTypeMismatch(ex, headers, status, request);
 	}
@@ -122,6 +132,16 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(CategoryConflictException.class)
 	ResponseEntity<ProblemDetail> categoryConflict(CategoryConflictException ex) {
+		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
+	}
+
+	@ExceptionHandler(TransactionNotFoundException.class)
+	ResponseEntity<ProblemDetail> transactionNotFound(TransactionNotFoundException ex) {
+		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
+	}
+
+	@ExceptionHandler(TransactionConflictException.class)
+	ResponseEntity<ProblemDetail> transactionConflict(TransactionConflictException ex) {
 		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
 	}
 
