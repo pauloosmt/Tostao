@@ -58,6 +58,11 @@ a mesma área passa a ser recusada.
    qualquer área protegida volta a exigir entrada.
 5. **Given** alguém sem sessão, **When** tenta acessar qualquer área protegida, **Then** o acesso é
    recusado por falta de autenticação.
+6. **Given** uma pessoa autenticada em dois aparelhos, **When** ela escolhe sair de todos os aparelhos
+   em um deles, **Then** a sessão do outro aparelho também deixa de valer na próxima requisição, e uma
+   nova entrada volta a funcionar normalmente.
+7. **Given** uma pessoa autenticada em dois aparelhos, **When** ela sai apenas em um deles, **Then** a
+   sessão do outro aparelho continua válida.
 
 ---
 
@@ -154,6 +159,9 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 - Pessoa membro de nenhum workspace por falha de dados: o sistema trata como estado inválido e não
   concede acesso a nada.
 - Sair sem estar autenticada: responde com sucesso sem efeito colateral.
+- Aparelho perdido ou roubado: a pessoa entra em outro aparelho e escolhe sair de todos, e a sessão do
+  aparelho perdido deixa de valer, mesmo sem ela ter acesso a ele.
+- Sair de todos os aparelhos sem estar autenticada: recusado por falta de autenticação.
 - Servidor reiniciado: o bloqueio por tentativas falhas não depende de memória de um único processo a
   ponto de ser trivialmente contornado reiniciando o serviço.
 
@@ -187,6 +195,10 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
   após 365 dias sem nenhum uso.
 - **FR-011**: O sistema MUST permitir sair, invalidando a sessão no navegador imediatamente; sair sem
   estar autenticada MUST responder com sucesso.
+- **FR-025**: O sistema MUST permitir sair de todos os aparelhos: uma ação que invalida de uma vez todas
+  as sessões da pessoa, em qualquer aparelho, que passam a ser recusadas na próxima requisição. Sair
+  comum (FR-011) encerra só a sessão do aparelho atual. Uma nova entrada depois de sair de todos os
+  aparelhos MUST funcionar normalmente.
 - **FR-012**: O sistema MUST contar falhas consecutivas de entrada por conta e, ao atingir 5 falhas,
   recusar novas tentativas por 15 minutos, inclusive com a senha correta, informando quando tentar de
   novo. O contador MUST ser zerado após uma entrada bem-sucedida ou ao fim da espera.
@@ -251,6 +263,8 @@ recusada durante a espera e que a entrada volta a funcionar depois dela.
 - **SC-007**: Cadastros simultâneos com o mesmo e-mail resultam em exatamente uma conta e em nenhum erro
   interno visível à pessoa.
 - **SC-008**: Entrar e consultar os próprios dados leva menos de 2 segundos em uso normal.
+- **SC-009**: Depois de sair de todos os aparelhos, 100% das requisições feitas com qualquer sessão
+  anterior são recusadas, e as sessões criadas depois continuam válidas.
 
 ## Assumptions
 
