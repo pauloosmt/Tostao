@@ -18,4 +18,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WorkspaceScoped {
+
+	/**
+	 * {@code true} para operações que alteram dados: só os papéis OWNER e EDITOR passam, e VIEWER recebe
+	 * 403. Quem não é membro recebe 404 de qualquer forma.
+	 */
+	boolean write() default false;
+
 }
