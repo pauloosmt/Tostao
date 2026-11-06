@@ -6,9 +6,11 @@ import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tostao.tostao_api.transaction.dto.CreateTransactionRequest;
 import com.tostao.tostao_api.transaction.dto.TransactionPageResponse;
 import com.tostao.tostao_api.transaction.dto.TransactionResponse;
+import com.tostao.tostao_api.transaction.dto.UpdateTransactionRequest;
 
 import jakarta.validation.Valid;
 
@@ -48,6 +51,18 @@ class TransactionController {
 	@GetMapping("/{id}")
 	TransactionResponse get(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID transactionId) {
 		return transactions.get(workspaceId, transactionId);
+	}
+
+	@PutMapping("/{id}")
+	TransactionResponse update(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID transactionId,
+			@Valid @RequestBody UpdateTransactionRequest request) {
+		return transactions.update(workspaceId, transactionId, request);
+	}
+
+	@DeleteMapping("/{id}")
+	ResponseEntity<Void> delete(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID transactionId) {
+		transactions.delete(workspaceId, transactionId);
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping

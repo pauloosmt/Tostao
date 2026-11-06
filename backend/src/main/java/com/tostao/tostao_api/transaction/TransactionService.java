@@ -2,6 +2,7 @@ package com.tostao.tostao_api.transaction;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import com.tostao.tostao_api.common.error.TransactionNotFoundException;
 import com.tostao.tostao_api.transaction.dto.CreateTransactionRequest;
 import com.tostao.tostao_api.transaction.dto.TransactionPageResponse;
 import com.tostao.tostao_api.transaction.dto.TransactionResponse;
+import com.tostao.tostao_api.transaction.dto.UpdateTransactionRequest;
 import com.tostao.tostao_api.workspace.CurrentUser;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
 
@@ -98,15 +100,7 @@ public class TransactionService {
 	 * travadas em ordem de id (evita impasse entre transferências opostas) e conferidas antes de gravar.
 	 */
 	private TransactionResponse createTransfer(UUID workspaceId, CreateTransactionRequest request) {
-		if (request.destinationAccountId() == null) {
-			throw new FieldValidationException("destinationAccountId", "obrigatório para transferência");
-		}
-		if (request.destinationAccountId().equals(request.accountId())) {
-			throw new FieldValidationException("destinationAccountId", "deve ser diferente da conta de origem");
-		}
-		if (request.categoryId() != null) {
-			throw new FieldValidationException("categoryId", "transferência não tem categoria");
-		}
+		requireTransferFields(request.accountId(), request.destinationAccountId(), request.categoryId());
 		requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
 
 		UUID group = UUID.randomUUID();
@@ -139,6 +133,169 @@ public class TransactionService {
 				.param("createdBy", CurrentUser.id())
 				.query(UUID.class)
 				.single();
+	}
+
+	/**
+	 * Edita um lançamento. O tipo nunca muda. Numa transferência as duas pontas mudam juntas, na mesma
+	 * transação: {@code accountId} é a origem e {@code destinationAccountId} o destino, qualquer que seja a
+	 * ponta endereçada. Só as contas e a categoria que <b>mudaram</b> são conferidas e travadas: manter a conta
+	 * ou a categoria arquivada que o lançamento já tinha é aceito, passar a usar uma arquivada não.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public TransactionResponse update(UUID workspaceId, UUID transactionId, UpdateTransactionRequest request) {
+		TransactionRules.requireDateInRange(request.occurredOn());
+		Peek peek = peek(workspaceId, transactionId);
+		if (request.type() != null && request.type() != peek.type()) {
+			throw new FieldValidationException("type", "não pode ser mudado");
+		}
+		if (peek.type() == TransactionType.TRANSFER) {
+			requireTransferFields(request.accountId(), request.destinationAccountId(), request.categoryId());
+		}
+		else {
+			if (request.destinationAccountId() != null) {
+				throw new FieldValidationException("destinationAccountId", "só vale para transferência");
+			}
+			if (request.categoryId() == null) {
+				throw new FieldValidationException("categoryId", "obrigatório para receita e despesa");
+			}
+		}
+
+		List<Row> rows = lockUnit(workspaceId, transactionId, peek);
+		if (peek.type() == TransactionType.TRANSFER) {
+			if (rows.size() != 2) {
+				throw new TransactionNotFoundException();
+			}
+			Row outflow = rows.stream().filter(r -> r.amountCents() < 0).findFirst().orElseThrow();
+			Row inflow = rows.stream().filter(r -> r.amountCents() > 0).findFirst().orElseThrow();
+			List<UUID> changed = new ArrayList<>();
+			if (!request.accountId().equals(outflow.accountId())) {
+				changed.add(request.accountId());
+			}
+			if (!request.destinationAccountId().equals(inflow.accountId())) {
+				changed.add(request.destinationAccountId());
+			}
+			if (changed.size() == 1) {
+				requireUsableAccount(workspaceId, changed.get(0));
+			}
+			else if (changed.size() == 2) {
+				requireUsableAccounts(workspaceId, changed.get(0), changed.get(1));
+			}
+
+			long[] legs = TransactionRules.transferLegs(request.amountCents());
+			updateRow(workspaceId, outflow.id(), request.accountId(), outflow.categoryId(), legs[0], request);
+			updateRow(workspaceId, inflow.id(), request.destinationAccountId(), inflow.categoryId(), legs[1],
+					request);
+		}
+		else {
+			Row row = rows.get(0);
+			if (!request.accountId().equals(row.accountId())) {
+				requireUsableAccount(workspaceId, request.accountId());
+			}
+			if (!request.categoryId().equals(row.categoryId())) {
+				requireUsableCategory(workspaceId, request.categoryId(), peek.type());
+			}
+			updateRow(workspaceId, row.id(), request.accountId(), request.categoryId(),
+					TransactionRules.signedAmount(peek.type(), request.amountCents()), request);
+		}
+		return load(workspaceId, transactionId);
+	}
+
+	/** Contas obrigatórias, distintas, e sem categoria: as regras de campo de uma transferência. */
+	private static void requireTransferFields(UUID accountId, UUID destinationAccountId, UUID categoryId) {
+		if (destinationAccountId == null) {
+			throw new FieldValidationException("destinationAccountId", "obrigatório para transferência");
+		}
+		if (destinationAccountId.equals(accountId)) {
+			throw new FieldValidationException("destinationAccountId", "deve ser diferente da conta de origem");
+		}
+		if (categoryId != null) {
+			throw new FieldValidationException("categoryId", "transferência não tem categoria");
+		}
+	}
+
+	private void updateRow(UUID workspaceId, UUID id, UUID accountId, UUID categoryId, long signedCents,
+			UpdateTransactionRequest request) {
+		jdbc.sql("""
+				update transactions
+				set account_id = :accountId, category_id = :categoryId, amount_cents = :amount,
+				    occurred_on = :occurredOn, description = :description, notes = :notes, updated_at = now()
+				where id = :id and workspace_id = :workspaceId and deleted_at is null
+				""")
+				.param("accountId", accountId)
+				.param("categoryId", categoryId)
+				.param("amount", signedCents)
+				.param("occurredOn", request.occurredOn())
+				.param("description", request.description())
+				.param("notes", request.notes())
+				.param("id", id)
+				.param("workspaceId", workspaceId)
+				.update();
+	}
+
+	/**
+	 * Exclusão lógica: põe {@code deleted_at} no lançamento ou, numa transferência, nas duas pontas. Nunca
+	 * apaga a linha. Lançamento já excluído, de outro workspace ou inexistente é "não encontrado".
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public void delete(UUID workspaceId, UUID transactionId) {
+		Peek peek = peek(workspaceId, transactionId);
+		List<Row> rows = lockUnit(workspaceId, transactionId, peek);
+		jdbc.sql("""
+				update transactions set deleted_at = now(), updated_at = now()
+				where workspace_id = :workspaceId and id in (:ids) and deleted_at is null
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", rows.stream().map(Row::id).toList())
+				.update();
+	}
+
+	/** Linha de lançamento lida e travada para alteração. */
+	private record Row(UUID id, UUID accountId, UUID categoryId, long amountCents) {
+	}
+
+	/** Tipo e grupo do lançamento, lidos sem travar para saber o que travar. */
+	private record Peek(TransactionType type, UUID transferGroupId) {
+	}
+
+	private Peek peek(UUID workspaceId, UUID transactionId) {
+		return jdbc.sql("""
+				select type, transfer_group_id from transactions
+				where id = :id and workspace_id = :workspaceId and deleted_at is null
+				""")
+				.param("id", transactionId)
+				.param("workspaceId", workspaceId)
+				.query((rs, i) -> new Peek(TransactionType.valueOf(rs.getString("type")),
+						rs.getObject("transfer_group_id", UUID.class)))
+				.optional()
+				.orElseThrow(TransactionNotFoundException::new);
+	}
+
+	/**
+	 * Trava a unidade a alterar: a linha, ou as duas pontas da transferência, sempre em ordem de id e sempre
+	 * pelo grupo (nunca pela ponta endereçada primeiro), para duas operações opostas na mesma transferência
+	 * não se bloquearem uma à outra. Depois de esperar o bloqueio, a linha é relida: se foi excluída nesse
+	 * meio tempo, é "não encontrada".
+	 */
+	private List<Row> lockUnit(UUID workspaceId, UUID transactionId, Peek peek) {
+		String where = peek.transferGroupId() == null ? "id = :key" : "transfer_group_id = :key";
+		List<Row> rows = jdbc.sql("""
+				select id, account_id, category_id, amount_cents from transactions
+				where workspace_id = :workspaceId and deleted_at is null and\s""" + where + """
+
+				order by id
+				for update
+				""")
+				.param("workspaceId", workspaceId)
+				.param("key", peek.transferGroupId() == null ? transactionId : peek.transferGroupId())
+				.query((rs, i) -> new Row(rs.getObject("id", UUID.class), rs.getObject("account_id", UUID.class),
+						rs.getObject("category_id", UUID.class), rs.getLong("amount_cents")))
+				.list();
+		if (rows.stream().noneMatch(r -> r.id().equals(transactionId))) {
+			throw new TransactionNotFoundException();
+		}
+		return rows;
 	}
 
 	/**
