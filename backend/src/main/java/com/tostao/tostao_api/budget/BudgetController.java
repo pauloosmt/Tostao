@@ -77,7 +77,7 @@ class BudgetController {
 	/** Copia os limites de uma semana para as próximas N semanas, só onde ainda não há limite. */
 	@PostMapping("/copy")
 	CopyBudgetsResponse copy(@PathVariable("wid") UUID workspaceId, @Valid @RequestBody CopyBudgetsRequest request) {
-		Period from = Period.ofWeek(request.fromWeek());
+		Period from = Period.ofWeek(request.fromWeek(), "fromWeek");
 		return budgets.copy(workspaceId, from, request.weeks());
 	}
 

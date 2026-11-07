@@ -58,19 +58,24 @@ public final class Period {
 
 	/** Semana no formato {@code AAAA-Www}, ano ISO de 2000 a 2100, de uma semana que exista nesse ano. */
 	public static Period ofWeek(String text) {
+		return ofWeek(text, "week");
+	}
+
+	/** Como {@link #ofWeek(String)}, mas o erro aponta o campo {@code field} (por exemplo {@code fromWeek}). */
+	public static Period ofWeek(String text, String field) {
 		Matcher m = text == null ? null : WEEK_FORMAT.matcher(text);
 		if (m == null || !m.matches()) {
-			throw invalidWeek();
+			throw invalidWeek(field);
 		}
 		int year = Integer.parseInt(m.group(1));
 		int week = Integer.parseInt(m.group(2));
 		if (year < MIN_YEAR || year > MAX_YEAR) {
-			throw invalidWeek();
+			throw invalidWeek(field);
 		}
 		// 28/12 pertence sempre à última semana ISO do ano
 		int weeksInYear = LocalDate.of(year, 12, 28).get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
 		if (week < 1 || week > weeksInYear) {
-			throw invalidWeek();
+			throw invalidWeek(field);
 		}
 		LocalDate monday = LocalDate.of(year, 1, 4).with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week).with(WEEK_START);
 		return weekOf(monday);
@@ -157,8 +162,8 @@ public final class Period {
 		return new FieldValidationException("month", "mês inválido: use AAAA-MM entre 2000-01 e 2100-12");
 	}
 
-	private static FieldValidationException invalidWeek() {
-		return new FieldValidationException("week",
+	private static FieldValidationException invalidWeek(String field) {
+		return new FieldValidationException(field,
 				"semana inválida: use AAAA-Www, uma semana ISO existente entre 2000 e 2100");
 	}
 
