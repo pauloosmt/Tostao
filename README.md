@@ -75,6 +75,28 @@ Despesas saem positivas e o resultado é receitas menos despesas. Transferência
 contam. Mês e semana não podem ser pedidos juntos. Os saldos de abertura, de fechamento e por dia valem para
 as contas ativas.
 
+Orçamento semanal: limites de gasto por semana (de segunda a domingo, a mesma do dashboard), para uma categoria
+de despesa ou gerais da semana. O acompanhamento mostra, por limite, o gasto, o que resta, o percentual usado e
+o estado (`WITHIN`, `WARNING` a partir de 80% e `EXCEEDED` acima de 100%), mais o total gasto e o gasto fora dos
+limites de categoria. Só OWNER e EDITOR escrevem.
+
+```bash
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"week":"2026-W45","categoryId":"<categoria de despesa>","amountCents":40000}' $BASE/workspaces/$WID/budgets   # define ou substitui
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"week":"2026-W45","amountCents":150000}' $BASE/workspaces/$WID/budgets                  # limite geral da semana (sem categoryId)
+curl -b jar.txt "$BASE/workspaces/$WID/budgets?week=2026-W45"                                   # acompanhamento (sem week: a semana corrente)
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"amountCents":45000}' $BASE/workspaces/$WID/budgets/<id>                                 # ajusta o valor
+curl -b jar.txt -X DELETE $BASE/workspaces/$WID/budgets/<id>                                    # remove (de verdade, só daquela semana)
+curl -b jar.txt -X POST -H 'Content-Type: application/json' \
+  -d '{"fromWeek":"2026-W45","weeks":3}' $BASE/workspaces/$WID/budgets/copy                    # copia para as 3 semanas seguintes, só onde falta
+```
+
+Um limite de categoria principal cobre os gastos dela e os das subcategorias; o limite geral cobre todas as
+despesas da semana. Os limites são planos, não lançamentos: ao contrário dos lançamentos, são removidos de
+verdade. Receitas, transferências e lançamentos excluídos nunca contam como gasto.
+
 Categorias: o cadastro já traz o conjunto padrão (Alimentação, Moradia, Transporte, Saúde, Lazer, Educação,
 Salário e outras), com subcategorias.
 
