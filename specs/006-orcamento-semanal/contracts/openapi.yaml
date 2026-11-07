@@ -1,0 +1,283 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Orçamento semanal
+  version: 0.6.0
+  description: >
+    Contrato da spec 006. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um workspace.
+    Quem não é membro do workspace recebe 404, igual a um workspace inexistente. VIEWER só consulta
+    (403 nas demais operações). Valores monetários são sempre inteiros em centavos. A semana é a da spec 005
+    (ISO 8601, segunda a domingo, AAAA-Www, de 2000 a 2100). Um limite pertence a uma semana e a um escopo
+    (uma categoria de despesa ou o geral) e é removido de verdade. Erros seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/budgets:
+    get:
+      summary: Acompanha uma semana contra os limites
+      operationId: getWeekBudgets
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: week
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-W\d{2}$', example: 2026-W45 }
+          description: Semana ISO. Sem o parâmetro, vale a semana corrente (fuso de Brasília). Texto vazio é inválido
+      responses:
+        '200':
+          description: Limites da semana com gasto, restante, percentual e estado, mais os totais
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WeekBudgets' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Define o limite de um escopo e semana, ou substitui o valor se já existe
+      operationId: defineBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DefineBudget' }
+      responses:
+        '201':
+          description: Limite criado
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Budget' }
+        '200':
+          description: Limite que já existia teve o valor substituído (criador e data de criação mantidos)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Budget' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+  /workspaces/{wid}/budgets/{id}:
+    put:
+      summary: Ajusta o valor de um limite existente
+      operationId: updateBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/BudgetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateBudget' }
+      responses:
+        '200':
+          description: Limite com o novo valor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Budget' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+    delete:
+      summary: Remove o limite (somente aquela semana; funciona também em categoria arquivada)
+      operationId: deleteBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/BudgetId'
+      responses:
+        '204': { description: Limite removido }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/budgets/copy:
+    post:
+      summary: Copia os limites de uma semana para as próximas N semanas (só onde ainda não há limite)
+      operationId: copyBudgets
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CopyBudgets' }
+      responses:
+        '200':
+          description: Cópia concluída (inteira ou nenhuma), com as contagens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CopyResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    BudgetId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campos inválidos (semana, valor, categoria de receita, campos extras)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, limite ou categoria inexistente (ou de outro workspace), ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ArchivedConflict:
+      description: A categoria do limite está arquivada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    LimitCents:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 1000000000000
+      description: Valor do limite em centavos, inteiro; zero significa "não quero gastar nada"
+    BudgetStatus:
+      type: string
+      enum: [WITHIN, WARNING, EXCEEDED]
+      description: WITHIN abaixo de 80% do limite; WARNING de 80% a 100% (inclusive); EXCEEDED acima de 100%
+    DefineBudget:
+      type: object
+      additionalProperties: false
+      required: [week, amountCents]
+      properties:
+        week: { type: string, pattern: '^\d{4}-W\d{2}$', example: 2026-W45 }
+        categoryId:
+          type: [string, 'null']
+          format: uuid
+          description: Categoria de despesa ativa do workspace (principal ou subcategoria). Ausente ou nulo = limite geral
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+    UpdateBudget:
+      type: object
+      additionalProperties: false
+      required: [amountCents]
+      properties:
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+    CopyBudgets:
+      type: object
+      additionalProperties: false
+      required: [fromWeek, weeks]
+      properties:
+        fromWeek: { type: string, pattern: '^\d{4}-W\d{2}$', example: 2026-W45 }
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 52
+          description: Quantas semanas seguintes recebem a cópia; as de destino ficam até 2100
+    Budget:
+      type: object
+      required: [id, week, categoryId, categoryName, amountCents, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        week: { type: string, example: 2026-W45 }
+        categoryId: { type: [string, 'null'], format: uuid }
+        categoryName: { type: [string, 'null'] }
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    WeekBudgets:
+      type: object
+      required: [week, totalSpentCents, spentOutsideCategoryLimitsCents, budgets]
+      properties:
+        week:
+          type: object
+          required: [id, startDate, endDate]
+          properties:
+            id: { type: string, example: 2026-W45 }
+            startDate: { type: string, format: date }
+            endDate: { type: string, format: date }
+        totalSpentCents:
+          type: integer
+          format: int64
+          description: Todas as despesas da semana, positivas. Receitas, transferências e excluídos não contam
+        spentOutsideCategoryLimitsCents:
+          type: integer
+          format: int64
+          description: Despesas que nenhum limite de categoria cobre (inclui despesa sem categoria). Os valores dos limites nunca são somados entre si
+        budgets:
+          type: array
+          description: Estourados primeiro, depois atenção, depois dentro do limite; depois maior gasto, nome (o geral primeiro entre iguais) e id
+          items: { $ref: '#/components/schemas/BudgetStatusItem' }
+    BudgetStatusItem:
+      type: object
+      required: [id, categoryId, categoryName, categoryArchived, amountCents, spentCents, remainingCents, percentUsed, status, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: [string, 'null'], format: uuid, description: Nulo no limite geral }
+        categoryName: { type: [string, 'null'] }
+        categoryArchived: { type: boolean }
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+        spentCents: { type: integer, format: int64 }
+        remainingCents: { type: integer, format: int64, description: Limite menos gasto; negativo quando estourado }
+        percentUsed:
+          type: [number, 'null']
+          description: Gasto sobre limite, em %, com duas casas (metade para cima); nulo quando o limite é zero
+        status: { $ref: '#/components/schemas/BudgetStatus' }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CopyResult:
+      type: object
+      required: [created, skippedExisting, skippedArchivedCategory]
+      properties:
+        created: { type: integer, minimum: 0, description: Limites gravados nas semanas de destino }
+        skippedExisting: { type: integer, minimum: 0, description: Ignorados porque o destino já tinha limite do mesmo escopo }
+        skippedArchivedCategory: { type: integer, minimum: 0, description: Ignorados porque a categoria está arquivada }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
