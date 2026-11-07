@@ -3,6 +3,7 @@ package com.tostao.tostao_api.budget;
 import java.net.URI;
 import java.time.Clock;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +23,7 @@ import com.tostao.tostao_api.budget.dto.CopyBudgetsResponse;
 import com.tostao.tostao_api.budget.dto.DefineBudgetRequest;
 import com.tostao.tostao_api.budget.dto.UpdateBudgetRequest;
 import com.tostao.tostao_api.budget.dto.WeekBudgetResponse;
+import com.tostao.tostao_api.common.error.FieldValidationException;
 import com.tostao.tostao_api.dashboard.Period;
 
 import jakarta.validation.Valid;
@@ -33,6 +35,9 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/workspaces/{wid}/budgets")
 class BudgetController {
+
+	private static final Pattern UUID_FORMAT = Pattern
+			.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
 	private final BudgetService budgets;
 	private final Clock clock;
@@ -54,12 +59,26 @@ class BudgetController {
 	ResponseEntity<BudgetResponse> define(@PathVariable("wid") UUID workspaceId,
 			@Valid @RequestBody DefineBudgetRequest request) {
 		Period week = Period.ofWeek(request.week());
-		DefineResult result = budgets.define(workspaceId, week, request.categoryId(), request.amountCents());
+		DefineResult result = budgets.define(workspaceId, week, categoryOf(request.categoryId()), request.amountCents());
 		if (!result.created()) {
 			return ResponseEntity.ok(result.budget());
 		}
 		URI location = URI.create("/api/v1/workspaces/" + workspaceId + "/budgets/" + result.budget().id());
 		return ResponseEntity.created(location).body(result.budget());
+	}
+
+	/**
+	 * Ausente ou nulo é o limite geral. Texto vazio ou que não é um UUID é recusado: o Jackson converteria
+	 * uma string vazia em nulo e criaria, sem aviso, um limite geral no lugar do de categoria.
+	 */
+	private static UUID categoryOf(String text) {
+		if (text == null) {
+			return null;
+		}
+		if (!UUID_FORMAT.matcher(text).matches()) {
+			throw new FieldValidationException("categoryId", "deve ser o identificador (UUID) de uma categoria");
+		}
+		return UUID.fromString(text);
 	}
 
 	@PutMapping("/{id}")

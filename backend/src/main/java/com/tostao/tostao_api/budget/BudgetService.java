@@ -277,6 +277,7 @@ public class BudgetService {
 				from weekly_budgets b
 				cross join generate_series(1, :weeks) as i(n)
 				where b.workspace_id = :workspaceId and b.id in (:ids)
+				order by i.n, b.id
 				on conflict do nothing
 				returning id
 				""")
