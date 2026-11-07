@@ -104,6 +104,14 @@ public final class Period {
 		return weekOf(LocalDate.ofInstant(now, ZONE).with(WEEK_START));
 	}
 
+	/** Segunda-feira da última semana aceita (2100-W52). */
+	public static final LocalDate LAST_WEEK_START = LocalDate.of(2100, 12, 27);
+
+	/** A semana ISO que contém a data dada (sem validar a faixa 2000 a 2100). */
+	public static Period containing(LocalDate date) {
+		return weekOf(date.with(WEEK_START));
+	}
+
 	/** Mês anterior, ou a semana de 7 dias antes. Pode cair antes de 2000 (então não tem lançamentos). */
 	public Period previous() {
 		return type == PeriodType.MONTH ? monthOf(start.minusMonths(1)) : weekOf(start.minusDays(7));
