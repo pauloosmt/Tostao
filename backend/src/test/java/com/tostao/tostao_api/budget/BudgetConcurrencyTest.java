@@ -205,7 +205,9 @@ class BudgetConcurrencyTest {
 					() -> answer(copy(mvc, w, s.owner(), "{\"fromWeek\":\"" + sourceId + "\",\"weeks\":1}")),
 					() -> answer(define(mvc, s.owner(), body(targetId, null, 9_999)))));
 
-			assertThat(answers).extracting(Answer::status).containsOnly(200, 201);
+			// a cópia responde sempre 200; a definição responde 201 se chegou antes, 200 se a cópia gravou o geral antes
+			assertThat(answers.get(0).status()).isEqualTo(200);
+			assertThat(answers.get(1).status()).isIn(200, 201);
 			long rows = owner.client().sql("select count(*) from weekly_budgets where workspace_id = :w and week_start = :s")
 					.param("w", w).param("s", target).query(Long.class).single();
 			assertThat(rows).as("rodada " + i).isEqualTo(2);
