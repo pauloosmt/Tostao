@@ -126,6 +126,24 @@ public class WorkspaceFixtures {
 				.param("s", description).param("g", group).param("u", userId).query(UUID.class).single();
 	}
 
+	/**
+	 * Limite semanal (spec 006): {@code weekStart} é a segunda-feira da semana e {@code categoryId} nulo é o
+	 * limite geral. Pela conexão do dono; devolve o {@code id}.
+	 */
+	public UUID insertWeeklyBudget(UUID workspaceId, java.time.LocalDate weekStart, UUID categoryId, long amountCents,
+			UUID createdBy) {
+		return owner.client().sql("""
+				insert into weekly_budgets (workspace_id, week_start, category_id, amount_cents, created_by)
+				values (:w, :s, :c, :m, :u) returning id""")
+				.param("w", workspaceId).param("s", weekStart).param("c", categoryId).param("m", amountCents)
+				.param("u", createdBy).query(UUID.class).single();
+	}
+
+	public long countWeeklyBudgets(UUID workspaceId) {
+		return owner.client().sql("select count(*) from weekly_budgets where workspace_id = :w")
+				.param("w", workspaceId).query(Long.class).single();
+	}
+
 	/** Transferência: duas linhas com o mesmo grupo, saída negativa e entrada positiva. */
 	public void insertTransfer(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents) {
 		UUID group = UUID.randomUUID();
