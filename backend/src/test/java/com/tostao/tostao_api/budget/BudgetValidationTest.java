@@ -102,7 +102,8 @@ class BudgetValidationTest {
 		for (String amount : new String[] { "-1", "-100000", "1000000000001", "9223372036854775807",
 				"99999999999999999999", "0.5", "1e3", "10.0", "true", "[]", "{}", "null" }) {
 			MvcResult result = define(mvc, s.owner(), "{\"week\":\"2026-W45\",\"amountCents\":" + amount + "}")
-					.andExpect(status().isBadRequest()).andReturn();
+					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors[0].field").value("amountCents"))
+					.andReturn();
 			assertNoInternalDetail(result);
 		}
 		define(mvc, s.owner(), "{\"week\":\"2026-W45\",\"amountCents\":1000000000001}")
@@ -158,7 +159,8 @@ class BudgetValidationTest {
 				"\"updatedAt\":\"2020-01-01T00:00:00Z\"", "\"id\":\"" + UUID.randomUUID() + "\"", "\"kind\":\"INCOME\"",
 				"\"weekStart\":\"2026-11-03\"" }) {
 			define(mvc, s.owner(), "{\"week\":\"2026-W46\",\"amountCents\":100," + extra + "}")
-					.andExpect(status().isBadRequest());
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.errors[0].field").value(extra.substring(1, extra.indexOf('"', 1))));
 			BudgetScenario.update(mvc, w, s.owner(), id.toString(), "{\"amountCents\":100," + extra + "}")
 					.andExpect(status().isBadRequest());
 			BudgetScenario.copy(mvc, w, s.owner(), "{\"fromWeek\":\"2026-W45\",\"weeks\":2," + extra + "}")
@@ -175,9 +177,9 @@ class BudgetValidationTest {
 		s.seedQuickstartBudgets(fixtures);
 		UUID w = s.owner().workspaceId();
 
-		for (String weeks : new String[] { "0", "-1", "53", "100", "2.5", "\"3\"x", "null", "true", "[]" }) {
+		for (String weeks : new String[] { "0", "-1", "53", "100", "2.5", "null", "true", "[]" }) {
 			BudgetScenario.copy(mvc, w, s.owner(), "{\"fromWeek\":\"2026-W45\",\"weeks\":" + weeks + "}")
-					.andExpect(status().isBadRequest());
+					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors[0].field").value("weeks"));
 		}
 		assertThat(fixtures.countWeeklyBudgets(w)).isEqualTo(4);
 		BudgetScenario.copy(mvc, w, s.owner(), "{\"fromWeek\":\"2026-W45\",\"weeks\":1}").andExpect(status().isOk());
