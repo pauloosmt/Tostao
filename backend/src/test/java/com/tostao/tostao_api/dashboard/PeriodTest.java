@@ -159,6 +159,34 @@ class PeriodTest {
 		assertThat(Period.resolve(null, null, now).type()).isEqualTo(PeriodType.MONTH);
 	}
 
+	@Test
+	void withoutAWeekTheCurrentIsoWeekInBrasiliaIsUsed() {
+		assertThat(currentWeekId("2026-11-05T12:00:00Z")).isEqualTo("2026-W45");
+		assertThat(currentWeekId("2026-11-08T23:30:00-03:00")).isEqualTo("2026-W45");
+		// 02:00 UTC de segunda ainda é 23h de domingo em Brasília; 03:00 UTC já é segunda
+		assertThat(currentWeekId("2026-11-09T02:00:00Z")).isEqualTo("2026-W45");
+		assertThat(currentWeekId("2026-11-09T03:00:00Z")).isEqualTo("2026-W46");
+		assertThat(currentWeekId("2027-01-03T12:00:00Z")).isEqualTo("2026-W53");
+		assertThat(currentWeekId("2027-01-04T12:00:00Z")).isEqualTo("2027-W01");
+		assertThat(Period.resolveWeek(null, Instant.parse("2026-11-05T12:00:00Z")).start())
+				.isEqualTo(LocalDate.of(2026, 11, 2));
+	}
+
+	@Test
+	void resolveWeekUsesTheRequestedWeekAndRejectsBadText() {
+		Instant now = Instant.parse("2026-11-06T12:00:00Z");
+
+		assertThat(Period.resolveWeek("2026-W45", now).id()).isEqualTo("2026-W45");
+		assertThat(Period.resolveWeek("2026-W53", now).start()).isEqualTo(LocalDate.of(2026, 12, 28));
+		assertThat(rejection(() -> Period.resolveWeek("", now)).field()).isEqualTo("week");
+		assertThat(rejection(() -> Period.resolveWeek("2026-W54", now)).field()).isEqualTo("week");
+		assertThat(rejection(() -> Period.resolveWeek("2026-W5", now)).field()).isEqualTo("week");
+	}
+
+	private static String currentWeekId(String instant) {
+		return Period.resolveWeek(null, OffsetDateTime.parse(instant).toInstant()).id();
+	}
+
 	private static String currentId(String instant) {
 		return Period.resolve(null, null, OffsetDateTime.parse(instant).toInstant()).id();
 	}

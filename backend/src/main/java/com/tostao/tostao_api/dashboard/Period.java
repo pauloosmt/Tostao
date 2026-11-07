@@ -93,6 +93,17 @@ public final class Period {
 		return monthOf(LocalDate.ofInstant(now, ZONE).withDayOfMonth(1));
 	}
 
+	/**
+	 * A semana pedida ou, sem {@code week}, a semana ISO que contém hoje no fuso de Brasília. Texto vazio é
+	 * valor inválido, nunca "ausente".
+	 */
+	public static Period resolveWeek(String week, Instant now) {
+		if (week != null) {
+			return ofWeek(week);
+		}
+		return weekOf(LocalDate.ofInstant(now, ZONE).with(WEEK_START));
+	}
+
 	/** Mês anterior, ou a semana de 7 dias antes. Pode cair antes de 2000 (então não tem lançamentos). */
 	public Period previous() {
 		return type == PeriodType.MONTH ? monthOf(start.minusMonths(1)) : weekOf(start.minusDays(7));
