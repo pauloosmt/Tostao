@@ -43,7 +43,28 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
 				"Corpo da requisição ausente, malformado ou com campos não permitidos");
 		problem.setTitle("Requisição inválida");
+		String field = offendingField(ex);
+		if (field != null) {
+			problem.setProperty("errors", List.of(new FieldProblem(field, "valor inválido")));
+		}
 		return ResponseEntity.badRequest().body(problem);
+	}
+
+	/**
+	 * Campo do corpo que o Jackson não conseguiu ler (tipo errado, decimal num campo inteiro, campo não
+	 * permitido), para a resposta apontar o campo; {@code null} quando o corpo nem é um JSON legível. Só o
+	 * nome do campo sai, nunca a mensagem interna do Jackson.
+	 */
+	private static String offendingField(HttpMessageNotReadableException ex) {
+		if (ex.getCause() instanceof tools.jackson.core.JacksonException jackson) {
+			for (int i = jackson.getPath().size() - 1; i >= 0; i--) {
+				String name = jackson.getPath().get(i).getPropertyName();
+				if (name != null && !name.isBlank()) {
+					return name;
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
