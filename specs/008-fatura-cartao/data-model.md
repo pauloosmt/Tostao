@@ -38,7 +38,7 @@ Cada dia pertence a exatamente uma fatura (os fechamentos crescem estritamente d
 | Restante | `max(total - pago, 0)` |
 | Situação | `hoje <= fechamento` → `OPEN`; senão `restante = 0` → `PAID`; senão `hoje > vencimento` → `OVERDUE`; senão `CLOSED` |
 | Devido do cartão | `max(-saldo, 0)`, com o saldo de `AccountService.get` |
-| Limite disponível | `limite - devido`; nulo quando o cartão não tem limite |
+| Limite disponível | `limite + saldo` (a dívida reduz, um crédito a favor aumenta); nulo quando o cartão não tem limite |
 
 O saldo inicial do cartão nunca entra em nenhuma fatura. "Hoje" é a data no fuso de Brasília.
 

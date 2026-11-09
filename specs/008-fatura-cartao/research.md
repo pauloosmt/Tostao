@@ -81,7 +81,7 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 ## 9. Resumo do cartão
 
 - **Decisão**: `AccountService.get` para o saldo e os dados do cartão (limite, dias, arquivado); devido =
-  `max(-saldo, 0)`; disponível = `limite - devido` (nulo sem limite); a fatura aberta é calculada como na
+  `max(-saldo, 0)`; disponível = `limite + saldo` (a dívida reduz, um crédito aumenta; nulo sem limite); a fatura aberta é calculada como na
   consulta de fatura, só se o cartão tem os dois dias.
 - **Motivo**: FR-016: o devido é o mesmo cálculo da spec 002, não uma cópia. Chamar o serviço de contas dentro da
   mesma transação reaproveita o aspecto e o RLS.

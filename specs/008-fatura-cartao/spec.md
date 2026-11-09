@@ -205,9 +205,9 @@ outro workspace, tentar cada consulta e conferir as respostas.
   dia do fechamento; "paga" quando já fechou e o restante é zero; "vencida" quando já fechou, o vencimento
   passou e o restante é maior que zero; "fechada" nos demais casos.
 - **FR-009**: O sistema MUST oferecer o resumo do cartão: limite (ou vazio se não cadastrado), valor devido (o
-  saldo negativo calculado na spec 002, e zero se o saldo for zero ou positivo), limite disponível (limite
-  menos o devido, podendo ser negativo, ou vazio sem limite) e a fatura aberta com fechamento, vencimento e
-  total até agora.
+  saldo negativo calculado na spec 002, e zero se o saldo for zero ou positivo), limite disponível (o limite
+  mais o saldo do cartão: a dívida reduz e um crédito a favor aumenta; pode ser negativo; vazio sem limite) e
+  a fatura aberta com fechamento, vencimento e total até agora.
 - **FR-010**: O sistema MUST oferecer a lista das faturas de um intervalo de meses (padrão: as seis até a
   fatura aberta; no máximo 36 meses), do vencimento mais recente para o mais antigo, cada uma com os mesmos
   números da consulta individual e sem os lançamentos. Intervalo inválido MUST ser recusado indicando o campo.
@@ -257,7 +257,8 @@ outro workspace, tentar cada consulta e conferir as respostas.
   com a data de hoje, o fechamento, o vencimento e os pagamentos, inclusive no dia exato do fechamento, no dia
   exato do vencimento e com pagamento maior que o total.
 - **SC-005**: Em 100% dos testes, o devido do resumo é igual ao saldo negativo do cartão na consulta de saldos
-  da spec 002, e o limite disponível é o limite menos o devido.
+  da spec 002, e o limite disponível é o limite mais o saldo do cartão (o limite menos o devido quando há
+  dívida, e o limite mais o crédito quando há crédito a favor).
 - **SC-006**: Em 100% dos testes de isolamento, consultar fatura, resumo e lista de uma conta de outro workspace
   recebe a mesma resposta de um workspace inexistente, e nenhum dado é revelado; os lançamentos de um workspace
   nunca entram em soma de outro.

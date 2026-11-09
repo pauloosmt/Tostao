@@ -170,7 +170,7 @@ components:
         archived: { type: boolean }
         limitCents: { type: [integer, 'null'], format: int64 }
         owedCents: { type: integer, format: int64, description: O saldo negativo da conta; zero quando o saldo não é negativo }
-        availableCents: { type: [integer, 'null'], format: int64, description: Limite menos devido; negativo se passou do limite; nulo sem limite }
+        availableCents: { type: [integer, 'null'], format: int64, description: Limite mais o saldo do cartão (a dívida reduz, um crédito a favor aumenta); negativo se passou do limite; nulo sem limite }
         openInvoice:
           type: [object, 'null']
           description: A fatura que contém hoje; nulo se o cartão não tem os dois dias

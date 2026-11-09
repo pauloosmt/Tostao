@@ -70,7 +70,7 @@ consulta individual do mês, sem `lines`. Sem parâmetros → seis faturas até 
 
 `GET .../card-summary` → `limitCents` 500000; `owedCents` **54345**, porque o saldo do cartão é
 −(12345 + 30000 + 20000 + 10000 + 5000) + 4000 − 6000 + 25000 = −54345 (se você já lançou o pagamento extra de
-37000 do passo 3, o devido é **17345**); `availableCents` = 500000 − devido (**445655** no primeiro caso);
+37000 do passo 3, o devido é **17345**); `availableCents` = 500000 + saldo (**445655** no primeiro caso);
 `openInvoice` com o mês de hoje e `closingDate` no dia 20. O `owedCents` é igual ao saldo negativo de
 `GET .../accounts/$CARD`.
 
