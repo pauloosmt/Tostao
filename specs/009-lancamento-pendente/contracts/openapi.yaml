@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Lançamento pendente
+  version: 0.9.0
+  description: >
+    Contrato da spec 009. Acrescenta o estado do lançamento (CLEARED, efetivado, ou PENDING, pendente) à API de
+    lançamentos da spec 004 e uma rota para efetivar. Regra única: o lançamento pendente NUNCA conta no realizado
+    (saldo das contas, dashboard, gasto dos orçamentos e fatura do cartão); ele só aparece na listagem, no saldo
+    previsto e no bloco "pending" do dashboard. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um
+    workspace. Quem não é membro recebe 404, igual a um workspace inexistente. VIEWER só consulta (403 nas
+    escritas). Valores monetários são inteiros em centavos. Erros seguem Problem Details (RFC 7807). Os campos
+    novos são aditivos: nenhum campo existente muda de nome nem de significado.
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/transactions/{id}/clear:
+    post:
+      summary: Efetiva um lançamento pendente (numa transferência, as duas pontas juntas)
+      description: >
+        Sem corpo. Já efetivado responde 200 sem nenhum efeito (nem na data de última alteração). Altera só o estado
+        e a data de última alteração, e funciona também em conta ou categoria arquivada depois da criação.
+      operationId: clearTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: O lançamento, já efetivado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/transactions:
+    get:
+      summary: Lista lançamentos (campo e filtro de estado acrescentados pela spec 009)
+      operationId: listTransactions
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/TransactionStatus' }
+          description: Só os pendentes ou só os efetivados; combinado com os demais filtros por "e". Valor inválido é 400 no campo status
+      responses:
+        '200':
+          description: Página de lançamentos, cada um com o seu estado
+        '400': { $ref: '#/components/responses/ValidationError' }
+    post:
+      summary: Cria um lançamento; o estado é opcional (padrão efetivado)
+      operationId: createTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: '#/components/schemas/TransactionStatus' }
+      responses:
+        '201':
+          description: Lançamento criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /workspaces/{wid}/transactions/{id}:
+    put:
+      summary: Edita um lançamento; o estado é opcional (ausente mantém o atual)
+      operationId: updateTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: '#/components/schemas/TransactionStatus' }
+      responses:
+        '200':
+          description: Lançamento editado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Estado ou campo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace ou lançamento inexistente, excluído ou de outro workspace, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    TransactionStatus:
+      type: string
+      enum: [CLEARED, PENDING]
+      description: CLEARED conta no realizado; PENDING é previsto e nunca conta no realizado. Numa transferência as duas pontas têm sempre o mesmo estado
+    Transaction:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/TransactionStatus' }
+    AccountForecast:
+      type: object
+      description: Campos acrescentados à conta e a cada item da consulta de saldos
+      required: [pendingCents, projectedBalanceCents]
+      properties:
+        pendingCents: { type: integer, format: int64, description: Soma dos lançamentos pendentes não excluídos da conta, com sinal }
+        projectedBalanceCents: { type: integer, format: int64, description: Saldo (só efetivados) mais pendingCents }
+    BalanceReportForecast:
+      type: object
+      description: Campo acrescentado à consulta de saldos do workspace
+      required: [totalProjectedCents]
+      properties:
+        totalProjectedCents: { type: integer, format: int64, description: Soma dos saldos previstos das contas ativas }
+    DashboardPending:
+      type: object
+      description: Bloco acrescentado ao dashboard; todos os demais números do dashboard continuam realizados
+      required: [incomeCents, expenseCents, count]
+      properties:
+        incomeCents: { type: integer, format: int64, description: Receitas pendentes do período }
+        expenseCents: { type: integer, format: int64, description: Despesas pendentes do período, positivas }
+        count: { type: integer, description: Quantidade de lançamentos pendentes (receita e despesa) do período; sem transferências }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
