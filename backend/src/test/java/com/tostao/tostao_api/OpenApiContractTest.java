@@ -46,6 +46,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path MONTHLY_BUDGETS_CONTRACT = Path.of("..", "specs", "007-orcamento-mensal", "contracts",
 			"openapi.yaml");
+	private static final Path INVOICES_CONTRACT = Path.of("..", "specs", "008-fatura-cartao", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -209,6 +211,35 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void invoicesContractFileDeclaresOnlyReadRoutes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(INVOICES_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/accounts/{accountId}/invoices/{month}",
+				"/api/v1/workspaces/{wid}/accounts/{accountId}/invoices",
+				"/api/v1/workspaces/{wid}/accounts/{accountId}/card-summary");
+		operations.values().forEach(methods -> assertThat(methods).containsExactly("get"));
+	}
+
+	@Test
+	void theInvoicesAreReadOnlyInTheGeneratedDocs() throws Exception {
+		String base = "$.paths['/api/v1/workspaces/{wid}/accounts/{accountId}";
+		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
+		for (String path : List.of("/invoices/{month}']", "/invoices']", "/card-summary']")) {
+			docs.andExpect(jsonPath(base + path + ".get").exists())
+					.andExpect(jsonPath(base + path + ".post").doesNotExist())
+					.andExpect(jsonPath(base + path + ".put").doesNotExist())
+					.andExpect(jsonPath(base + path + ".patch").doesNotExist())
+					.andExpect(jsonPath(base + path + ".delete").doesNotExist());
+		}
+		docs.andExpect(jsonPath(base + "/invoices'].get.parameters[?(@.name=='from')]").exists())
+				.andExpect(jsonPath(base + "/invoices'].get.parameters[?(@.name=='to')]").exists())
+				.andExpect(jsonPath("$.components.schemas.InvoiceResponse.properties.lines").exists())
+				.andExpect(jsonPath("$.components.schemas.InvoiceListItem.properties.lines").doesNotExist())
+				.andExpect(jsonPath("$.components.schemas.CardSummaryResponse.properties.openInvoice").exists());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -234,7 +265,7 @@ class OpenApiContractTest {
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
-				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT)) {
+				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
