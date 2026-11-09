@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Fatura do cartão
+  version: 0.8.0
+  description: >
+    Contrato da spec 008. Só leitura. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um
+    workspace e uma conta. Quem não é membro do workspace recebe 404, igual a um workspace inexistente;
+    OWNER, EDITOR e VIEWER consultam. A fatura é calculada, nunca guardada, e é identificada pelo mês do
+    vencimento (AAAA-MM, de 2000-01 a 2100-12). Valores monetários são inteiros em centavos. Erros seguem
+    Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/accounts/{accountId}/invoices/{month}:
+    get:
+      summary: Fatura de um cartão para um mês de vencimento, com os lançamentos
+      operationId: getInvoice
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/AccountId'
+        - name: month
+          in: path
+          required: true
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: 2024-11 }
+      responses:
+        '200':
+          description: Fatura com datas, total, pago, restante, situação e lançamentos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invoice' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NotAvailable' }
+  /workspaces/{wid}/accounts/{accountId}/invoices:
+    get:
+      summary: Faturas de um intervalo de meses de vencimento, sem os lançamentos
+      operationId: listInvoices
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/AccountId'
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: 2024-06 }
+          description: Primeiro mês de vencimento. Sem os dois parâmetros, as seis faturas até a aberta
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: 2024-12 }
+          description: Último mês de vencimento; no máximo 36 meses desde from
+      responses:
+        '200':
+          description: Faturas do vencimento mais recente para o mais antigo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvoiceList' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NotAvailable' }
+  /workspaces/{wid}/accounts/{accountId}/card-summary:
+    get:
+      summary: Resumo do cartão: limite, devido, disponível e fatura aberta
+      operationId: getCardSummary
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Resumo do cartão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CardSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NotAvailable' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Mês ou intervalo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace ou conta inexistente (ou de outro workspace), ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotAvailable:
+      description: A conta não é um cartão de crédito, ou o cartão não tem dia de fechamento e de vencimento (a mensagem diz quais faltam)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    InvoiceStatus:
+      type: string
+      enum: [OPEN, CLOSED, PAID, OVERDUE]
+      description: OPEN até o dia do fechamento; PAID quando fechada e sem restante; OVERDUE quando fechada, vencida e com restante; CLOSED nos demais casos
+    InvoiceSummary:
+      type: object
+      required: [month, periodStart, closingDate, dueDate, totalCents, paidCents, remainingCents, status]
+      properties:
+        month: { type: string, example: 2024-11 }
+        periodStart: { type: string, format: date, description: Dia seguinte ao fechamento da fatura anterior }
+        closingDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        totalCents: { type: integer, format: int64, description: Compras e saques menos estornos do período; pagamentos, excluídos e saldo inicial não entram }
+        paidCents: { type: integer, format: int64, description: Transferências que entram no cartão depois do fechamento e até o fechamento da fatura seguinte; zero na fatura aberta }
+        remainingCents: { type: integer, format: int64, description: Total menos pago, nunca negativo }
+        status: { $ref: '#/components/schemas/InvoiceStatus' }
+    InvoiceLine:
+      type: object
+      required: [id, date, description, categoryId, categoryName, type, chargeCents]
+      properties:
+        id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        description: { type: string }
+        categoryId: { type: [string, 'null'], format: uuid }
+        categoryName: { type: [string, 'null'] }
+        type: { type: string, enum: [EXPENSE, INCOME, TRANSFER] }
+        chargeCents: { type: integer, format: int64, description: Positivo é compra ou saque; negativo é estorno }
+    Invoice:
+      allOf:
+        - $ref: '#/components/schemas/InvoiceSummary'
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              description: Em ordem de data e depois de identificador
+              items: { $ref: '#/components/schemas/InvoiceLine' }
+    InvoiceList:
+      type: object
+      required: [invoices]
+      properties:
+        invoices:
+          type: array
+          items: { $ref: '#/components/schemas/InvoiceSummary' }
+    CardSummary:
+      type: object
+      required: [accountId, name, archived, limitCents, owedCents, availableCents, openInvoice]
+      properties:
+        accountId: { type: string, format: uuid }
+        name: { type: string }
+        archived: { type: boolean }
+        limitCents: { type: [integer, 'null'], format: int64 }
+        owedCents: { type: integer, format: int64, description: O saldo negativo da conta; zero quando o saldo não é negativo }
+        availableCents: { type: [integer, 'null'], format: int64, description: Limite menos devido; negativo se passou do limite; nulo sem limite }
+        openInvoice:
+          type: [object, 'null']
+          description: A fatura que contém hoje; nulo se o cartão não tem os dois dias
+          properties:
+            month: { type: string }
+            periodStart: { type: string, format: date }
+            closingDate: { type: string, format: date }
+            dueDate: { type: string, format: date }
+            totalCents: { type: integer, format: int64 }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
