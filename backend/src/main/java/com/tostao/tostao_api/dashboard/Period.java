@@ -114,6 +114,11 @@ public final class Period {
 		return weekOf(LocalDate.ofInstant(now, ZONE).with(WEEK_START));
 	}
 
+	/** A data de {@code now} no fuso de Brasília ("hoje" para a situação das faturas). */
+	public static LocalDate today(Instant now) {
+		return LocalDate.ofInstant(now, ZONE);
+	}
+
 	/** Segunda-feira da última semana aceita (2100-W52). */
 	public static final LocalDate LAST_WEEK_START = LocalDate.of(2100, 12, 27);
 

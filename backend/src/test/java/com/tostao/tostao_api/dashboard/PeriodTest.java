@@ -220,6 +220,14 @@ class PeriodTest {
 		assertThat(currentId("2027-01-01T02:00:00Z")).isEqualTo("2026-12");
 	}
 
+	@Test
+	void todayIsTheDateInBrasilia() {
+		// 02:59:59 UTC ainda é 23:59:59 do dia anterior em Brasília; 03:00 UTC já é o dia seguinte
+		assertThat(Period.today(Instant.parse("2024-11-20T02:59:59Z"))).isEqualTo(LocalDate.of(2024, 11, 19));
+		assertThat(Period.today(Instant.parse("2024-11-20T03:00:00Z"))).isEqualTo(LocalDate.of(2024, 11, 20));
+		assertThat(Period.today(Instant.parse("2025-01-01T02:00:00Z"))).isEqualTo(LocalDate.of(2024, 12, 31));
+	}
+
 	private static String currentWeekId(String instant) {
 		return Period.resolveWeek(null, OffsetDateTime.parse(instant).toInstant()).id();
 	}
