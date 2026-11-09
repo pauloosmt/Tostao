@@ -1,0 +1,284 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Orçamento mensal
+  version: 0.7.0
+  description: >
+    Contrato da spec 007. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um workspace.
+    Quem não é membro do workspace recebe 404, igual a um workspace inexistente. VIEWER só consulta
+    (403 nas demais operações). Valores monetários são sempre inteiros em centavos. O mês é o da spec 005
+    (AAAA-MM, do dia 1 ao último dia, de 2000-01 a 2100-12). Um limite mensal pertence a um mês e a um escopo
+    (uma categoria de despesa ou o geral) e é removido de verdade. É independente do orçamento semanal da
+    spec 006: tabelas, ids e rotas separados. Erros seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/monthly-budgets:
+    get:
+      summary: Acompanha um mês contra os limites
+      operationId: getMonthBudgets
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - name: month
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: 2026-11 }
+          description: Mês AAAA-MM. Sem o parâmetro, vale o mês corrente (fuso de Brasília). Texto vazio é inválido
+      responses:
+        '200':
+          description: Limites do mês com gasto, restante, percentual e estado, mais os totais
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthBudgets' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      summary: Define o limite de um escopo e mês, ou substitui o valor se já existe
+      operationId: defineMonthlyBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DefineMonthlyBudget' }
+      responses:
+        '201':
+          description: Limite criado
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthlyBudget' }
+        '200':
+          description: Limite que já existia teve o valor substituído (criador e data de criação mantidos)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthlyBudget' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+  /workspaces/{wid}/monthly-budgets/{id}:
+    put:
+      summary: Ajusta o valor de um limite mensal existente
+      operationId: updateMonthlyBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/BudgetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateMonthlyBudget' }
+      responses:
+        '200':
+          description: Limite com o novo valor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthlyBudget' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/ArchivedConflict' }
+    delete:
+      summary: Remove o limite (somente aquele mês; funciona também em categoria arquivada)
+      operationId: deleteMonthlyBudget
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/BudgetId'
+      responses:
+        '204': { description: Limite removido }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/monthly-budgets/copy:
+    post:
+      summary: Copia os limites de um mês para os próximos N meses (só onde ainda não há limite)
+      operationId: copyMonthlyBudgets
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CopyMonthlyBudgets' }
+      responses:
+        '200':
+          description: Cópia concluída (inteira ou nenhuma), com as contagens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CopyResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    BudgetId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campos inválidos (mês, valor, categoria de receita, campos extras)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, limite ou categoria inexistente (ou de outro workspace; um limite semanal também não é encontrado aqui), ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ArchivedConflict:
+      description: A categoria do limite está arquivada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    LimitCents:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 1000000000000
+      description: Valor do limite em centavos, inteiro; zero significa "não quero gastar nada"
+    BudgetStatus:
+      type: string
+      enum: [WITHIN, WARNING, EXCEEDED]
+      description: WITHIN abaixo de 80% do limite; WARNING de 80% a 100% (inclusive); EXCEEDED acima de 100%
+    DefineMonthlyBudget:
+      type: object
+      additionalProperties: false
+      required: [month, amountCents]
+      properties:
+        month: { type: string, pattern: '^\d{4}-\d{2}$', example: 2026-11 }
+        categoryId:
+          type: [string, 'null']
+          format: uuid
+          description: Categoria de despesa ativa do workspace (principal ou subcategoria). Ausente ou nulo = limite geral
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+    UpdateMonthlyBudget:
+      type: object
+      additionalProperties: false
+      required: [amountCents]
+      properties:
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+    CopyMonthlyBudgets:
+      type: object
+      additionalProperties: false
+      required: [fromMonth, months]
+      properties:
+        fromMonth: { type: string, pattern: '^\d{4}-\d{2}$', example: 2026-11 }
+        months:
+          type: integer
+          minimum: 1
+          maximum: 24
+          description: Quantos meses seguintes recebem a cópia; os de destino ficam até 2100-12
+    MonthlyBudget:
+      type: object
+      required: [id, month, categoryId, categoryName, amountCents, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        month: { type: string, example: 2026-11 }
+        categoryId: { type: [string, 'null'], format: uuid }
+        categoryName: { type: [string, 'null'] }
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MonthBudgets:
+      type: object
+      required: [month, totalSpentCents, spentOutsideCategoryLimitsCents, budgets]
+      properties:
+        month:
+          type: object
+          required: [id, startDate, endDate]
+          properties:
+            id: { type: string, example: 2026-11 }
+            startDate: { type: string, format: date }
+            endDate: { type: string, format: date }
+        totalSpentCents:
+          type: integer
+          format: int64
+          description: Todas as despesas do mês, positivas. Receitas, transferências e excluídos não contam
+        spentOutsideCategoryLimitsCents:
+          type: integer
+          format: int64
+          description: Despesas que nenhum limite de categoria cobre (inclui despesa sem categoria). Os valores dos limites nunca são somados entre si
+        budgets:
+          type: array
+          description: Estourados primeiro, depois atenção, depois dentro do limite; depois maior gasto, nome (o geral primeiro entre iguais) e id
+          items: { $ref: '#/components/schemas/BudgetStatusItem' }
+    BudgetStatusItem:
+      type: object
+      required: [id, categoryId, categoryName, categoryArchived, amountCents, spentCents, remainingCents, percentUsed, status, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: [string, 'null'], format: uuid, description: Nulo no limite geral }
+        categoryName: { type: [string, 'null'] }
+        categoryArchived: { type: boolean }
+        amountCents: { $ref: '#/components/schemas/LimitCents' }
+        spentCents: { type: integer, format: int64 }
+        remainingCents: { type: integer, format: int64, description: Limite menos gasto; negativo quando estourado }
+        percentUsed:
+          type: [number, 'null']
+          description: Gasto sobre limite, em %, com duas casas (metade para cima); nulo quando o limite é zero
+        status: { $ref: '#/components/schemas/BudgetStatus' }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CopyResult:
+      type: object
+      required: [created, skippedExisting, skippedArchivedCategory]
+      properties:
+        created: { type: integer, minimum: 0, description: Limites gravados nos meses de destino }
+        skippedExisting: { type: integer, minimum: 0, description: Ignorados porque o destino já tinha limite do mesmo escopo }
+        skippedArchivedCategory: { type: integer, minimum: 0, description: Ignorados porque a categoria está arquivada }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
