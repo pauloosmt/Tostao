@@ -71,7 +71,7 @@ class BudgetController {
 	 * Ausente ou nulo é o limite geral. Texto vazio ou que não é um UUID é recusado: o Jackson converteria
 	 * uma string vazia em nulo e criaria, sem aviso, um limite geral no lugar do de categoria.
 	 */
-	private static UUID categoryOf(String text) {
+	static UUID categoryOf(String text) {
 		if (text == null) {
 			return null;
 		}

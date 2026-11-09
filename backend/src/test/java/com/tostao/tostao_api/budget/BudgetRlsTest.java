@@ -68,7 +68,7 @@ class BudgetRlsTest {
 		}
 	}
 
-	private static final String[] QUERIES = { BudgetService.WEEK_LIMITS_SQL, BudgetService.WEEK_SPENT_SQL };
+	private static final String[] QUERIES = { BudgetService.WEEK_LIMITS_SQL, BudgetService.PERIOD_SPENT_SQL };
 
 	private BudgetScenario scenario(WorkspaceFixtures fixtures) {
 		BudgetScenario s = BudgetScenario.create(fixtures);

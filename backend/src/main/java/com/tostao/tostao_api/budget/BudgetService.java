@@ -1,10 +1,7 @@
 package com.tostao.tostao_api.budget;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -17,11 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tostao.tostao_api.budget.BudgetRules.Item;
+import com.tostao.tostao_api.budget.BudgetTracking.Limit;
+import com.tostao.tostao_api.budget.BudgetTracking.Spent;
 import com.tostao.tostao_api.budget.dto.BudgetResponse;
 import com.tostao.tostao_api.budget.dto.CopyBudgetsResponse;
 import com.tostao.tostao_api.budget.dto.WeekBudgetResponse;
-import com.tostao.tostao_api.budget.dto.WeekBudgetResponse.BudgetItem;
 import com.tostao.tostao_api.budget.dto.WeekBudgetResponse.WeekInfo;
 import com.tostao.tostao_api.common.error.BudgetConflictException;
 import com.tostao.tostao_api.common.error.BudgetNotFoundException;
@@ -69,8 +66,11 @@ public class BudgetService {
 			where b.workspace_id = :workspaceId and b.week_start = :start
 			""";
 
-	/** Despesas da semana por categoria (e categoria pai), positivas, sem excluídos nem transferências. */
-	static final String WEEK_SPENT_SQL = """
+	/**
+	 * Despesas de um período (semana ou mês, entre {@code :start} e {@code :end}) por categoria e categoria pai,
+	 * positivas, sem excluídos nem transferências. Compartilhada com o orçamento mensal.
+	 */
+	static final String PERIOD_SPENT_SQL = """
 			select t.category_id, c.parent_id, -sum(t.amount_cents)::bigint as spent_cents
 			from transactions t
 			left join categories c on c.id = t.category_id and c.workspace_id = t.workspace_id
@@ -172,12 +172,6 @@ public class BudgetService {
 	@WorkspaceScoped
 	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public WeekBudgetResponse week(UUID workspaceId, Period week) {
-		record Limit(UUID id, UUID categoryId, String categoryName, boolean archived, long amountCents,
-				UUID createdBy, Instant createdAt, Instant updatedAt) {
-		}
-		record Spent(UUID categoryId, UUID parentId, long cents) {
-		}
-
 		List<Limit> limits = jdbc.sql(WEEK_LIMITS_SQL)
 				.param("workspaceId", workspaceId)
 				.param("start", week.start())
@@ -187,7 +181,7 @@ public class BudgetService {
 						rs.getObject("created_at", OffsetDateTime.class).toInstant(),
 						rs.getObject("updated_at", OffsetDateTime.class).toInstant()))
 				.list();
-		List<Spent> spent = jdbc.sql(WEEK_SPENT_SQL)
+		List<Spent> spent = jdbc.sql(PERIOD_SPENT_SQL)
 				.param("workspaceId", workspaceId)
 				.param("start", week.start())
 				.param("end", week.end())
@@ -195,27 +189,9 @@ public class BudgetService {
 						rs.getLong("spent_cents")))
 				.list();
 
-		long total = BudgetRules.sumExact(spent.stream().map(Spent::cents).toList());
-		List<UUID> categoryLimits = limits.stream().map(Limit::categoryId).filter(Objects::nonNull).toList();
-		long outside = BudgetRules.sumExact(spent.stream()
-				.filter(s -> categoryLimits.stream().noneMatch(l -> BudgetRules.covers(l, s.categoryId(), s.parentId())))
-				.map(Spent::cents).toList());
-
-		List<BudgetItem> items = new ArrayList<>();
-		for (Limit limit : limits) {
-			long spentCents = BudgetRules.sumExact(spent.stream()
-					.filter(s -> BudgetRules.covers(limit.categoryId(), s.categoryId(), s.parentId()))
-					.map(Spent::cents).toList());
-			items.add(new BudgetItem(limit.id(), limit.categoryId(), limit.categoryName(), limit.archived(),
-					limit.amountCents(), spentCents, BudgetRules.remaining(spentCents, limit.amountCents()),
-					BudgetRules.percent(spentCents, limit.amountCents()),
-					BudgetRules.status(spentCents, limit.amountCents()), limit.createdBy(), limit.createdAt(),
-					limit.updatedAt()));
-		}
-		items.sort(Comparator.comparing(i -> new Item(i.id(), i.categoryName(), i.spentCents(), i.status()),
-				BudgetRules.order()));
-
-		return new WeekBudgetResponse(new WeekInfo(week.id(), week.start(), week.end()), total, outside, items);
+		BudgetTracking.Result result = BudgetTracking.track(limits, spent);
+		return new WeekBudgetResponse(new WeekInfo(week.id(), week.start(), week.end()), result.totalSpentCents(),
+				result.spentOutsideCategoryLimitsCents(), result.items());
 	}
 
 	/**
