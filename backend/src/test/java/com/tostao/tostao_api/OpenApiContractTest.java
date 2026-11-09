@@ -44,6 +44,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path BUDGETS_CONTRACT = Path.of("..", "specs", "006-orcamento-semanal", "contracts",
 			"openapi.yaml");
+	private static final Path MONTHLY_BUDGETS_CONTRACT = Path.of("..", "specs", "007-orcamento-mensal", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -156,6 +158,57 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void monthlyBudgetsContractFileDeclaresTheExpectedRoutes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(MONTHLY_BUDGETS_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/monthly-budgets",
+				"/api/v1/workspaces/{wid}/monthly-budgets/{id}",
+				"/api/v1/workspaces/{wid}/monthly-budgets/copy");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/monthly-budgets")).containsExactlyInAnyOrder("get", "put");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/monthly-budgets/{id}"))
+				.containsExactlyInAnyOrder("put", "delete");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/monthly-budgets/copy")).containsExactly("post");
+	}
+
+	@Test
+	void theMonthlyBudgetsExposeExactlyTheDeclaredOperationsAndNoPatch() throws Exception {
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].get").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].put").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].post").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].delete").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].patch").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets/{id}'].put").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets/{id}'].delete").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets/{id}'].get").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets/{id}'].patch").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/monthly-budgets/copy'].post").exists())
+				.andExpect(jsonPath(
+						"$.paths['/api/v1/workspaces/{wid}/monthly-budgets'].get.parameters[?(@.name=='month')]")
+						.exists());
+	}
+
+	@Test
+	void theMonthlyContractMatchesTheRequestAndResponseFields() throws Exception {
+		String contract = Files.readString(MONTHLY_BUDGETS_CONTRACT);
+		for (String field : List.of("month", "fromMonth", "months", "categoryId", "amountCents", "totalSpentCents",
+				"spentOutsideCategoryLimitsCents", "budgets", "skippedExisting", "skippedArchivedCategory")) {
+			assertThat(contract).as(field).contains(field + ":");
+		}
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.components.schemas.DefineMonthlyBudgetRequest.properties.month").exists())
+				.andExpect(jsonPath("$.components.schemas.DefineMonthlyBudgetRequest.properties.categoryId").exists())
+				.andExpect(jsonPath("$.components.schemas.DefineMonthlyBudgetRequest.properties.amountCents").exists())
+				.andExpect(jsonPath("$.components.schemas.CopyMonthlyBudgetsRequest.properties.fromMonth").exists())
+				.andExpect(jsonPath("$.components.schemas.CopyMonthlyBudgetsRequest.properties.months").exists())
+				.andExpect(jsonPath("$.components.schemas.MonthBudgetResponse.properties.month").exists())
+				.andExpect(jsonPath("$.components.schemas.MonthBudgetResponse.properties.totalSpentCents").exists())
+				.andExpect(jsonPath("$.components.schemas.MonthBudgetResponse.properties.budgets").exists())
+				.andExpect(jsonPath("$.components.schemas.MonthlyBudgetResponse.properties.month").exists());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -181,7 +234,7 @@ class OpenApiContractTest {
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
-				DASHBOARD_CONTRACT, BUDGETS_CONTRACT)) {
+				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
