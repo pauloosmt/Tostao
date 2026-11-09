@@ -183,6 +183,43 @@ class PeriodTest {
 		assertThat(rejection(() -> Period.resolveWeek("2026-W5", now)).field()).isEqualTo("week");
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "2026-1", "202611", "2026-13", "2026-00", "1999-12", "2101-01", "2026-11-01", "" })
+	void aBadMonthIsRejectedNamingTheGivenField(String text) {
+		assertThat(rejection(() -> Period.ofMonth(text, "fromMonth")).field()).isEqualTo("fromMonth");
+		assertThat(rejection(() -> Period.ofMonth(null, "fromMonth")).field()).isEqualTo("fromMonth");
+		// a forma sem campo continua apontando "month"
+		assertThat(rejection(() -> Period.ofMonth(text)).field()).isEqualTo("month");
+	}
+
+	@Test
+	void theFieldOverloadAcceptsTheSameMonthsAsTheOriginal() {
+		Period november = Period.ofMonth("2026-11", "fromMonth");
+
+		assertThat(november.id()).isEqualTo("2026-11");
+		assertThat(november.start()).isEqualTo(LocalDate.of(2026, 11, 1));
+		assertThat(november.end()).isEqualTo(LocalDate.of(2026, 11, 30));
+		assertThat(Period.ofMonth("2028-02", "x").end()).isEqualTo(LocalDate.of(2028, 2, 29));
+		assertThat(Period.ofMonth("2027-02", "x").end()).isEqualTo(LocalDate.of(2027, 2, 28));
+	}
+
+	@Test
+	void theLastAcceptedMonthStartsOnTheFirstOfDecember2100() {
+		Period last = Period.ofMonth("2100-12");
+
+		assertThat(Period.LAST_MONTH_START).isEqualTo(LocalDate.of(2100, 12, 1)).isEqualTo(last.start());
+		assertThat(rejection(() -> Period.ofMonth("2101-01")).field()).isEqualTo("month");
+	}
+
+	@Test
+	void theCurrentMonthFollowsBrasiliaAtTheMonthBoundary() {
+		assertThat(currentId("2026-11-15T12:00:00Z")).isEqualTo("2026-11");
+		// 02:59:59 UTC de 1º/11 ainda é 23:59:59 de 31/10 em Brasília
+		assertThat(currentId("2026-11-01T02:59:59Z")).isEqualTo("2026-10");
+		assertThat(currentId("2026-11-01T03:00:00Z")).isEqualTo("2026-11");
+		assertThat(currentId("2027-01-01T02:00:00Z")).isEqualTo("2026-12");
+	}
+
 	private static String currentWeekId(String instant) {
 		return Period.resolveWeek(null, OffsetDateTime.parse(instant).toInstant()).id();
 	}

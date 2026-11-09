@@ -44,14 +44,19 @@ public final class Period {
 
 	/** Mês no formato {@code AAAA-MM}, de 2000-01 a 2100-12. */
 	public static Period ofMonth(String text) {
+		return ofMonth(text, "month");
+	}
+
+	/** Como {@link #ofMonth(String)}, mas o erro aponta o campo {@code field} (por exemplo {@code fromMonth}). */
+	public static Period ofMonth(String text, String field) {
 		Matcher m = text == null ? null : MONTH_FORMAT.matcher(text);
 		if (m == null || !m.matches()) {
-			throw invalidMonth();
+			throw invalidMonth(field);
 		}
 		int year = Integer.parseInt(m.group(1));
 		int month = Integer.parseInt(m.group(2));
 		if (year < MIN_YEAR || year > MAX_YEAR || month < 1 || month > 12) {
-			throw invalidMonth();
+			throw invalidMonth(field);
 		}
 		return monthOf(LocalDate.of(year, month, 1));
 	}
@@ -112,6 +117,9 @@ public final class Period {
 	/** Segunda-feira da última semana aceita (2100-W52). */
 	public static final LocalDate LAST_WEEK_START = LocalDate.of(2100, 12, 27);
 
+	/** Primeiro dia do último mês aceito (2100-12). */
+	public static final LocalDate LAST_MONTH_START = LocalDate.of(2100, 12, 1);
+
 	/** A semana ISO que contém a data dada (sem validar a faixa 2000 a 2100). */
 	public static Period containing(LocalDate date) {
 		return weekOf(date.with(WEEK_START));
@@ -158,8 +166,8 @@ public final class Period {
 		return new Period(PeriodType.WEEK, id, monday, monday.plusDays(6));
 	}
 
-	private static FieldValidationException invalidMonth() {
-		return new FieldValidationException("month", "mês inválido: use AAAA-MM entre 2000-01 e 2100-12");
+	private static FieldValidationException invalidMonth(String field) {
+		return new FieldValidationException(field, "mês inválido: use AAAA-MM entre 2000-01 e 2100-12");
 	}
 
 	private static FieldValidationException invalidWeek(String field) {
