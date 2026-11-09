@@ -135,7 +135,7 @@ public record BudgetScenario(Fixture owner, UUID checking, UUID savings, UUID fo
 		return fingerprint(owner, workspaceId, "weekly_budgets");
 	}
 
-	private static String fingerprint(OwnerJdbc owner, UUID workspaceId, String... tables) {
+	static String fingerprint(OwnerJdbc owner, UUID workspaceId, String... tables) {
 		StringBuilder all = new StringBuilder();
 		for (String table : tables) {
 			all.append(owner.client().sql("select coalesce(md5(string_agg(x::text, ',' order by x.id)), 'vazio') from "

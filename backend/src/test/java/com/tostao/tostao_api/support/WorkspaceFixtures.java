@@ -144,6 +144,24 @@ public class WorkspaceFixtures {
 				.param("w", workspaceId).query(Long.class).single();
 	}
 
+	/**
+	 * Limite mensal (spec 007): {@code monthStart} é o dia 1 do mês e {@code categoryId} nulo é o limite
+	 * geral. Pela conexão do dono; devolve o {@code id}.
+	 */
+	public UUID insertMonthlyBudget(UUID workspaceId, java.time.LocalDate monthStart, UUID categoryId,
+			long amountCents, UUID createdBy) {
+		return owner.client().sql("""
+				insert into monthly_budgets (workspace_id, month_start, category_id, amount_cents, created_by)
+				values (:w, :s, :c, :m, :u) returning id""")
+				.param("w", workspaceId).param("s", monthStart).param("c", categoryId).param("m", amountCents)
+				.param("u", createdBy).query(UUID.class).single();
+	}
+
+	public long countMonthlyBudgets(UUID workspaceId) {
+		return owner.client().sql("select count(*) from monthly_budgets where workspace_id = :w")
+				.param("w", workspaceId).query(Long.class).single();
+	}
+
 	/** Transferência: duas linhas com o mesmo grupo, saída negativa e entrada positiva. */
 	public void insertTransfer(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents) {
 		UUID group = UUID.randomUUID();
