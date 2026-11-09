@@ -176,6 +176,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
 	}
 
+	@ExceptionHandler(InvoiceNotAvailableException.class)
+	ResponseEntity<ProblemDetail> invoiceNotAvailable(InvoiceNotAvailableException ex) {
+		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
+	}
+
 	@ExceptionHandler(FieldValidationException.class)
 	ResponseEntity<ProblemDetail> fieldValidation(FieldValidationException ex) {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
