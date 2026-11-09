@@ -201,8 +201,9 @@ public class InvoiceService {
 			throw new InvoiceNotAvailableException(NOT_A_CARD);
 		}
 		long owed = Math.max(Math.negateExact(account.balanceCents()), 0);
+		// limite mais o saldo: a dívida (saldo negativo) reduz e um crédito a favor (saldo positivo) aumenta
 		Long available = account.creditLimitCents() == null ? null
-				: Math.subtractExact(account.creditLimitCents(), owed);
+				: Math.addExact(account.creditLimitCents(), account.balanceCents());
 
 		OpenInvoice open = null;
 		if (account.closingDay() != null && account.dueDay() != null) {
