@@ -97,6 +97,39 @@ Um limite de categoria principal cobre os gastos dela e os das subcategorias; o 
 despesas da semana. Os limites são planos, não lançamentos: ao contrário dos lançamentos, são removidos de
 verdade. Receitas, transferências e lançamentos excluídos nunca contam como gasto.
 
+Orçamento mensal: o mesmo orçamento por mês (`AAAA-MM`, do dia 1 ao último dia), com a mesma regra de gasto,
+percentual e estado, em rotas próprias. É independente do semanal: o mês não é a soma das semanas e um tipo de
+limite nunca mexe no outro. A cópia vai até 24 meses.
+
+```bash
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"month":"2026-11","categoryId":"<categoria de despesa>","amountCents":160000}' $BASE/workspaces/$WID/monthly-budgets   # define ou substitui
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"month":"2026-11","amountCents":600000}' $BASE/workspaces/$WID/monthly-budgets                  # limite geral do mês (sem categoryId)
+curl -b jar.txt "$BASE/workspaces/$WID/monthly-budgets?month=2026-11"                                   # acompanhamento (sem month: o mês corrente)
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"amountCents":170000}' $BASE/workspaces/$WID/monthly-budgets/<id>                                # ajusta o valor
+curl -b jar.txt -X DELETE $BASE/workspaces/$WID/monthly-budgets/<id>                                    # remove (de verdade, só daquele mês)
+curl -b jar.txt -X POST -H 'Content-Type: application/json' \
+  -d '{"fromMonth":"2026-11","months":3}' $BASE/workspaces/$WID/monthly-budgets/copy                   # copia para os 3 meses seguintes, só onde falta
+```
+
+Fatura do cartão de crédito: calculada a cada consulta (nada é guardado) a partir do dia de fechamento e do de
+vencimento do cartão, e só de leitura (OWNER, EDITOR e VIEWER consultam). A fatura é identificada pelo mês do
+**vencimento**. O período vai do dia seguinte ao fechamento anterior até o dia do fechamento, inclusive; dia 29,
+30 ou 31 em mês curto vale o último dia do mês. O total soma compras e saques e subtrai estornos; transferências
+que entram no cartão são pagamentos (depois do fechamento, até o fechamento da seguinte). A situação é `OPEN`,
+`CLOSED`, `PAID` ou `OVERDUE`. As faturas usam os dias de fechamento e vencimento de **hoje**: mudar os dias
+recalcula as passadas.
+
+```bash
+curl -b jar.txt $BASE/workspaces/$WID/accounts/<id do cartão>/invoices/2026-11          # fatura de novembro, com os lançamentos
+curl -b jar.txt "$BASE/workspaces/$WID/accounts/<id do cartão>/invoices?from=2026-06&to=2026-12"   # lista (sem from/to: as seis até a aberta)
+curl -b jar.txt $BASE/workspaces/$WID/accounts/<id do cartão>/card-summary               # limite, devido, disponível e fatura aberta
+```
+
+Conta que não é cartão, ou cartão sem `closingDay` e `dueDay`, responde 409 dizendo o que falta.
+
 Categorias: o cadastro já traz o conjunto padrão (Alimentação, Moradia, Transporte, Saúde, Lazer, Educação,
 Salário e outras), com subcategorias.
 
