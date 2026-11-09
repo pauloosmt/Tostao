@@ -64,6 +64,18 @@ public class WorkspaceFixtures {
 	}
 
 	/** Categoria principal (parentId nulo) ou subcategoria; o tipo da subcategoria tem de ser o do pai. */
+	/** Cartão de crédito com limite e dias opcionais (nulos = não cadastrados). Pela conexão do dono. */
+	public UUID insertCard(UUID workspaceId, String name, long initialCents, Long limitCents, Integer closingDay,
+			Integer dueDay, boolean archived) {
+		return owner.client().sql("""
+				insert into accounts (workspace_id, name, type, initial_balance_cents, credit_limit_cents,
+				                      closing_day, due_day, archived)
+				values (:w, :n, 'CREDIT_CARD', :i, cast(:l as bigint), cast(:c as smallint), cast(:d as smallint), :a)
+				returning id""")
+				.param("w", workspaceId).param("n", name).param("i", initialCents).param("l", limitCents)
+				.param("c", closingDay).param("d", dueDay).param("a", archived).query(UUID.class).single();
+	}
+
 	public UUID insertCategory(UUID workspaceId, UUID parentId, String name, String kind, boolean archived) {
 		return owner.client().sql("""
 				insert into categories (workspace_id, parent_id, name, kind, archived)
