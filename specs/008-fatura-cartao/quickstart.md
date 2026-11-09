@@ -54,8 +54,11 @@ novembro fica com `paidCents` 62000, `remainingCents` 0 e `status` **PAID**. Um 
 ## 4. Calendário (US1)
 
 Edite o cartão para `closingDay` 25 e `dueDay` 5: `GET .../invoices/2024-12` → `closingDate` `2024-11-25`,
-`dueDate` `2024-12-05`, `periodStart` `2024-10-26`. Edite para 31 e 31: `GET .../invoices/2027-02` →
-`closingDate` e `dueDate` `2027-02-28`, `periodStart` `2027-01-01`; `2028-02` → 29/02. Volte para 20 e 28.
+`dueDate` `2024-12-05`, `periodStart` `2024-10-26`. Edite para 31 e 31 (vencimento igual ao fechamento cai no mês
+seguinte): `GET .../invoices/2027-02` → `closingDate` `2027-01-31`, `dueDate` `2027-02-28`, `periodStart`
+`2027-01-01`; `2028-02` → `dueDate` `2028-02-29`. Edite para 31 e 5: `2027-03` → `closingDate` `2027-02-28`
+(fevereiro tem 28 dias), `dueDate` `2027-03-05`, `periodStart` `2027-02-01`; `2028-03` → `closingDate`
+`2028-02-29`. Volte para 20 e 28.
 
 ## 5. Lista (US4)
 
