@@ -71,7 +71,7 @@ description: "Tarefas da feature 008-fatura-cartao"
 - [X] T016 [P] `TEST/invoice/InvoicePerformanceTest.java` (SC-009): workspace com 20.000 lançamentos espalhados em 3 anos, um cartão com ~7.000; mediana de 5 chamadas de fatura, resumo e lista de 36 meses, cada uma abaixo de 1000 ms; imprimir as medianas; afirmar que a resposta é real. Se passar de 1 s, índice numa migration com a medição registrada
 - [X] T017 Em `TEST/OpenApiContractTest.java` acrescentar `INVOICES_CONTRACT` (`specs/008-fatura-cartao/contracts/openapi.yaml`): declara exatamente `GET` em `/invoices/{month}`, `/invoices` e `/card-summary`; `/v3/api-docs` expõe as mesmas operações e nenhuma de escrita; inclui no laço "todos os contratos"
 - [ ] T018 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes (o `LoginTimingTest` já falhava antes e é da spec 001) e registrar a contagem
-- [ ] T019 [P] Atualizar `README.md` com os `curl` da fatura (fatura, lista e resumo) e a nota de que a fatura é calculada, só de leitura, e usa os dias de hoje
+- [X] T019 [P] Atualizar `README.md` com os `curl` da fatura (fatura, lista e resumo) e a nota de que a fatura é calculada, só de leitura, e usa os dias de hoje
 - [ ] T020 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com limpeza ao fim; marcar todas as tarefas como `[X]` e commitar; não fazer push
 
 ---
