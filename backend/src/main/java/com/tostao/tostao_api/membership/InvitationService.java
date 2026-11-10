@@ -10,8 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.common.error.FieldValidationException;
+import com.tostao.tostao_api.common.error.InvalidInvitationException;
 import com.tostao.tostao_api.common.error.InvitationNotFoundException;
 import com.tostao.tostao_api.common.error.MembershipConflictException;
+import com.tostao.tostao_api.membership.dto.AcceptInvitationResponse;
 import com.tostao.tostao_api.membership.dto.CreateInvitationRequest;
 import com.tostao.tostao_api.membership.dto.InvitationCreatedResponse;
 import com.tostao.tostao_api.membership.dto.InvitationResponse;
@@ -115,6 +117,32 @@ public class InvitationService {
 						CurrentUser.id(), rs.getObject("created_at", OffsetDateTime.class).toInstant(),
 						rs.getObject("expires_at", OffsetDateTime.class).toInstant(), code))
 				.single();
+	}
+
+	/**
+	 * Aceita um convite com o código. Não fica sob um workspace: a pessoa ainda não é membro, e o RLS por workspace não a
+	 * alcança. A função de banco {@code accept_invitation} (V13) confere o código pela impressão, a validade, o estado e o
+	 * e-mail da <b>conta</b> (lido do banco a partir da sessão, nunca do corpo), trava o convite e o workspace, confere o
+	 * limite de 20 membros e cria o vínculo, numa operação atômica. O resultado volta como desfecho, sem exceção: código
+	 * inexistente, expirado, usado, revogado ou de outro e-mail respondem todos igual (404); já ser membro e o workspace
+	 * cheio são conflito (409).
+	 */
+	@Transactional
+	public AcceptInvitationResponse accept(String code) {
+		record Outcome(String outcome, UUID workspaceId, String name, String role) {
+		}
+		Outcome result = jdbc.sql("select outcome, workspace_id, workspace_name, role from accept_invitation(:codeHash, :userId)")
+				.param("codeHash", InvitationCodes.hash(code))
+				.param("userId", CurrentUser.id())
+				.query((rs, i) -> new Outcome(rs.getString("outcome"), rs.getObject("workspace_id", UUID.class),
+						rs.getString("workspace_name"), rs.getString("role")))
+				.single();
+		return switch (result.outcome()) {
+			case "ACCEPTED" -> new AcceptInvitationResponse(result.workspaceId(), result.name(), result.role());
+			case "ALREADY_MEMBER" -> throw new MembershipConflictException("Você já participa deste workspace");
+			case "FULL" -> throw new MembershipConflictException("O workspace atingiu o limite de membros");
+			default -> throw new InvalidInvitationException();
+		};
 	}
 
 	/** Os convites pendentes (não usados, não revogados e não expirados), do mais recente para o mais antigo. Sem o código. */

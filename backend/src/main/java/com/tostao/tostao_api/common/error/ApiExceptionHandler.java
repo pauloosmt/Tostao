@@ -191,6 +191,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
 	}
 
+	@ExceptionHandler(InvalidInvitationException.class)
+	ResponseEntity<ProblemDetail> invalidInvitation(InvalidInvitationException ex) {
+		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
+	}
+
 	@ExceptionHandler(MembershipConflictException.class)
 	ResponseEntity<ProblemDetail> membershipConflict(MembershipConflictException ex) {
 		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
