@@ -15,7 +15,8 @@ import com.tostao.tostao_api.transaction.TransactionType;
  * {@code installmentNumber} é o número da parcela e {@code installmentCount} o total; nos demais lançamentos os três
  * vêm nulos. {@code autoClear} diz se o lançamento pendente será efetivado sozinho quando a data chegar (de uso único: some ao
  * efetivar); {@code recurrenceId} e {@code occurrenceNumber} dizem de qual recorrência e qual ocorrência ele é (nulos nos
- * demais). Não expõe o {@code workspace_id}.
+ * demais). {@code imported} diz se o lançamento veio de uma importação de extrato (a chave de importação em si não sai).
+ * Não expõe o {@code workspace_id}.
  */
 public record TransactionResponse(
 		UUID id,
@@ -37,5 +38,6 @@ public record TransactionResponse(
 		Integer installmentCount,
 		boolean autoClear,
 		UUID recurrenceId,
-		Integer occurrenceNumber) {
+		Integer occurrenceNumber,
+		boolean imported) {
 }

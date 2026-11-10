@@ -40,7 +40,7 @@ public class TransactionService {
 			       t.category_id, t.transfer_group_id, o.account_id as counterpart_account_id, t.created_by,
 			       t.created_at, t.updated_at, t.status,
 			       t.installment_group_id, t.installment_number, t.installment_count,
-			       t.auto_clear, t.recurrence_id, t.occurrence_number
+			       t.auto_clear, t.recurrence_id, t.occurrence_number, (t.import_key is not null) as imported
 			from transactions t
 			left join transactions o
 			       on o.workspace_id = t.workspace_id and o.transfer_group_id = t.transfer_group_id
@@ -68,7 +68,8 @@ public class TransactionService {
 			rs.getObject("installment_count", Integer.class),
 			rs.getBoolean("auto_clear"),
 			rs.getObject("recurrence_id", UUID.class),
-			rs.getObject("occurrence_number", Integer.class));
+			rs.getObject("occurrence_number", Integer.class),
+			rs.getBoolean("imported"));
 
 	private final JdbcClient jdbc;
 	private final UsableRefs refs;
