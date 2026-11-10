@@ -230,6 +230,34 @@ curl -b jar2.txt -H 'Content-Type: application/json' \
 
 O dono não sai nem é rebaixado: o workspace sempre tem exatamente um.
 
+Importação de extratos: a pessoa (OWNER ou EDITOR) envia o extrato do banco para uma conta, vê uma **prévia que não
+grava nada** e confirma; cada movimento vira um lançamento **efetivado** (receita se o valor é positivo, despesa se é
+negativo). Formatos, reconhecidos pelo conteúdo: **OFX** (versões 1 e 2, banco e cartão, o melhor: traz identificador
+do banco), **CSV** (cabeçalho com colunas de data, descrição e valor; `;` ou `,`; `1.234,56` ou `1234.56`) e **PDF com
+texto selecionável** (cada linha que começa com uma data e termina com um valor; saldos são ignorados; PDF digitalizado
+ou com senha é recusado, e como o PDF é lido pela aparência do texto, confira a prévia). Até 2 MB e 1.000 movimentos
+(PDF: até 20 páginas). Cada movimento tem uma **chave de importação** por conta: importar o mesmo extrato de novo, ou
+um que repete alguns dias do anterior, só cria o que falta, e um lançamento que você excluiu **não volta**. A prévia
+marca o que já existe, as **possíveis duplicatas** (mesma data e valor de algo que você digitou à mão), os problemas de
+cada linha e uma categoria sugerida (a do último lançamento com a mesma descrição). A categoria é opcional; o que ficar
+sem categoria se acha com `uncategorized=true` e se categoriza pela edição normal. O arquivo é só dado: nada dele é
+executado nem buscado, e o conteúdo não vai para o log.
+
+```bash
+curl -b jar.txt -F 'file=@extrato.ofx' $BASE/workspaces/$WID/accounts/<id da conta>/import/preview   # prévia (OFX, CSV ou PDF)
+# a prévia traz, por linha: key, occurredOn, description, amountCents (com sinal), type, existing, possibleDuplicate,
+# suggestedCategoryId e problems. Confirma as linhas escolhidas (categoryId é opcional):
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"lines":[
+  {"key":"id:1","occurredOn":"2026-11-05","description":"SALARIO EMPRESA","amountCents":500000},
+  {"key":"id:2","occurredOn":"2026-11-06","description":"PADARIA DO ZE","amountCents":-2350,"categoryId":"<id da categoria>"}
+]}' $BASE/workspaces/$WID/accounts/<id da conta>/import                    # 201 {created:[...], skipped:N}; repetir dá 200
+curl -b jar.txt "$BASE/workspaces/$WID/transactions?uncategorized=true"    # receitas e despesas ainda sem categoria
+```
+
+Não faz nesta versão: importar transferências entre contas (entram como receita ou despesa), desfazer uma importação
+em lote (exclua os lançamentos um a um), conciliar o saldo do extrato e ler PDF digitalizado (sem reconhecimento de
+imagem).
+
 Com `SPRING_PROFILES_ACTIVE=local` (o padrão do Compose), a documentação da API fica em
 `http://127.0.0.1:8080/swagger-ui.html`.
 

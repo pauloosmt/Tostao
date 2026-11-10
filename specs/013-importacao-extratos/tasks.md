@@ -80,9 +80,9 @@ description: "Tarefas da feature 013-importacao-extratos"
 ## Phase 6: Polish
 
 - [X] T015 Em `TEST/OpenApiContractTest.java` acrescentar `IMPORT_CONTRACT` (`specs/013-importacao-extratos/contracts/openapi.yaml`) e conferir que o contrato declara exatamente as duas rotas (`POST` em `/import/preview` e em `/import`), que `/v3/api-docs` expõe as duas sem outros verbos, que `ImportConfirmRequest` não tem campos de workspace, autoria, estado nem tipo, que a prévia aceita `multipart/form-data` com a parte `file`, que `TransactionResponse` tem `imported` e que a listagem tem o parâmetro `uncategorized`; incluir o contrato no teste de "todas as operações do contrato existem"
-- [ ] T016 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 012 pode ter sido alterado além de acrescentar** (e dos construtores de `TransactionResponse` da T007), conferido com `git diff`
-- [ ] T017 [P] Atualizar `README.md`: seção de importação de extratos (formatos OFX e CSV, prévia e confirmação com `curl`, a chave que evita duplicar e respeita exclusões, o limite de 2 MB e 1.000 movimentos, a categoria opcional e o filtro `uncategorized`, só OWNER e EDITOR, o que não faz: transferências, desfazer em lote, conciliação)
-- [ ] T018 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 14 e limpeza ao fim; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
+- [X] T016 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 012 pode ter sido alterado além de acrescentar** (e dos construtores de `TransactionResponse` da T007), conferido com `git diff`
+- [X] T017 [P] Atualizar `README.md`: seção de importação de extratos (formatos OFX e CSV, prévia e confirmação com `curl`, a chave que evita duplicar e respeita exclusões, o limite de 2 MB e 1.000 movimentos, a categoria opcional e o filtro `uncategorized`, só OWNER e EDITOR, o que não faz: transferências, desfazer em lote, conciliação)
+- [X] T018 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 14 e limpeza ao fim; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
 ---
 
