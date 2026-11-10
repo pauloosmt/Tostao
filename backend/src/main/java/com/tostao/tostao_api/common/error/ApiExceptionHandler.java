@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /** Traduz exceções em Problem Details (RFC 7807), sem vazar detalhes internos. */
@@ -65,6 +67,27 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			}
 		}
 		return null;
+	}
+
+	/** Envio maior que o limite (spec 013): 413, sem citar nada do arquivo. */
+	@Override
+	protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE,
+				"O arquivo passa do tamanho máximo de 2 MB");
+		problem.setTitle("Arquivo grande demais");
+		return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(problem);
+	}
+
+	/** Parte do envio que falta (o arquivo do extrato): 400 apontando a parte. */
+	@Override
+	protected ResponseEntity<Object> handleMissingServletRequestPart(MissingServletRequestPartException ex,
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+				"Um ou mais campos são inválidos");
+		problem.setTitle("Requisição inválida");
+		problem.setProperty("errors", List.of(new FieldProblem(ex.getRequestPartName(), "é obrigatório")));
+		return ResponseEntity.badRequest().body(problem);
 	}
 
 	/**
