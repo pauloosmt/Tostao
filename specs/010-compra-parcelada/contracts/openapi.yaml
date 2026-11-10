@@ -1,0 +1,231 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Compra parcelada
+  version: 0.10.0
+  description: >
+    Contrato da spec 010. Registra uma despesa dividida em 2 a 48 parcelas mensais de uma vez, consulta o plano de
+    parcelas e cancela o que ainda está pendente. Cada parcela é um lançamento comum da spec 004 (despesa): pode ser
+    listada, editada, efetivada (spec 009) e excluída. A primeira parcela nasce efetivada (ou pendente, se pedido) e as
+    seguintes pendentes, e o pendente nunca conta no realizado. Todas as rotas exigem sessão (cookie tostao_session) e
+    ficam sob um workspace. Quem não é membro recebe 404, igual a um workspace inexistente. VIEWER só consulta (403
+    nas escritas). Valores monetários são inteiros em centavos. Erros seguem Problem Details (RFC 7807). Os campos
+    novos de lançamento são aditivos: nenhum campo existente muda de nome nem de significado.
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/installment-purchases:
+    post:
+      summary: Registra uma compra parcelada (todas as parcelas ou nenhuma)
+      description: >
+        Divide o total em centavos exatos (o resto vai, um centavo por parcela, para as primeiras), cria uma despesa por
+        mês a partir da primeira data e devolve o plano. A descrição de cada parcela recebe o sufixo " (N/T)".
+        Atômico: qualquer recusa deixa tudo como estava.
+      operationId: createInstallmentPurchase
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInstallmentPurchaseRequest' }
+      responses:
+        '201':
+          description: Compra registrada; o plano completo
+          headers:
+            Location:
+              schema: { type: string }
+              description: Caminho da consulta do plano
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstallmentPlan' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Conta ou categoria arquivada
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /workspaces/{wid}/installment-purchases/{groupId}:
+    get:
+      summary: Consulta o plano de parcelas
+      description: >
+        Parcelas não excluídas em ordem de número, com o total, o efetivado e o pendente. Um plano em que todas as
+        parcelas foram excluídas ainda existe: lista vazia e totais zero.
+      operationId: getInstallmentPlan
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: O plano
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstallmentPlan' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/installment-purchases/{groupId}/cancel:
+    post:
+      summary: Cancela as parcelas ainda pendentes do plano
+      description: >
+        Sem corpo. Exclui logicamente só as parcelas pendentes e vivas; as efetivadas ficam. Informa quantas foram
+        canceladas. Plano sem pendentes, ou cancelamento repetido, responde 200 com zero. Nenhum número realizado muda.
+      operationId: cancelInstallmentPlan
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Quantas parcelas pendentes foram canceladas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CancelInstallmentsResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/transactions:
+    get:
+      summary: Lista lançamentos (campos de parcela acrescentados pela spec 010)
+      description: Cada item traz installmentGroupId, installmentNumber e installmentCount (nulos nos que não são parcela)
+      operationId: listTransactions
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      responses:
+        '200':
+          description: Página de lançamentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Transaction' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, plano, conta ou categoria inexistente ou de outro workspace, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    TransactionStatus:
+      type: string
+      enum: [CLEARED, PENDING]
+    CreateInstallmentPurchaseRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, categoryId, totalCents, installmentCount, firstOccurredOn, description]
+      properties:
+        accountId: { type: string, format: uuid, description: Conta ativa do workspace }
+        categoryId: { type: string, format: uuid, description: Categoria de despesa ativa do workspace }
+        totalCents:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000000000
+          description: Valor total em centavos; pelo menos 1 centavo por parcela
+        installmentCount: { type: integer, minimum: 2, maximum: 48 }
+        firstOccurredOn:
+          type: string
+          format: date
+          description: Data da primeira parcela; as demais caem um mês depois da anterior, sempre contado a partir desta. Primeira e última entre 2000 e 2100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 190
+          description: Descrição base, sem espaços nas pontas; cada parcela recebe o sufixo " (N/T)"
+        notes: { type: string, maxLength: 1000, description: Opcional; copiada para todas as parcelas }
+        firstInstallmentStatus:
+          allOf:
+            - $ref: '#/components/schemas/TransactionStatus'
+          description: Estado da primeira parcela (padrão CLEARED). As seguintes são sempre PENDING
+    Transaction:
+      type: object
+      description: Lançamento (spec 004), com os campos de parcela acrescentados pela spec 010
+      required: [id]
+      properties:
+        id: { type: string, format: uuid }
+        amountCents: { type: integer, format: int64, description: Com sinal; a parcela é uma despesa, então negativo }
+        description: { type: string }
+        status: { $ref: '#/components/schemas/TransactionStatus' }
+        installmentGroupId: { type: [string, 'null'], format: uuid }
+        installmentNumber: { type: [integer, 'null'], minimum: 1, maximum: 48 }
+        installmentCount: { type: [integer, 'null'], minimum: 2, maximum: 48 }
+    InstallmentPlan:
+      type: object
+      required: [groupId, description, installmentCount, accountId, categoryId, totalCents, clearedCents, pendingCents, installments]
+      properties:
+        groupId: { type: string, format: uuid }
+        description: { type: string, description: Descrição base, sem o sufixo da parcela }
+        installmentCount: { type: integer, minimum: 2, maximum: 48, description: Total original de parcelas, mesmo com parcelas excluídas }
+        accountId: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        totalCents: { type: integer, format: int64, description: Soma (positiva) das parcelas não excluídas }
+        clearedCents: { type: integer, format: int64, description: Soma (positiva) das parcelas efetivadas }
+        pendingCents: { type: integer, format: int64, description: Soma (positiva) das parcelas pendentes }
+        installments:
+          type: array
+          description: Parcelas não excluídas, em ordem de número
+          items: { $ref: '#/components/schemas/Transaction' }
+    CancelInstallmentsResponse:
+      type: object
+      required: [cancelled]
+      properties:
+        cancelled: { type: integer, minimum: 0, description: Quantas parcelas pendentes foram excluídas }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
