@@ -1,0 +1,9 @@
+Extrato de conta corrente;;
+Agência: 0001;Conta: 12345-6;
+Período: 01/11/2026 a 10/11/2026;;
+
+Data;Histórico;Valor
+05/11/2026;SALARIO;5000,00
+06/11/2026;PADARIA DO ZE;R$ -23,50
+
+Saldo final;;4.976,50
