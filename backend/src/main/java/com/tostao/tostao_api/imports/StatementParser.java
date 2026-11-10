@@ -27,7 +27,7 @@ import com.tostao.tostao_api.common.error.FieldValidationException;
 public final class StatementParser {
 
 	public enum Format {
-		OFX, CSV
+		OFX, CSV, PDF
 	}
 
 	public record Parsed(Format format, List<StatementLine> lines) {
@@ -51,21 +51,27 @@ public final class StatementParser {
 		if (bytes.length > MAX_BYTES) {
 			throw refuse("o arquivo passa de 2 MB");
 		}
-		String text = decode(bytes);
-		if (text.isBlank()) {
-			throw refuse("o arquivo está vazio");
-		}
-
 		Format format;
 		List<RawLine> raw;
-		if (looksLikeOfx(text)) {
-			format = Format.OFX;
-			raw = OfxReader.read(text);
+		if (PdfReader.looksLikePdf(bytes)) {
+			// binário: não passa pela decodificação de texto
+			format = Format.PDF;
+			raw = PdfReader.read(bytes);
 		}
 		else {
-			format = Format.CSV;
-			raw = CsvReader.read(text).orElseThrow(() -> refuse(
-					"formato não reconhecido: envie um OFX ou um CSV com as colunas data, descrição e valor"));
+			String text = decode(bytes);
+			if (text.isBlank()) {
+				throw refuse("o arquivo está vazio");
+			}
+			if (looksLikeOfx(text)) {
+				format = Format.OFX;
+				raw = OfxReader.read(text);
+			}
+			else {
+				format = Format.CSV;
+				raw = CsvReader.read(text).orElseThrow(() -> refuse(
+						"formato não reconhecido: envie um OFX, um CSV com as colunas data, descrição e valor ou um PDF"));
+			}
 		}
 		if (raw.isEmpty()) {
 			throw refuse("nenhum movimento encontrado no arquivo");

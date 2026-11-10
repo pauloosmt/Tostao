@@ -114,6 +114,38 @@ class PreviewTest {
 	}
 
 	@Test
+	void previewsATextPdfWithTheSameFieldsAndDerivedKeys() throws Exception {
+		ImportScenario s = scenario();
+		String before = fingerprint(owner, s.workspace());
+		byte[] pdf = Pdfs.of("Extrato de conta corrente", "Periodo: 01/11/2026 a 10/11/2026", "05/11/2026 SALARIO EMPRESA XYZ 5.000,00 C",
+				"06/11/2026 PADARIA DO ZE 23,50 D", "07/11/2026 MERCADO CENTRAL 180,90 D", "06/11/2026 PADARIA DO ZE 23,50 D",
+				"SALDO FINAL 4.772,10");
+
+		String body = json(preview(mvc, s.owner(), s.workspace(), s.checking(), pdf).andExpect(status().isOk())
+				.andExpect(jsonPath("$.format").value("PDF")).andExpect(jsonPath("$.total").value(4))
+				.andExpect(jsonPath("$.valid").value(4)));
+
+		assertThat((List<Integer>) JsonPath.read(body, "$.lines[*].amountCents")).containsExactly(500000, -2350, -18090, -2350);
+		assertThat((List<String>) JsonPath.read(body, "$.lines[*].type")).containsExactly("INCOME", "EXPENSE", "EXPENSE", "EXPENSE");
+		List<String> keys = JsonPath.read(body, "$.lines[*].key");
+		assertThat(keys).allSatisfy(key -> assertThat(key).matches("h:[0-9a-f]{64}")).doesNotHaveDuplicates();
+		assertThat(fingerprint(owner, s.workspace())).as("a prévia não grava").isEqualTo(before);
+	}
+
+	@Test
+	void anImageOnlyOrProtectedOrBrokenPdfIsRefusedAsAWhole() throws Exception {
+		ImportScenario s = scenario();
+		byte[] pdf = Pdfs.of("05/11/2026 Compra 1,00 D");
+
+		for (byte[] bad : new byte[][] { Pdfs.imageOnly(), Pdfs.encrypted("05/11/2026 Compra 1,00 D"),
+				java.util.Arrays.copyOf(pdf, pdf.length / 2), Pdfs.withPages(PdfReader.MAX_PAGES + 1),
+				Pdfs.of("Extrato sem movimento", "SALDO FINAL 10,00") }) {
+			preview(mvc, s.owner(), s.workspace(), s.checking(), bad).andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.errors[0].field").value("file")).andExpect(jsonPath("$.lines").doesNotExist());
+		}
+	}
+
+	@Test
 	void csvWithoutAnIdentifierGivesDerivedKeysAndTwoIdenticalLinesKeepApart() throws Exception {
 		ImportScenario s = scenario();
 
