@@ -62,6 +62,23 @@ curl -b jar.txt "$BASE/workspaces/$WID/transactions?size=20&page=1&from=2026-11-
 curl -b jar.txt -X DELETE $BASE/workspaces/$WID/transactions/<id>    # exclusão lógica; numa transferência exclui as duas pontas
 ```
 
+Lançamento pendente: um lançamento pode ser registrado como **pendente** (previsto, ainda não efetivado) e depois
+efetivado. Sem `status` na criação, o lançamento é efetivado, como sempre. **O pendente nunca conta no realizado**:
+saldo das contas, dashboard, gasto dos orçamentos e fatura do cartão só contam efetivados. Ele aparece na listagem, no
+saldo previsto e no bloco `pending` do dashboard. Numa transferência as duas pontas têm sempre o mesmo estado.
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"type":"EXPENSE","accountId":"<conta>","amountCents":80000,
+  "occurredOn":"2026-11-20","description":"Aluguel","categoryId":"<categoria de despesa>","status":"PENDING"}' $BASE/workspaces/$WID/transactions
+curl -b jar.txt -X POST $BASE/workspaces/$WID/transactions/<id>/clear     # efetiva (as duas pontas, se for transferência); repetir não tem efeito
+curl -b jar.txt "$BASE/workspaces/$WID/transactions?status=PENDING"       # só os pendentes (ou CLEARED); combina com os outros filtros
+curl -b jar.txt $BASE/workspaces/$WID/accounts                            # balanceCents (só efetivados), pendingCents e projectedBalanceCents (previsto)
+curl -b jar.txt $BASE/workspaces/$WID/reports/balance                     # totalBalanceCents e totalProjectedCents
+```
+
+Para efetivar com outra data, ou voltar um efetivado a pendente, use a edição (`PUT .../transactions/<id>`) com `status`;
+sem `status` na edição, o estado atual é mantido. Só `CLEARED` e `PENDING` são aceitos.
+
 Dashboard (só leitura): o resumo de um mês ou de uma semana, com totais, grupos por categoria, evolução
 dia a dia, comparação com o período anterior e saldos. Sem parâmetro, vale o mês corrente.
 

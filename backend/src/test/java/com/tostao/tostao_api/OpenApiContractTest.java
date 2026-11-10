@@ -48,6 +48,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path INVOICES_CONTRACT = Path.of("..", "specs", "008-fatura-cartao", "contracts",
 			"openapi.yaml");
+	private static final Path PENDING_CONTRACT = Path.of("..", "specs", "009-lancamento-pendente", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -240,6 +242,36 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void pendingContractFileDeclaresTheClearRouteAndTheChangedOnes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(PENDING_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/transactions/{id}/clear",
+				"/api/v1/workspaces/{wid}/transactions",
+				"/api/v1/workspaces/{wid}/transactions/{id}");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions/{id}/clear")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions")).containsExactlyInAnyOrder("get", "post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions/{id}")).containsExactly("put");
+	}
+
+	@Test
+	void theClearRouteAndTheStatusFieldsAreInTheGeneratedDocs() throws Exception {
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}/clear'].post").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}/clear'].get").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}/clear'].put").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions/{id}/clear'].delete").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions'].get.parameters[?(@.name=='status')]").exists())
+				.andExpect(jsonPath("$.components.schemas.TransactionResponse.properties.status").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateTransactionRequest.properties.status").exists())
+				.andExpect(jsonPath("$.components.schemas.UpdateTransactionRequest.properties.status").exists())
+				.andExpect(jsonPath("$.components.schemas.AccountResponse.properties.pendingCents").exists())
+				.andExpect(jsonPath("$.components.schemas.AccountResponse.properties.projectedBalanceCents").exists())
+				.andExpect(jsonPath("$.components.schemas.BalanceReportResponse.properties.totalProjectedCents").exists())
+				.andExpect(jsonPath("$.components.schemas.DashboardResponse.properties.pending").exists());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -265,7 +297,7 @@ class OpenApiContractTest {
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
-				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT)) {
+				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
