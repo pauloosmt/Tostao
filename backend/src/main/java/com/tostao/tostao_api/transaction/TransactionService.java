@@ -369,10 +369,18 @@ public class TransactionService {
 		if (filter.from() != null && filter.to() != null && filter.from().isAfter(filter.to())) {
 			throw new FieldValidationException("from", "não pode ser depois da data final");
 		}
+		boolean uncategorized = parseUncategorized(filter.uncategorized());
+		if (uncategorized && filter.categoryId() != null) {
+			throw new FieldValidationException("uncategorized", "não pode ser combinado com categoryId");
+		}
 
 		StringBuilder conditions = new StringBuilder();
 		Map<String, Object> params = new HashMap<>();
 		params.put("workspaceId", workspaceId);
+		if (uncategorized) {
+			// receita e despesa sem categoria (a transferência nunca tem categoria e fica de fora)
+			conditions.append("  and t.category_id is null and t.type <> 'TRANSFER'\n");
+		}
 		if (filter.from() != null) {
 			conditions.append("  and t.occurred_on >= :from\n");
 			params.put("from", filter.from());
@@ -427,6 +435,17 @@ public class TransactionService {
 
 		return new TransactionPageResponse(items, filter.page(), filter.size(), totalItems,
 				TransactionRules.totalPages(totalItems, filter.size()));
+	}
+
+	/** Ausente é {@code false}; só {@code true} e {@code false} (em minúsculas) são aceitos. */
+	private static boolean parseUncategorized(String raw) {
+		if (raw == null || raw.equals("false")) {
+			return false;
+		}
+		if (raw.equals("true")) {
+			return true;
+		}
+		throw new FieldValidationException("uncategorized", "deve ser true ou false");
 	}
 
 	/** Um lançamento vigente do workspace. Excluído, de outro workspace ou inexistente é "não encontrado". */

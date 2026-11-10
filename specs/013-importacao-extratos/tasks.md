@@ -55,7 +55,7 @@ description: "Tarefas da feature 013-importacao-extratos"
 
 ## Phase 4: US3 - Categorizar (P2)
 
-- [ ] T011 [US3] Em `MAIN/transaction/TransactionFilter.java`, `TransactionController.java` e `TransactionService.java` acrescentar o filtro `uncategorized` (`true`/`false` estritos; junto com `categoryId` é 400 no campo `uncategorized`; `true` soma `category_id is null and type <> 'TRANSFER'`). Criar `TEST/imports/CategorizeImportedTest.java`: sugestão pela regra do FR-011 (caixa, acentos, espaços, tipo, categoria arquivada ignorada, desempate pela data e pela criação, sem sugestão de outro workspace); confirmar com e sem categoria; o filtro devolve exatamente as receitas e despesas sem categoria e combina com conta, datas e busca; categorizar pela edição da spec 004 mantém `imported` e tira a linha do filtro
+- [X] T011 [US3] Em `MAIN/transaction/TransactionFilter.java`, `TransactionController.java` e `TransactionService.java` acrescentar o filtro `uncategorized` (`true`/`false` estritos; junto com `categoryId` é 400 no campo `uncategorized`; `true` soma `category_id is null and type <> 'TRANSFER'`). Criar `TEST/imports/CategorizeImportedTest.java`: sugestão pela regra do FR-011 (caixa, acentos, espaços, tipo, categoria arquivada ignorada, desempate pela data e pela criação, sem sugestão de outro workspace); confirmar com e sem categoria; o filtro devolve exatamente as receitas e despesas sem categoria e combina com conta, datas e busca; categorizar pela edição da spec 004 mantém `imported` e tira a linha do filtro
 
 **Checkpoint**: importar, categorizar e achar o que falta funciona de ponta a ponta
 

@@ -44,9 +44,10 @@ class TransactionController {
 			@RequestParam(name = "categoryId", required = false) UUID categoryId,
 			@RequestParam(name = "type", required = false) TransactionType type,
 			@RequestParam(name = "q", required = false) String q,
-			@RequestParam(name = "status", required = false) TransactionStatus status) {
+			@RequestParam(name = "status", required = false) TransactionStatus status,
+			@RequestParam(name = "uncategorized", required = false) String uncategorized) {
 		return transactions.list(workspaceId,
-				new TransactionFilter(page, size, from, to, accountId, categoryId, type, q, status));
+				new TransactionFilter(page, size, from, to, accountId, categoryId, type, q, status, uncategorized));
 	}
 
 	@GetMapping("/{id}")

@@ -17,12 +17,19 @@ public record TransactionFilter(
 		UUID categoryId,
 		TransactionType type,
 		String q,
-		TransactionStatus status) {
+		TransactionStatus status,
+		String uncategorized) {
 
 	/** Sem filtro de estado: lista pendentes e efetivados. */
 	public TransactionFilter(int page, int size, LocalDate from, LocalDate to, UUID accountId, UUID categoryId,
 			TransactionType type, String q) {
-		this(page, size, from, to, accountId, categoryId, type, q, null);
+		this(page, size, from, to, accountId, categoryId, type, q, null, null);
+	}
+
+	/** Sem o filtro de "sem categoria". */
+	public TransactionFilter(int page, int size, LocalDate from, LocalDate to, UUID accountId, UUID categoryId,
+			TransactionType type, String q, TransactionStatus status) {
+		this(page, size, from, to, accountId, categoryId, type, q, status, null);
 	}
 
 	public static final int DEFAULT_SIZE = 20;
