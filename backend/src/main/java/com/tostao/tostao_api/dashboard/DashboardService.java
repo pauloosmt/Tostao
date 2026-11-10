@@ -19,6 +19,7 @@ import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Balances;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Change;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Comparison;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.DayPoint;
+import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Pending;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.PeriodInfo;
 import com.tostao.tostao_api.dashboard.dto.DashboardResponse.Totals;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
@@ -41,7 +42,7 @@ public class DashboardService {
 			       coalesce(sum(amount_cents) filter (where type = 'INCOME'), 0)::bigint as income,
 			       coalesce(-sum(amount_cents) filter (where type = 'EXPENSE'), 0)::bigint as expense
 			from transactions
-			where workspace_id = :workspaceId and deleted_at is null and type <> 'TRANSFER'
+			where workspace_id = :workspaceId and deleted_at is null and status = 'CLEARED' and type <> 'TRANSFER'
 			  and occurred_on between :from and :to
 			group by occurred_on
 			""";
@@ -57,7 +58,7 @@ public class DashboardService {
 			from transactions t
 			left join categories c on c.id = t.category_id and c.workspace_id = t.workspace_id
 			left join categories root on root.id = coalesce(c.parent_id, c.id) and root.workspace_id = t.workspace_id
-			where t.workspace_id = :workspaceId and t.deleted_at is null and t.type <> 'TRANSFER'
+			where t.workspace_id = :workspaceId and t.deleted_at is null and t.status = 'CLEARED' and t.type <> 'TRANSFER'
 			  and t.occurred_on between :from and :to
 			group by t.type, root.id, root.name, c.id, c.name
 			""";
@@ -74,6 +75,7 @@ public class DashboardService {
 			from accounts a
 			left join transactions t
 			       on t.account_id = a.id and t.workspace_id = a.workspace_id and t.deleted_at is null
+			      and t.status = 'CLEARED'
 			where a.workspace_id = :workspaceId and not a.archived
 			group by a.id
 			order by lower(a.name), a.id
@@ -84,9 +86,22 @@ public class DashboardService {
 			select t.occurred_on, sum(t.amount_cents)::bigint as movement
 			from transactions t
 			join accounts a on a.id = t.account_id and a.workspace_id = t.workspace_id
-			where t.workspace_id = :workspaceId and t.deleted_at is null and not a.archived
+			where t.workspace_id = :workspaceId and t.deleted_at is null and t.status = 'CLEARED' and not a.archived
 			  and t.occurred_on between :start and :end
 			group by t.occurred_on
+			""";
+
+	/**
+	 * O que está pendente no período: receita, despesa (positiva) e quantidade de lançamentos, sem transferências
+	 * e sem excluídos. Só informativo: o pendente nunca entra nos números realizados do painel.
+	 */
+	static final String PENDING_SQL = """
+			select coalesce(sum(amount_cents) filter (where type = 'INCOME'), 0)::bigint as income,
+			       coalesce(-sum(amount_cents) filter (where type = 'EXPENSE'), 0)::bigint as expense,
+			       count(*) as total
+			from transactions
+			where workspace_id = :workspaceId and deleted_at is null and status = 'PENDING' and type <> 'TRANSFER'
+			  and occurred_on between :from and :to
 			""";
 
 	private record DayRow(LocalDate date, long income, long expense) {
@@ -166,6 +181,13 @@ public class DashboardService {
 		List<CategoryRow> incomeRows = rowsOf(categoryRows, "INCOME");
 		List<CategoryRow> expenseRows = rowsOf(categoryRows, "EXPENSE");
 
+		Pending pending = jdbc.sql(PENDING_SQL)
+				.param("workspaceId", workspaceId)
+				.param("from", period.start())
+				.param("to", period.end())
+				.query((rs, i) -> new Pending(rs.getLong("income"), rs.getLong("expense"), rs.getLong("total")))
+				.single();
+
 		return new DashboardResponse(
 				info(period),
 				new Totals(income, expense, result),
@@ -173,7 +195,8 @@ public class DashboardService {
 				DashboardRules.groups(expenseRows, expense),
 				daily,
 				comparison,
-				balances);
+				balances,
+				pending);
 	}
 
 	/**

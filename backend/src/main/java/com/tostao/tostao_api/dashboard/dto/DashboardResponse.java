@@ -19,12 +19,20 @@ public record DashboardResponse(
 		List<CategoryGroup> expenseByCategory,
 		List<DayPoint> daily,
 		Comparison comparison,
-		Balances balances) {
+		Balances balances,
+		Pending pending) {
 
 	public record PeriodInfo(PeriodType type, String id, LocalDate startDate, LocalDate endDate) {
 	}
 
 	public record Totals(long incomeCents, long expenseCents, long resultCents) {
+	}
+
+	/**
+	 * O que está pendente no período (receita, despesa positiva e quantidade, sem transferências). Informativo: todos
+	 * os demais números do painel são realizados e nunca incluem o pendente.
+	 */
+	public record Pending(long incomeCents, long expenseCents, long count) {
 	}
 
 	/** Subcategoria usada no período; o percentual é sobre o total do tipo. */
