@@ -29,9 +29,11 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
   `CATEGORY_SQL`, `ACCOUNT_BALANCES_SQL`, `MOVEMENT_SQL`), `BudgetService.PERIOD_SPENT_SQL` (compartilhada pelo
   semanal e pelo mensal) e as quatro do `InvoiceService` (`LINES_SQL`, `TOTAL_SQL`, `PAID_SQL`, `DAILY_SQL`).
 - **Motivo**: simples, local e legível. Como `PERIOD_SPENT_SQL` e as consultas de fatura são compartilhadas dentro
-  do módulo, um filtro basta para os dois orçamentos. Nos `left join transactions t on ...` do saldo e do
-  dashboard o filtro vai **na condição do `join`** (não no `where`), para a conta sem lançamentos efetivados
-  continuar aparecendo com saldo zero.
+  do módulo, um filtro basta para os dois orçamentos. Onde a consulta só precisa dos efetivados (`ACCOUNT_BALANCES_SQL` do
+  dashboard), o filtro vai **na condição do `join`** (não no `where`), para a conta sem lançamentos efetivados
+  continuar aparecendo com saldo zero. No saldo da conta (`AccountService`), como a mesma consulta soma também os
+  pendentes, a junção fica **sem filtro** e o estado entra em cada soma: `sum(t.amount_cents) filter (where
+  t.status = 'CLEARED')` para o saldo e `filter (where t.status = 'PENDING')` para o pendente.
 - **Alternativas descartadas**: view `cleared_transactions` (migration com RLS e privilégios próprios, e esconde a
   origem do dado); constante de texto compartilhada com o filtro (acopla módulos e esconde a regra).
 

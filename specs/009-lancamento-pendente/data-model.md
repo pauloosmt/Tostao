@@ -32,8 +32,10 @@ Política de `UPDATE` do RLS (já existe, `V5`): `workspace_id = app_workspace_i
 | Fatura: linhas, total, pagamentos e lista | todos os não excluídos | só **efetivados** |
 | Listagem de lançamentos | todos os não excluídos | todos os não excluídos, com `status` e filtro opcional |
 
-Nos `left join transactions t` o filtro vai na condição do `join` (`and t.status = 'CLEARED'`), nunca no `where`,
-para a conta sem efetivados continuar aparecendo com saldo zero.
+Onde a consulta só precisa dos efetivados (saldos do dashboard), o filtro vai na condição do `left join` (`and
+t.status = 'CLEARED'`), nunca no `where`. No saldo da conta, a junção fica sem filtro e o estado entra em cada
+soma (`filter (where t.status = 'CLEARED')` e `'PENDING'`). Nos dois casos a conta sem lançamentos efetivados
+continua aparecendo com saldo zero.
 
 ## Regras de cálculo novas
 

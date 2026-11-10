@@ -117,7 +117,7 @@ backend/
 │   ├── budget/BudgetService.java              # AJUSTE: PERIOD_SPENT_SQL só efetivado (semanal e mensal)
 │   └── invoice/InvoiceService.java            # AJUSTE: 4 consultas só efetivado
 └── src/test/java/com/tostao/tostao_api/
-    └── transaction/                           # PendingTransactionTest, ClearTransactionTest,
+    └── transaction/                           # TransactionStatusSchemaTest, PendingTransactionTest, ClearTransactionTest,
                                                # PendingNotCountedTest, ForecastTest, UpdateStatusTest,
                                                # PendingAccessTest, PendingLayersTest, PendingRandomDataTest,
                                                # PendingConcurrencyTest, PendingPerformanceTest

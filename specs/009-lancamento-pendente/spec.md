@@ -225,7 +225,10 @@ editá-lo informando "pendente", conferindo o saldo nos dois momentos.
   sem vazar detalhes internos; as respostas autenticadas MUST instruir navegadores e intermediários a não
   guardá-las em cache.
 - **FR-017**: Esta funcionalidade MUST NÃO mudar o resultado de nenhuma consulta para quem não tem lançamentos
-  pendentes: todos os testes das specs anteriores continuam valendo sem alteração de resultado.
+  pendentes: todos os testes das specs anteriores continuam valendo sem alteração de resultado, **exceto duas
+  afirmações da spec 004** que recusavam o campo de estado (o estado agora é aceito, FR-002 e FR-006): uma que
+  tratava `status` como campo fora da lista na criação e outra que o listava entre as colunas que a aplicação não
+  pode atualizar.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -262,7 +265,8 @@ editá-lo informando "pendente", conferindo o saldo nos dois momentos.
   tentativas de mudar o estado de lançamento de outro workspace continuam recusadas pela outra camada.
 - **SC-010**: Em 100% dos testes de validação, estados inválidos e campos extras são recusados indicando o
   campo, e nada é gravado.
-- **SC-011**: Todos os testes das specs 001 a 008 continuam passando sem mudar o resultado esperado (FR-017).
+- **SC-011**: Todos os testes das specs 001 a 008 continuam passando sem mudar o resultado esperado (FR-017), salvo as
+  duas afirmações da spec 004 citadas no FR-017, que são ajustadas porque a 009 inverte a regra que elas testavam.
 - **SC-012**: Num workspace com 20.000 lançamentos, com uma parte pendente, a listagem, o saldo das contas, o
   dashboard e os acompanhamentos de orçamento e de fatura continuam respondendo em menos de 1 segundo cada.
 
