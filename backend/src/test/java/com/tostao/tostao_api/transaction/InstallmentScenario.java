@@ -2,9 +2,11 @@ package com.tostao.tostao_api.transaction;
 
 import static com.tostao.tostao_api.support.AuthSupport.session;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -39,6 +41,20 @@ public record InstallmentScenario(Fixture owner, UUID checking, UUID savings, UU
 	/** {@code GET /installment-purchases/{groupId}}; o grupo é texto para os testes de identificador malformado. */
 	public static ResultActions plan(MockMvc mvc, Fixture who, Object groupId) throws Exception {
 		return mvc.perform(get(purchasesUrl(who.workspaceId()) + "/" + groupId).cookie(session(who.token())));
+	}
+
+	/** {@code POST /installment-purchases} com o corpo dado. */
+	public static ResultActions purchase(MockMvc mvc, Fixture who, String json) throws Exception {
+		return mvc.perform(post(purchasesUrl(who.workspaceId())).cookie(session(who.token()))
+				.contentType(MediaType.APPLICATION_JSON).content(json));
+	}
+
+	/** Corpo de um registro; {@code status} nulo não aparece (a primeira parcela nasce efetivada). */
+	public static String purchaseBody(UUID account, UUID category, long totalCents, int count, String firstDate,
+			String description, String status) {
+		String s = "{\"accountId\":\"%s\",\"categoryId\":\"%s\",\"totalCents\":%d,\"installmentCount\":%d,\"firstOccurredOn\":\"%s\",\"description\":\"%s\""
+				.formatted(account, category, totalCents, count, firstDate, description);
+		return s + (status == null ? "" : ",\"firstInstallmentStatus\":\"" + status + "\"") + "}";
 	}
 
 }

@@ -23,6 +23,11 @@ public final class TransactionRules {
 	 * {@code PENDING}. Texto vazio, minúsculas e qualquer outro valor são recusados com o campo {@code status}.
 	 */
 	public static TransactionStatus parseStatus(String raw) {
+		return parseStatus(raw, "status");
+	}
+
+	/** Como {@link #parseStatus(String)}, apontando {@code field} no erro (a compra parcelada chama o seu de outro nome). */
+	public static TransactionStatus parseStatus(String raw, String field) {
 		if (raw == null) {
 			return null;
 		}
@@ -31,7 +36,7 @@ public final class TransactionRules {
 				return status;
 			}
 		}
-		throw new FieldValidationException("status", "deve ser CLEARED ou PENDING");
+		throw new FieldValidationException(field, "deve ser CLEARED ou PENDING");
 	}
 
 	/**

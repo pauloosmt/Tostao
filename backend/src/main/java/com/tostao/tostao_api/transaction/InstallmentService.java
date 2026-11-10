@@ -1,5 +1,6 @@
 package com.tostao.tostao_api.transaction;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,8 +10,10 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.common.error.InstallmentPlanNotFoundException;
+import com.tostao.tostao_api.transaction.dto.CreateInstallmentPurchaseRequest;
 import com.tostao.tostao_api.transaction.dto.InstallmentPlanResponse;
 import com.tostao.tostao_api.transaction.dto.TransactionResponse;
+import com.tostao.tostao_api.workspace.CurrentUser;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
 
 /**
@@ -23,9 +26,66 @@ import com.tostao.tostao_api.workspace.WorkspaceScoped;
 public class InstallmentService {
 
 	private final JdbcClient jdbc;
+	private final UsableRefs refs;
 
 	public InstallmentService(JdbcClient jdbc) {
 		this.jdbc = jdbc;
+		this.refs = new UsableRefs(jdbc);
+	}
+
+	/**
+	 * Registra a compra: uma despesa por parcela, todas ou nenhuma (uma transação). Tudo o que pode falhar de forma
+	 * previsível é conferido antes do primeiro {@code insert}: o estado, o total mínimo, a faixa de datas e, com
+	 * travas em modo compartilhado, a conta e a categoria. Nenhuma exceção é capturada dentro da transação, então
+	 * qualquer falha desfaz tudo. O grupo é gerado aqui, nunca vem do cliente.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public InstallmentPlanResponse create(UUID workspaceId, CreateInstallmentPurchaseRequest request) {
+		TransactionStatus firstStatus = TransactionRules.parseStatus(request.firstInstallmentStatus(),
+				"firstInstallmentStatus");
+		int count = request.installmentCount();
+		InstallmentRules.requireTotal(request.totalCents(), count);
+		InstallmentRules.requireDatesInRange(request.firstOccurredOn(), count);
+
+		refs.requireUsableAccount(workspaceId, request.accountId());
+		refs.requireUsableCategory(workspaceId, request.categoryId(), TransactionType.EXPENSE);
+
+		UUID group = UUID.randomUUID();
+		long[] amounts = InstallmentRules.split(request.totalCents(), count);
+		List<LocalDate> dates = InstallmentRules.dates(request.firstOccurredOn(), count);
+		for (int i = 0; i < count; i++) {
+			// a primeira nasce efetivada (ou como pedido); as seguintes, sempre pendentes
+			TransactionStatus status = i == 0 && firstStatus != TransactionStatus.PENDING ? TransactionStatus.CLEARED
+					: TransactionStatus.PENDING;
+			insertInstallment(workspaceId, request, group, i + 1, count, amounts[i], dates.get(i), status);
+		}
+		return loadPlan(workspaceId, group);
+	}
+
+	private void insertInstallment(UUID workspaceId, CreateInstallmentPurchaseRequest request, UUID group, int number,
+			int count, long amountCents, LocalDate date, TransactionStatus status) {
+		jdbc.sql("""
+				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
+				                          description, notes, status, created_by, installment_group_id,
+				                          installment_number, installment_count)
+				values (:workspaceId, :accountId, :categoryId, 'EXPENSE', :amount, :occurredOn, :description, :notes,
+				        :status, :createdBy, :groupId, :number, :count)
+				""")
+				.param("workspaceId", workspaceId)
+				.param("accountId", request.accountId())
+				.param("categoryId", request.categoryId())
+				// despesa: valor negativo, como em toda despesa
+				.param("amount", Math.negateExact(amountCents))
+				.param("occurredOn", date)
+				.param("description", InstallmentRules.describe(request.description(), number, count))
+				.param("notes", request.notes())
+				.param("status", status.name())
+				.param("createdBy", CurrentUser.id())
+				.param("groupId", group)
+				.param("number", number)
+				.param("count", count)
+				.update();
 	}
 
 	/**
