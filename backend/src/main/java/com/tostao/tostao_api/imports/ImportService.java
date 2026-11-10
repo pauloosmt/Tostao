@@ -1,6 +1,8 @@
 package com.tostao.tostao_api.imports;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -138,22 +140,35 @@ public class ImportService {
 		for (StatementLine line : valid) {
 			wanted.add(suggestionKey(line.description(), typeOf(line.amountCents())));
 		}
-		Map<String, UUID> found = new HashMap<>();
+		// uma linha por descrição e tipo (a mais recente): milhares de lançamentos viram poucas linhas
+		// e cada texto distinto é normalizado uma vez só
+		record Candidate(UUID categoryId, LocalDate occurredOn, Instant createdAt) {
+		}
+		Map<String, Candidate> best = new HashMap<>();
 		jdbc.sql("""
-				select t.description, t.type, t.category_id
+				select distinct on (t.description, t.type)
+				       t.description, t.type, t.category_id, t.occurred_on, t.created_at
 				from transactions t
 				join categories c on c.id = t.category_id and c.workspace_id = t.workspace_id
 				where t.workspace_id = :workspaceId and t.deleted_at is null and not c.archived
 				  and t.type in ('INCOME', 'EXPENSE')
-				order by t.occurred_on desc, t.created_at desc
+				order by t.description, t.type, t.occurred_on desc, t.created_at desc
 				""")
 				.param("workspaceId", workspaceId)
 				.query(rs -> {
-					String key = suggestionKey(rs.getString("description"), TransactionType.valueOf(rs.getString("type")));
-					if (wanted.contains(key)) {
-						found.putIfAbsent(key, rs.getObject("category_id", UUID.class));
+					String key = TransactionType.valueOf(rs.getString("type")) + "|" + ImportKeys.normalize(rs.getString("description"));
+					if (!wanted.contains(key)) {
+						return;
 					}
+					Candidate candidate = new Candidate(rs.getObject("category_id", UUID.class), rs.getObject("occurred_on", LocalDate.class),
+							rs.getObject("created_at", OffsetDateTime.class).toInstant());
+					best.merge(key, candidate, (a, b) -> {
+						int byDate = b.occurredOn().compareTo(a.occurredOn());
+						return byDate > 0 || (byDate == 0 && b.createdAt().isAfter(a.createdAt())) ? b : a;
+					});
 				});
+		Map<String, UUID> found = new HashMap<>();
+		best.forEach((key, candidate) -> found.put(key, candidate.categoryId()));
 		return found;
 	}
 

@@ -131,6 +131,19 @@ class PdfReaderTest {
 	}
 
 	@Test
+	void pathologicalTextLinesAreMatchedInLinearTime() {
+		String[] texts = { "05/11/2026 " + "1".repeat(500_000), "05/11/2026 " + "1.1 ".repeat(120_000),
+				"05/11/2026 " + " ".repeat(400_000) + "1,00", "05/11/2026 " + "a ".repeat(200_000) + "x",
+				"05/11/2026 " + "1,".repeat(200_000), "05/11/2026 x 1,00 D\n".repeat(20_000) };
+
+		for (String text : texts) {
+			long start = System.nanoTime();
+			PdfReader.movements(text);
+			assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
+		}
+	}
+
+	@Test
 	void repeatedSpacesAreCollapsed() {
 		assertThat(read("05/11/2026     PADARIA     DO    ZE      23,50     D")).singleElement()
 				.satisfies(line -> assertThat(line.description()).isEqualTo("PADARIA DO ZE"));

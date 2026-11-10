@@ -28,7 +28,7 @@ public final class Pdfs {
 
 	/** Um PDF com as linhas dadas, uma por linha de texto, distribuídas em páginas de 50 linhas. */
 	public static byte[] of(String... lines) {
-		return build(false, false, lines);
+		return build(false, (String) null, lines);
 	}
 
 	/** Um PDF de {@code pages} páginas, cada uma com uma linha de texto. */
@@ -76,10 +76,20 @@ public final class Pdfs {
 
 	/** Com um JavaScript de abertura e um link para um endereço externo, que nada deve executar nem abrir. */
 	public static byte[] withActions(String... lines) {
-		return build(false, true, lines);
+		return build(false, "http://127.0.0.1:9/nunca-deve-abrir", lines);
+	}
+
+	/** Como {@link #withActions(String...)}, com o endereço do link escolhido (para o teste vigiar o endereço). */
+	public static byte[] withLinkTo(String uri, String... lines) {
+		return build(false, uri, lines);
 	}
 
 	private static byte[] build(boolean encrypt, boolean actions, String... lines) {
+		return build(encrypt, actions ? "http://127.0.0.1:9/nunca-deve-abrir" : null, lines);
+	}
+
+	private static byte[] build(boolean encrypt, String linkUri, String... lines) {
+		boolean actions = linkUri != null;
 		try (PDDocument document = new PDDocument()) {
 			PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 			List<List<String>> pages = new ArrayList<>();
@@ -104,7 +114,7 @@ public final class Pdfs {
 					PDAnnotationLink link = new PDAnnotationLink();
 					link.setRectangle(new PDRectangle(10, 10, 100, 20));
 					PDActionURI uri = new PDActionURI();
-					uri.setURI("http://127.0.0.1:9/nunca-deve-abrir");
+					uri.setURI(linkUri);
 					link.setAction(uri);
 					page.getAnnotations().add(link);
 				}

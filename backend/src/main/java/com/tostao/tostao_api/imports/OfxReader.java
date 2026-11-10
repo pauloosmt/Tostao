@@ -23,6 +23,10 @@ final class OfxReader {
 		int i = 0;
 		int n = text.length();
 		while (i < n) {
+			if (lines.size() > StatementParser.MAX_LINES) {
+				// já passou do limite: o arquivo será recusado, não há por que ler o resto
+				return lines;
+			}
 			int open = text.indexOf('<', i);
 			if (open < 0) {
 				break;
@@ -96,8 +100,9 @@ final class OfxReader {
 		int i = 0;
 		while (i < value.length()) {
 			char c = value.charAt(i);
-			int semicolon = c == '&' ? value.indexOf(';', i) : -1;
-			if (semicolon < 0 || semicolon - i > 10) {
+			// o ';' de uma entidade válida está a poucos caracteres: nunca varre o texto todo (custo linear)
+			int semicolon = c == '&' ? value.indexOf(';', i, Math.min(value.length(), i + 12)) : -1;
+			if (semicolon < 0) {
 				out.append(c);
 				i++;
 				continue;

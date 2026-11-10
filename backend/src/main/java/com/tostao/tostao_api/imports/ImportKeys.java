@@ -7,6 +7,7 @@ import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * A chave de importação: o que diz "este movimento do banco já entrou nesta conta". Estável (o mesmo movimento do mesmo
@@ -21,13 +22,16 @@ final class ImportKeys {
 	/** Identificadores maiores que isto viram o SHA-256 deles, para a chave caber em 200 caracteres. */
 	static final int MAX_RAW_IDENTIFIER = 150;
 
+	private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+	private static final Pattern SPACES = Pattern.compile("\\s+");
+
 	private ImportKeys() {
 	}
 
 	/** Minúscula, sem acentos e com sequências de espaços reduzidas a um (e sem espaços nas pontas). */
 	static String normalize(String text) {
-		String decomposed = Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-		return decomposed.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").strip();
+		String decomposed = MARKS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD)).replaceAll("");
+		return SPACES.matcher(decomposed.toLowerCase(Locale.ROOT)).replaceAll(" ").strip();
 	}
 
 	/** Chave a partir do identificador do banco; nula se o identificador está em branco. */

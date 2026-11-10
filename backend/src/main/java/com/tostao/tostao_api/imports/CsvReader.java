@@ -80,7 +80,7 @@ final class CsvReader {
 	private static List<RawLine> lines(List<Record> records, Header header) {
 		int needed = Math.max(header.date(), Math.max(header.description(), header.amount()));
 		List<RawLine> lines = new ArrayList<>();
-		for (int row = header.row() + 1; row < records.size(); row++) {
+		for (int row = header.row() + 1; row < records.size() && lines.size() <= StatementParser.MAX_LINES; row++) {
 			Record record = records.get(row);
 			List<String> cells = record.cells();
 			if (cells.size() <= needed) {
