@@ -66,7 +66,7 @@ description: "Tarefas da feature 011-recorrencias-agendamentos"
 ## Phase 5: Polish
 
 - [ ] T016 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 010 pode ter sido alterado além de acrescentar** (conferir com `git diff` dos arquivos de teste antigos)
-- [ ] T017 [P] Atualizar `README.md`: seção de recorrências e efetivação automática (o marcador `autoClear`, de uso único e desligado por padrão; as quatro rotas; as três frequências e o calendário sem acumular ajuste; 12 meses de horizonte; encerrar exclui só as pendentes futuras; a execução automática ao iniciar e a cada hora, com `tostao.automation.enabled`; a ocorrência é um lançamento comum)
+- [X] T017 [P] Atualizar `README.md`: seção de recorrências e efetivação automática (o marcador `autoClear`, de uso único e desligado por padrão; as quatro rotas; as três frequências e o calendário sem acumular ajuste; 12 meses de horizonte; encerrar exclui só as pendentes futuras; a execução automática ao iniciar e a cada hora, com `tostao.automation.enabled`; a ocorrência é um lançamento comum)
 - [ ] T018 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 11 e limpeza ao fim (inclusive `recurrences`); marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
 ---

@@ -98,6 +98,34 @@ curl -b jar.txt $BASE/workspaces/$WID/installment-purchases/<groupId>          #
 curl -b jar.txt -X POST $BASE/workspaces/$WID/installment-purchases/<groupId>/cancel   # {"cancelled":N}: exclui só as pendentes
 ```
 
+Efetivação automática e recorrências: por padrão a data **nunca** efetiva nada sozinha (o lançamento pendente espera a
+pessoa). Quem quiser, liga o marcador `autoClear` num lançamento pendente (na criação ou na edição; também na compra
+parcelada, que o liga nas parcelas pendentes): no dia da data o sistema o efetiva, com o mesmo efeito da efetivação
+manual (as duas pontas de uma transferência juntas). O marcador é **de uso único**: some quando o lançamento é efetivado
+por qualquer caminho, e devolvido a pendente não volta a ser efetivado sozinho; só vale para pendente (efetivado com
+`autoClear` ligado é 400). Uma **recorrência** repete uma receita ou despesa toda semana, mês ou ano (`WEEKLY`,
+`MONTHLY`, `YEARLY`): o sistema mantém geradas, como lançamentos pendentes comuns, as ocorrências até 12 meses à frente.
+As datas são sempre contadas a partir do início (31/01, 28/02, 31/03, sem acumular o ajuste), o início pode ficar até
+366 dias no passado, e uma ocorrência excluída à mão não é recriada. A regra da recorrência não se edita: encerra-se e
+cria-se outra. Encerrar exclui só as ocorrências pendentes **futuras**; as efetivadas e as pendentes vencidas ficam.
+Cada ocorrência é um lançamento comum (`recurrenceId` e `occurrenceNumber` aparecem em todo lançamento, nulos nos
+demais). OWNER e EDITOR criam e encerram; VIEWER só consulta.
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"accountId":"<conta>","categoryId":"<categoria de despesa>",
+  "type":"EXPENSE","amountCents":150000,"description":"Aluguel","frequency":"MONTHLY","startOn":"2026-11-05",
+  "autoClear":true}' $BASE/workspaces/$WID/recurrences          # 201: a recorrência e as ocorrências geradas
+curl -b jar.txt $BASE/workspaces/$WID/recurrences               # lista, com a próxima ocorrência pendente
+curl -b jar.txt $BASE/workspaces/$WID/recurrences/<id>          # detalhe: ocorrências em ordem, totais efetivado e pendente
+curl -b jar.txt -X POST $BASE/workspaces/$WID/recurrences/<id>/end   # {"cancelled":N}: exclui só as pendentes futuras
+```
+
+A **execução automática** (gerar as ocorrências que faltam e efetivar o que venceu) roda sem pessoa logada, 10 segundos
+depois de a API subir e a cada hora, no fuso `America/Sao_Paulo`; então um lançamento que vence no dia D é efetivado em
+até uma hora depois do início do dia D. Duas execuções simultâneas nunca duplicam nem efetivam duas vezes. Fica ligada
+por padrão; `TOSTAO_AUTOMATION_ENABLED=false` (a propriedade `tostao.automation.enabled`) a desliga, e é o que os testes
+fazem, chamando `AutomationService.runOnce(data)` com a data que querem.
+
 Dashboard (só leitura): o resumo de um mês ou de uma semana, com totais, grupos por categoria, evolução
 dia a dia, comparação com o período anterior e saldos. Sem parâmetro, vale o mês corrente.
 
