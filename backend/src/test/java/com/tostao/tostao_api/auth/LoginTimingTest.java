@@ -22,17 +22,27 @@ import com.tostao.tostao_api.TestcontainersConfiguration;
 class LoginTimingTest {
 
 	private static final int ATTEMPTS = 20;
+	private static final int WARMUP = 5;
+	/**
+	 * 5 falhas seguidas bloqueiam o e-mail por 15 minutos, e o login bloqueado responde antes de qualquer BCrypt.
+	 * Para o teste medir o custo da senha errada (e não o do bloqueio), as tentativas se espalham por estes
+	 * e-mails, cada um com no máximo 4 falhas.
+	 */
+	private static final int ACCOUNTS = 8;
 
 	@Autowired
 	MockMvc mvc;
 
 	@Test
 	void unknownEmailAndWrongPasswordTakeAboutTheSameTime() throws Exception {
-		String email = newEmail();
-		register(mvc, email);
+		String[] emails = new String[ACCOUNTS];
+		for (int i = 0; i < ACCOUNTS; i++) {
+			emails[i] = newEmail();
+			register(mvc, emails[i]);
+		}
 		// aquecimento: classes carregadas, pool de conexões aberto, JIT
-		for (int i = 0; i < 5; i++) {
-			login(mvc, email, "Errada-123-abc");
+		for (int i = 0; i < WARMUP; i++) {
+			login(mvc, emails[i % ACCOUNTS], "Errada-123-abc");
 			login(mvc, newEmail(), PASSWORD);
 		}
 
@@ -40,7 +50,7 @@ class LoginTimingTest {
 		long unknownEmail = 0;
 		for (int i = 0; i < ATTEMPTS; i++) {
 			long t0 = System.nanoTime();
-			login(mvc, email, "Errada-123-abc");
+			login(mvc, emails[(WARMUP + i) % ACCOUNTS], "Errada-123-abc");
 			wrongPassword += System.nanoTime() - t0;
 
 			String other = newEmail();
