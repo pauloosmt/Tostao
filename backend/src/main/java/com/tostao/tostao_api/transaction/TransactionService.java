@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tostao.tostao_api.category.CategoryKind;
 import com.tostao.tostao_api.common.error.AccountNotFoundException;
-import com.tostao.tostao_api.common.error.CategoryNotFoundException;
 import com.tostao.tostao_api.common.error.FieldValidationException;
 import com.tostao.tostao_api.common.error.TransactionConflictException;
 import com.tostao.tostao_api.common.error.TransactionNotFoundException;
@@ -65,9 +63,11 @@ public class TransactionService {
 			TransactionStatus.valueOf(rs.getString("status")));
 
 	private final JdbcClient jdbc;
+	private final UsableRefs refs;
 
 	public TransactionService(JdbcClient jdbc) {
 		this.jdbc = jdbc;
+		this.refs = new UsableRefs(jdbc);
 	}
 
 	/**
@@ -89,8 +89,8 @@ public class TransactionService {
 		if (request.categoryId() == null) {
 			throw new FieldValidationException("categoryId", "obrigatório para receita e despesa");
 		}
-		requireUsableAccount(workspaceId, request.accountId());
-		requireUsableCategory(workspaceId, request.categoryId(), request.type());
+		refs.requireUsableAccount(workspaceId, request.accountId());
+		refs.requireUsableCategory(workspaceId, request.categoryId(), request.type());
 
 		UUID id = insertRow(workspaceId, request.accountId(), request.categoryId(), request.type(),
 				TransactionRules.signedAmount(request.type(), request.amountCents()), request, null, status);
@@ -182,7 +182,7 @@ public class TransactionService {
 				changed.add(request.destinationAccountId());
 			}
 			if (changed.size() == 1) {
-				requireUsableAccount(workspaceId, changed.get(0));
+				refs.requireUsableAccount(workspaceId, changed.get(0));
 			}
 			else if (changed.size() == 2) {
 				requireUsableAccounts(workspaceId, changed.get(0), changed.get(1));
@@ -196,10 +196,10 @@ public class TransactionService {
 		else {
 			Row row = rows.get(0);
 			if (!request.accountId().equals(row.accountId())) {
-				requireUsableAccount(workspaceId, request.accountId());
+				refs.requireUsableAccount(workspaceId, request.accountId());
 			}
 			if (!request.categoryId().equals(row.categoryId())) {
-				requireUsableCategory(workspaceId, request.categoryId(), peek.type());
+				refs.requireUsableCategory(workspaceId, request.categoryId(), peek.type());
 			}
 			updateRow(workspaceId, row.id(), request.accountId(), request.categoryId(),
 					TransactionRules.signedAmount(peek.type(), request.amountCents()), request, status);
@@ -426,26 +426,6 @@ public class TransactionService {
 				.orElseThrow(TransactionNotFoundException::new);
 	}
 
-	/**
-	 * A conta existe no workspace e está ativa. A linha fica travada em modo compartilhado: arquivar a conta
-	 * (um {@code UPDATE}) espera este lançamento confirmar, e o arquivamento que chegar antes é visto aqui.
-	 */
-	private void requireUsableAccount(UUID workspaceId, UUID accountId) {
-		boolean archived = jdbc.sql("""
-				select archived from accounts
-				where id = :accountId and workspace_id = :workspaceId
-				for share
-				""")
-				.param("accountId", accountId)
-				.param("workspaceId", workspaceId)
-				.query(Boolean.class)
-				.optional()
-				.orElseThrow(AccountNotFoundException::new);
-		if (archived) {
-			throw new TransactionConflictException("A conta está arquivada");
-		}
-	}
-
 	/** As duas contas existem no workspace e estão ativas; travadas em modo compartilhado, em ordem de id. */
 	private void requireUsableAccounts(UUID workspaceId, UUID first, UUID second) {
 		record Row(UUID id, boolean archived) {
@@ -465,26 +445,6 @@ public class TransactionService {
 		}
 		if (rows.stream().anyMatch(Row::archived)) {
 			throw new TransactionConflictException("A conta está arquivada");
-		}
-	}
-
-	/** A categoria existe no workspace, está ativa e tem o tipo do lançamento. Também travada ({@code FOR SHARE}). */
-	private void requireUsableCategory(UUID workspaceId, UUID categoryId, TransactionType type) {
-		record Category(CategoryKind kind, boolean archived) {
-		}
-		Category category = jdbc.sql("""
-				select kind, archived from categories
-				where id = :categoryId and workspace_id = :workspaceId
-				for share
-				""")
-				.param("categoryId", categoryId)
-				.param("workspaceId", workspaceId)
-				.query((rs, i) -> new Category(CategoryKind.valueOf(rs.getString("kind")), rs.getBoolean("archived")))
-				.optional()
-				.orElseThrow(CategoryNotFoundException::new);
-		TransactionRules.requireCategoryKind(type, category.kind());
-		if (category.archived()) {
-			throw new TransactionConflictException("A categoria está arquivada");
 		}
 	}
 

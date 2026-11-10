@@ -59,8 +59,9 @@ Cada decisão segue o formato: decisão, motivo e alternativas descartadas.
 
 - **Decisão**: `InstallmentService` (registrar, consultar o plano, cancelar) e `InstallmentController`, no módulo
   `transaction`. A conferência de conta e de categoria hoje é privada em `TransactionService`
-  (`requireUsableAccount`, `requireUsableCategory`); passa para um componente pequeno `UsableRefs`, usado pelos dois
-  serviços. Comportamento, mensagens e travas (`FOR SHARE`) ficam **idênticos**.
+  (`requireUsableAccount`, `requireUsableCategory`); passa para uma classe de apoio pequena `UsableRefs`, usada pelos dois
+  serviços. Ela **não é um bean**: cada serviço a cria a partir do seu `JdbcClient`, porque testes das specs
+  anteriores constroem `new TransactionService(jdbc)` e o construtor não pode mudar. Comportamento, mensagens e travas (`FOR SHARE`) ficam **idênticos**.
 - **Motivo**: o registro precisa exatamente das mesmas conferências e travas da criação de lançamentos (FR-009);
   copiá-las criaria duas versões de uma regra de integridade. É o primeiro segundo consumidor real, então a
   extração se justifica (princípio VII). A suíte de lançamentos inteira roda antes e depois, sem alteração.

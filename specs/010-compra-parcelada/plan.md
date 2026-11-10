@@ -23,7 +23,8 @@ Abordagem técnica (decisões detalhadas em [research.md](research.md)):
   VIII).
 - **Serviço próprio, `InstallmentService`**, com três operações: registrar, consultar o plano e cancelar. Reaproveita
   a conferência de conta e categoria (`FOR SHARE`) que a criação de lançamentos já usa, extraída para uma classe
-  de apoio pequena (`UsableRefs`) para os dois serviços compartilharem sem duplicar.
+  de apoio pequena (`UsableRefs`, criada por cada serviço a partir do seu `JdbcClient`) para os dois serviços
+  compartilharem sem duplicar.
 - **Rotas** sob `/api/v1/workspaces/{wid}/installment-purchases`: `POST` (registra), `GET /{groupId}` (plano) e
   `POST /{groupId}/cancel` (cancela as pendentes).
 - **Atômico**: o registro é uma transação só (todas as parcelas ou nenhuma). O cancelamento é um `UPDATE`
