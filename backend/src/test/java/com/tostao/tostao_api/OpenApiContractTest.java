@@ -50,6 +50,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path PENDING_CONTRACT = Path.of("..", "specs", "009-lancamento-pendente", "contracts",
 			"openapi.yaml");
+	private static final Path INSTALLMENTS_CONTRACT = Path.of("..", "specs", "010-compra-parcelada", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -272,6 +274,71 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void installmentsContractFileDeclaresTheThreeRoutesAndTheTransactionList() throws IOException {
+		Map<String, List<String>> operations = contractOperations(INSTALLMENTS_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/installment-purchases",
+				"/api/v1/workspaces/{wid}/installment-purchases/{groupId}",
+				"/api/v1/workspaces/{wid}/installment-purchases/{groupId}/cancel",
+				"/api/v1/workspaces/{wid}/transactions");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/installment-purchases")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/installment-purchases/{groupId}")).containsExactly("get");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/installment-purchases/{groupId}/cancel")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions")).containsExactly("get");
+	}
+
+	@Test
+	void theInstallmentRoutesAndFieldsAreInTheGeneratedDocsAndNothingElse() throws Exception {
+		String purchases = "$.paths['/api/v1/workspaces/{wid}/installment-purchases']";
+		String plan = "$.paths['/api/v1/workspaces/{wid}/installment-purchases/{groupId}']";
+		String cancel = "$.paths['/api/v1/workspaces/{wid}/installment-purchases/{groupId}/cancel']";
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				// o plano não tem como ser editado nem apagado: só registrar, consultar e cancelar
+				.andExpect(jsonPath(purchases + ".post").exists())
+				.andExpect(jsonPath(purchases + ".get").doesNotExist())
+				.andExpect(jsonPath(purchases + ".put").doesNotExist())
+				.andExpect(jsonPath(purchases + ".delete").doesNotExist())
+				.andExpect(jsonPath(plan + ".get").exists())
+				.andExpect(jsonPath(plan + ".post").doesNotExist())
+				.andExpect(jsonPath(plan + ".put").doesNotExist())
+				.andExpect(jsonPath(plan + ".patch").doesNotExist())
+				.andExpect(jsonPath(plan + ".delete").doesNotExist())
+				.andExpect(jsonPath(cancel + ".post").exists())
+				.andExpect(jsonPath(cancel + ".get").doesNotExist())
+				.andExpect(jsonPath(cancel + ".put").doesNotExist())
+				.andExpect(jsonPath(cancel + ".delete").doesNotExist())
+				// os campos de parcela de todo lançamento
+				.andExpect(jsonPath("$.components.schemas.TransactionResponse.properties.installmentGroupId").exists())
+				.andExpect(jsonPath("$.components.schemas.TransactionResponse.properties.installmentNumber").exists())
+				.andExpect(jsonPath("$.components.schemas.TransactionResponse.properties.installmentCount").exists())
+				// o plano
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.groupId").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.description").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.installmentCount").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.accountId").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.categoryId").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.totalCents").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.clearedCents").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.pendingCents").exists())
+				.andExpect(jsonPath("$.components.schemas.InstallmentPlanResponse.properties.installments").exists())
+				.andExpect(jsonPath("$.components.schemas.CancelInstallmentsResponse.properties.cancelled").exists())
+				// o corpo do registro: só os campos permitidos, e nada de grupo, número ou autor
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.accountId").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.categoryId").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.totalCents").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.installmentCount").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.firstOccurredOn").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.description").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.notes").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.firstInstallmentStatus").exists())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.installmentGroupId").doesNotExist())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.installmentNumber").doesNotExist())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.createdBy").doesNotExist())
+				.andExpect(jsonPath("$.components.schemas.CreateInstallmentPurchaseRequest.properties.workspaceId").doesNotExist());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -297,7 +364,8 @@ class OpenApiContractTest {
 	void everyOperationInTheContractsExistsInTheGeneratedDocs() throws Exception {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
-				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT)) {
+				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT,
+				INSTALLMENTS_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
