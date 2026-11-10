@@ -36,8 +36,10 @@
      evita uma tabela de rascunhos; a confirmação confere tudo de novo e a chave de importação torna repetir inofensivo.
   2. **A chave de importação é por conta e inclui lançamentos excluídos**: o mesmo critério da spec 011 (ocorrência
      excluída não volta). Importar de novo nunca desfaz uma exclusão feita pela pessoa.
-  3. **Formatos**: OFX (o que os bancos exportam, com identificador próprio) e um CSV genérico reconhecido pelo nome
-     das colunas. Layouts específicos de banco ficam fora.
+  3. **Formatos**: OFX (o que os bancos exportam, com identificador próprio), um CSV genérico reconhecido pelo nome
+     das colunas e PDF de texto (pedido depois, em 2026-11-10), lido pelo padrão da linha (data no começo, valor no
+     fim). O PDF acrescenta a única dependência nova (extração de texto) e é o formato de menor confiança, por isso a
+     prévia é obrigatória antes de gravar. Layouts específicos de banco e OCR ficam fora.
   4. **Linhas ruins não derrubam o arquivo na prévia**, mas qualquer linha ruim derruba a **confirmação** inteira
      (atomicidade): o que a pessoa confirma é o que entra.
   5. **Tudo entra efetivado**, só receita e despesa, e a categoria pode faltar: o banco já aceita receita e despesa

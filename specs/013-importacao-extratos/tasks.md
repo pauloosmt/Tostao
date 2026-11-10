@@ -61,11 +61,17 @@ description: "Tarefas da feature 013-importacao-extratos"
 
 ---
 
+## Phase 4b: PDF (P2, pedido depois da spec)
+
+- [ ] T019 [US1] Acrescentar `org.apache.pdfbox:pdfbox` (versão 3.0.x fixa) ao `pom.xml`. Criar `MAIN/imports/PdfReader.java`: `Loader.loadPDF` sobre os bytes com cache só em memória, recusa de PDF criptografado, com mais de 20 páginas, sem texto ou com mais de 500.000 caracteres; `PDFTextStripper` com ordenação por posição; movimento = linha que começa com data (`dd/MM/yyyy`, `dd/MM/yy`, `dd/MM` com o ano da primeira data completa) e termina com valor (regras do CSV mais sinal no fim e `D`/`C`); ignora linhas de saldo e as que não casam. Em `StatementParser` reconhecer `%PDF-` e acrescentar `PDF` a `Format`. Criar `TEST/imports/PdfReaderTest.java` (PDFs gerados no teste com o próprio PDFBox: datas completa, curta e sem ano, sinais, `D`/`C`, milhar, saldo ignorado, linha quebrada ignorada, vários movimentos iguais, sem texto, com senha, com 21 páginas, truncado, bytes aleatórios depois do cabeçalho) e acrescentar o PDF aos casos de `StatementParserTest` e `PreviewTest`
+
+---
+
 ## Phase 5: Provas (US4 e integração)
 
 - [ ] T012 [P] [US2] Criar `TEST/imports/ImportEffectsTest.java`: lançamentos importados entram em exatos centavos no saldo da conta, no dashboard (grupo "Sem categoria" para os sem categoria, categorias para os categorizados), nos orçamentos semanal e mensal (sem categoria só no limite geral), na fatura de um cartão (compras do extrato) e na listagem; excluir um importado o tira de tudo; nada pendente é criado
 - [ ] T013 [P] [US4] Criar `TEST/imports/ImportAccessTest.java` (VIEWER em prévia e confirmação é 403 sem efeito; não membro tem o mesmo 404 de um workspace inexistente; sem sessão é 401; conta e categoria de outro workspace; id malformado) e `TEST/imports/ImportLayersTest.java` (camada de dados: o SQL da inserção como `tostao_app` sem filtro de workspace é barrado pelo RLS; camada de serviço: o serviço com a conexão do dono isola sozinho pelo filtro explícito)
-- [ ] T014 [P] [US4] Criar `TEST/imports/ImportFileSafetyTest.java`: `entidade.ofx` não busca nada nem demora (arquivo local e endereço externo, tempo limitado) e a descrição sai como texto; expansão de entidades aninhadas não consome memória; descrição, valor e chave de um arquivo de teste não aparecem na saída do processo (`OutputCaptureExtension`) nem em mensagens de erro; arquivo de 2 MB no limite e de 2 MB + 1; desempenho do SC-014 (prévia de 1.000 movimentos em menos de 2 s e confirmação de 1.000 linhas em menos de 3 s, com 20.000 lançamentos no workspace)
+- [ ] T014 [P] [US4] Criar `TEST/imports/ImportFileSafetyTest.java`: `entidade.ofx` não busca nada nem demora (arquivo local e endereço externo, tempo limitado) e a descrição sai como texto; expansão de entidades aninhadas não consome memória; descrição, valor e chave de um arquivo de teste não aparecem na saída do processo (`OutputCaptureExtension`) nem em mensagens de erro; arquivo de 2 MB no limite e de 2 MB + 1; um PDF com script, ação de abertura, anexo e link que não executa nem busca nada, um PDF com páginas demais e um truncado recusados no tempo limite; desempenho do SC-014 (prévia de 1.000 movimentos em menos de 2 s e confirmação de 1.000 linhas em menos de 3 s, com 20.000 lançamentos no workspace)
 
 **Checkpoint**: integração, isolamento, permissões e segurança do arquivo provados
 
@@ -86,6 +92,7 @@ description: "Tarefas da feature 013-importacao-extratos"
 - **Phase 2**: T007 e T008 depois de T001 e T006 (T007 antes de T009, que devolve lançamentos)
 - **Phase 3**: T009 depois de T007 e T008; T010 depois de T009
 - **Phase 4**: T011 depois de T008 (usa a sugestão) e de T009
+- **Phase 4b**: T019 depois de T008 e antes de T014 (que prova a segurança do PDF)
 - **Phase 5**: T012 a T014 em paralelo depois de T011
 - **Phase 6**: T015 depois de T011; T016 depois de tudo; T018 por último
 
@@ -97,6 +104,7 @@ description: "Tarefas da feature 013-importacao-extratos"
 4. `feat(import): preview a statement` — T008
 5. `feat(import): confirm an import without duplicating` — T009, T010
 6. `feat(import): suggest categories and find the uncategorized` — T011
+6b. `feat(import): read PDF statements` — T019
 7. `test(import): prove the effects on the existing features` — T012
 8. `test(import): prove access, isolation and file safety` — T013, T014
 9. `test(api): check the import contract` — T015

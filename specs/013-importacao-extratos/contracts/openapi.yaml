@@ -3,7 +3,7 @@ info:
   title: Tostão API — Importação de extratos
   version: 0.13.0
   description: >
-    Contrato da spec 013. A pessoa envia o extrato do banco (OFX ou CSV) para uma conta e vê uma prévia que não grava
+    Contrato da spec 013. A pessoa envia o extrato do banco (OFX, CSV ou PDF de texto) para uma conta e vê uma prévia que não grava
     nada; depois confirma as linhas escolhidas, que viram lançamentos efetivados da conta. Cada movimento tem uma chave
     de importação, única por conta (inclusive para lançamentos excluídos): importar o mesmo extrato, ou um que se
     sobrepõe ao anterior, não duplica nada e não recria o que a pessoa excluiu. A categoria é opcional e pode ser
@@ -17,7 +17,7 @@ paths:
     post:
       summary: Lê o extrato e devolve a prévia (não grava nada)
       description: >
-        O formato é reconhecido pelo conteúdo. Até 2 MB e 1.000 movimentos; acima disso, vazio, sem movimento ou
+        O formato é reconhecido pelo conteúdo (OFX, CSV ou PDF). Até 2 MB e 1.000 movimentos (PDF: até 20 páginas, só texto selecionável); acima disso, vazio, sem movimento ou
         ilegível, o arquivo inteiro é recusado (400 no campo `file`; 413 se passa de 2 MB). Linha com problema vem
         marcada e não impede as outras. Conta arquivada é 409.
       operationId: previewImport
@@ -33,7 +33,7 @@ paths:
               type: object
               required: [file]
               properties:
-                file: { type: string, format: binary, description: 'Extrato OFX ou CSV, até 2 MB' }
+                file: { type: string, format: binary, description: 'Extrato OFX, CSV ou PDF de texto, até 2 MB' }
       responses:
         '200':
           description: As linhas encontradas, na ordem do arquivo
@@ -133,7 +133,7 @@ components:
       type: object
       required: [format, total, valid, existing, invalid, lines]
       properties:
-        format: { type: string, enum: [OFX, CSV] }
+        format: { type: string, enum: [OFX, CSV, PDF] }
         total: { type: integer }
         valid: { type: integer, description: 'Sem problema e ainda não existentes na conta' }
         existing: { type: integer, description: 'Já existentes na conta (inclusive excluídos)' }

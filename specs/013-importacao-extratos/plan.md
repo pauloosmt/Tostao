@@ -6,7 +6,7 @@
 
 ## Summary
 
-A pessoa envia o extrato do banco (OFX ou CSV) para uma conta, vê uma prévia que não grava nada e confirma as linhas
+A pessoa envia o extrato do banco (OFX, CSV ou PDF) para uma conta, vê uma prévia que não grava nada e confirma as linhas
 escolhidas, que viram lançamentos efetivados daquela conta. Importar o mesmo extrato (ou um que se sobrepõe) nunca duplica
 nem recria o que foi excluído. A categoria é opcional e pode ser sugerida; o que ficar sem categoria é achado depois por
 um filtro novo da listagem.
@@ -18,10 +18,13 @@ Abordagem técnica (decisões detalhadas em [research.md](research.md)):
   sem `GRANT UPDATE` na coluna: a chave nunca muda.
 - **Duas rotas sem estado**: `POST .../accounts/{accountId}/import/preview` (multipart, lê e compara, não grava) e
   `POST .../accounts/{accountId}/import` (JSON, grava até 1.000 linhas). A prévia não é guardada.
-- **Leitores próprios, sem dependência nova**: `OfxReader` (marcas, serve ao OFX 1 em SGML e ao 2 em XML, sem parser de
+- **Leitores próprios para OFX e CSV**: `OfxReader` (marcas, serve ao OFX 1 em SGML e ao 2 em XML, sem parser de
   XML, então sem entidade externa por construção) e `CsvReader` (RFC 4180, separador `;` ou `,` achado pelo cabeçalho,
   colunas por nome). `StatementParser` reconhece o formato pelo conteúdo, decodifica (UTF-8 ou Windows-1252) e produz
   linhas normalizadas com problemas por linha.
+- **PDF com Apache PDFBox (a única dependência nova)**: `PdfReader` extrai o texto (só texto selecionável, no máximo 20
+  páginas e 500.000 caracteres, cache de memória, sem executar nada do documento) e acha os movimentos pelo padrão da
+  linha: data no começo e valor no fim, com `D`/`C`/sinal. A partir do texto, o caminho é o mesmo dos outros formatos.
 - **A chave de importação**: o identificador do banco (`FITID` ou coluna `id`) ou, sem ele, o SHA-256 de data, valor,
   descrição normalizada e ordem entre linhas idênticas do arquivo.
 - **Gravação**: trava de conta (`pg_advisory_xact_lock`) e `INSERT ... ON CONFLICT DO NOTHING RETURNING id` em blocos de 100
@@ -36,7 +39,8 @@ Abordagem técnica (decisões detalhadas em [research.md](research.md)):
 **Language/Version**: Java 21 (Temurin), Spring Boot 4.1.2
 
 **Primary Dependencies**: Spring Web MVC (multipart), Spring JDBC (`JdbcClient`), Bean Validation, Spring Security (contexto e
-aspecto da `001`), springdoc-openapi, Flyway. Nenhuma dependência nova (`MessageDigest`, `Charset` e `CharsetDecoder` são do JDK).
+aspecto da `001`), springdoc-openapi, Flyway. Uma dependência nova, **Apache PDFBox 3** (só para o PDF; `MessageDigest`,
+`Charset` e `CharsetDecoder` são do JDK).
 
 **Storage**: PostgreSQL 17. `V14` (coluna, restrições, índice único parcial).
 
@@ -105,6 +109,7 @@ backend/
 │   │   ├── StatementParser.java                          # NOVO: formato pelo conteúdo, decodificação, limites
 │   │   ├── OfxReader.java                                # NOVO: leitor de marcas (OFX 1 e 2), sem parser de XML
 │   │   ├── CsvReader.java                                # NOVO: RFC 4180, separador e colunas por nome
+│   │   ├── PdfReader.java                                # NOVO: texto do PDF (PDFBox) e movimentos pelo padrão da linha
 │   │   ├── StatementLine.java                            # NOVO: linha lida (valores ou problemas)
 │   │   ├── Money.java                                    # NOVO: texto para centavos exatos (regras do FR-004)
 │   │   ├── ImportKeys.java                               # NOVO: normalização e chave de importação
@@ -126,6 +131,7 @@ backend/
         ├── OfxReaderTest.java                            # unitário: OFX 1 e 2, entidades
         ├── CsvReaderTest.java                            # unitário: separadores, aspas, cabeçalho
         ├── StatementParserTest.java                      # formato, codificação, limites
+        ├── PdfReaderTest.java                            # unitário: PDFs gerados no teste, padrão da linha, limites
         ├── ImportScenario.java                           # apoio dos testes de rota
         ├── PreviewTest.java                              # prévia
         ├── ConfirmImportTest.java                        # confirmação, atomicidade, validação
@@ -145,6 +151,7 @@ e a importação o grava pelo mesmo caminho de inserção e conferência de cont
 
 | Escolha | Por quê | Alternativa simples descartada |
 |---|---|---|
+| Apache PDFBox para o PDF | PDF é um formato binário comprimido; ler o texto à mão não é viável. O PDFBox é a biblioteca padrão de extração, sem execução de conteúdo do documento; entra com versão fixa, só no leitor de PDF, com limites de páginas, de texto e de tamanho, e testado com PDFs maliciosos | Não aceitar PDF (descartado a pedido da pessoa) ou OCR/serviço externo (envia dados financeiros para fora, viola a constituição) |
 | Dois leitores escritos à mão (OFX e CSV) em vez de bibliotecas | O OFX 1 não é XML (um parser de XML não o lê) e, sem parser de XML, entidade externa e expansão de entidade não existem por construção; o CSV é pequeno, mas precisa de regras próprias (separador, cabeçalho precedido de resumo, milhar brasileiro) que uma biblioteca genérica não dá | Biblioteca de OFX e de CSV de terceiros: duas dependências novas para auditar e atualizar, e o comportamento de segurança deixaria de ser nosso |
 | Índice único inclui as linhas excluídas | Respeitar a exclusão da pessoa: importar de novo não pode recriá-la (mesmo critério da spec 011) | Índice só nas linhas ativas: reimportar um extrato traria de volta o que a pessoa excluiu de propósito |
 | Trava consultiva por conta na confirmação | Duas confirmações simultâneas das mesmas linhas em ordens diferentes entrariam em impasse esperando as chaves uma da outra; o índice único sozinho garante não duplicar, mas não evita o impasse | Ordenar as linhas pela chave antes de inserir (resolve entre importações do mesmo tipo, mas depende de todo inserção seguir a ordem) |

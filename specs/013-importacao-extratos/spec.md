@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Importação de extratos: a pessoa envia o arquivo de extrato do banco (OFX ou CSV) para uma conta, vê uma prévia do que será lançado, confirma, e os movimentos entram como lançamentos efetivados daquela conta. Importar o mesmo extrato de novo (ou um extrato que se sobrepõe ao anterior) nunca duplica lançamentos. A categoria pode ser sugerida a partir dos lançamentos anteriores e pode ficar em branco para ser definida depois."
+**Input**: User description: "Importação de extratos: a pessoa envia o arquivo de extrato do banco (OFX, CSV ou PDF) para uma conta, vê uma prévia do que será lançado, confirma, e os movimentos entram como lançamentos efetivados daquela conta. Importar o mesmo extrato de novo (ou um extrato que se sobrepõe ao anterior) nunca duplica lançamentos. A categoria pode ser sugerida a partir dos lançamentos anteriores e pode ficar em branco para ser definida depois."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,12 +38,16 @@ descrição, valor com sinal e tipo, e nada é gravado.
 5. **Given** linhas com problema (data inválida ou fora de 2000-01-01 a 2100-12-31, valor zero ou ilegível,
    descrição vazia), **When** a prévia é gerada, **Then** cada uma vem com o motivo e o número da linha no arquivo,
    e as boas continuam normais.
-6. **Given** um arquivo que não é OFX nem CSV legível, vazio, sem movimentos, maior que 2 MB ou com mais de 1.000
-   movimentos, **When** é enviado, **Then** é recusado inteiro, com o motivo, sem prévia parcial.
+6. **Given** um arquivo que não é OFX, CSV nem PDF legível, vazio, sem movimentos, maior que 2 MB ou com mais de 1.000
+   movimentos (ou um PDF protegido por senha, só de imagem ou com mais de 20 páginas), **When** é enviado, **Then** é recusado inteiro, com o motivo, sem prévia parcial.
 7. **Given** uma conta arquivada, de outro workspace ou inexistente, **When** a prévia é pedida, **Then** conta de
    outro workspace ou inexistente responde "não encontrado" e arquivada é recusada como conflito.
 8. **Given** uma descrição com mais de 200 caracteres ou com espaços repetidos, **When** a prévia é gerada, **Then**
    a descrição vem sem espaços nas pontas, com os espaços repetidos reduzidos a um e cortada em 200 caracteres.
+9. **Given** um PDF de extrato com texto selecionável, **When** é enviado, **Then** cada linha de texto que começa com
+   uma data e termina com um valor vira um movimento (data, descrição entre as duas pontas e valor), as linhas de saldo
+   e as demais linhas do documento são ignoradas, e a prévia segue as mesmas regras dos outros formatos. A pessoa
+   revisa a prévia, porque o PDF é lido pela aparência do texto e não por campos do banco.
 
 ---
 
@@ -154,6 +158,12 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 - Valor acima do limite de 1.000.000.000.000 centavos: linha com problema.
 - OFX sem `FITID`, ou CSV sem coluna de identificador: a chave é derivada da data, do valor, da descrição normalizada
   e da ordem entre linhas idênticas do arquivo; o mesmo arquivo gera sempre as mesmas chaves.
+- PDF com texto em colunas que o extrator embaralha, ou com um layout que não começa a linha pela data: as linhas
+  que não casam com o padrão são ignoradas e a prévia mostra só o que foi reconhecido; o que sobrar fora dela a
+  pessoa lança à mão ou importa por OFX ou CSV.
+- PDF em que a descrição de um movimento quebra em duas linhas: a segunda linha não começa com data e é ignorada
+  (a descrição fica só com a primeira parte).
+- PDF só de imagem (digitalizado), protegido por senha ou corrompido: recusado inteiro, com o motivo.
 - Dois `FITID` iguais no mesmo arquivo: a segunda linha vem com problema ("identificador repetido").
 - Arquivo em UTF-8 (com ou sem BOM) ou em Windows-1252/ISO-8859-1: os acentos saem certos nos dois.
 - CSV com linhas de resumo, saldo ou total antes do cabeçalho: o cabeçalho é a primeira linha que tem as colunas de
@@ -177,13 +187,21 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 - **FR-001**: O sistema MUST permitir enviar um arquivo para uma conta ativa do workspace e devolver uma **prévia**
   das linhas encontradas, sem gravar nada.
 - **FR-002**: O sistema MUST reconhecer o formato pelo **conteúdo**, não pelo nome nem pelo tipo declarado: OFX
-  (versões 1 e 2, extrato bancário e de cartão) ou CSV; qualquer outro MUST ser recusado como formato não
-  reconhecido.
+  (versões 1 e 2, extrato bancário e de cartão), PDF (começa com `%PDF-`) ou CSV; qualquer outro MUST ser recusado
+  como formato não reconhecido.
 - **FR-003**: Para OFX, cada movimento MUST dar a data lançada (como escrita), o valor, o identificador do banco
   (`FITID`) e a descrição formada pelo nome e/ou memorando do movimento. Para CSV, o cabeçalho MUST ser reconhecido
   pelos nomes das colunas (sem diferença de maiúsculas e acentos): data (`data`, `date`), descrição (`descrição`,
   `histórico`, `lançamento`, `memo`, `description`) e valor (`valor`, `amount`); uma coluna opcional `id` ou
   `identificador` vale como identificador.
+- **FR-003a**: Para PDF, o sistema MUST extrair o texto do documento (só texto selecionável; não há reconhecimento
+  de imagem) e tratar como movimento cada linha de texto que **começa com uma data** (`dd/MM/yyyy`, `dd/MM/yy` ou
+  `dd/MM`) e **termina com um valor**. Em `dd/MM` o ano é o da primeira data completa (`dd/MM/yyyy`) que aparece no
+  documento; sem ela, a linha é uma linha com problema. A descrição é o texto entre a data e o valor. O valor aceita
+  as regras do CSV (FR-004) e o sinal no começo (`-`), no fim (`-`) ou pela letra `D` (débito, negativo) ou `C`
+  (crédito, positivo) depois do número; sem sinal, é positivo. Linhas de saldo (descrição que começa com `SALDO`),
+  linhas sem data no começo e linhas sem valor no fim MUST ser ignoradas, não viram linhas com problema. Um PDF
+  protegido por senha, sem texto ou sem nenhum movimento MUST ser recusado inteiro.
 - **FR-004**: Valores MUST ser lidos para centavos inteiros exatos, sem ponto flutuante, aceitando vírgula ou ponto
   decimal, sinal `+` ou `-` e o prefixo `R$`. No OFX, que não usa separador de milhar, o último ponto ou vírgula é o
   decimal. No CSV, com os dois separadores o último é o decimal; com um só tipo, seguido de exatamente três dígitos
@@ -193,7 +211,8 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
   formato `AAAAMMDD` com horário e fuso opcionais, que são ignorados. Fora disso MUST ser uma linha com problema.
 - **FR-006**: A descrição MUST sair sem espaços nas pontas, com sequências de espaços reduzidas a um e cortada em
   200 caracteres; vazia MUST ser uma linha com problema.
-- **FR-007**: O arquivo MUST ter no máximo 2 MB e 1.000 movimentos; acima disso, vazio, sem nenhum movimento ou
+- **FR-007**: O arquivo MUST ter no máximo 2 MB e 1.000 movimentos (um PDF, também, no máximo 20 páginas e 500.000
+  caracteres de texto); acima disso, vazio, sem nenhum movimento ou
   ilegível como um todo, MUST ser recusado inteiro. Uma linha com problema MUST NOT impedir as outras.
 - **FR-008**: Cada linha da prévia MUST trazer: o número dela no arquivo, a data, a descrição, o valor com sinal, o
   tipo (receita se positivo, despesa se negativo), a chave de importação, se **já existe** na conta, se é **possível
@@ -237,8 +256,8 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 - **FR-021**: Conta e categoria MUST ser do workspace da rota; as duas camadas de isolamento (políticas do banco e
   filtro explícito por workspace no serviço) MUST valer cada uma sozinha.
 - **FR-022**: O arquivo MUST ser tratado só como dado: nenhuma entidade externa, instrução de processamento ou
-  expansão de entidades é resolvida, nada é buscado de fora e o consumo de memória e de tempo fica limitado pelos
-  limites do FR-007.
+  expansão de entidades é resolvida, nada é buscado de fora, nada de um PDF é executado (scripts, ações, anexos e
+  links são ignorados) e o consumo de memória e de tempo fica limitado pelos limites do FR-007.
 - **FR-023**: O conteúdo do arquivo, as descrições e os valores MUST NOT ser registrados nos logs do sistema.
 - **FR-024**: Valores e datas MUST seguir as regras de dinheiro da constituição (centavos inteiros, sem arredondar
   em silêncio) e nenhuma exceção MUST ser capturada dentro da transação de gravação.
@@ -247,7 +266,7 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Extrato**: o arquivo enviado (OFX ou CSV). Não é guardado: existe só durante a prévia.
+- **Extrato**: o arquivo enviado (OFX, CSV ou PDF). Não é guardado: existe só durante a prévia.
 - **Linha do extrato**: um movimento lido do arquivo, com número, data, descrição, valor com sinal, chave, estado
   (já existe, possível duplicata) e problemas. Existe só na resposta da prévia.
 - **Chave de importação**: o que identifica um movimento do banco naquela conta. Guardada no lançamento importado,
@@ -261,9 +280,9 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 
 ### Measurable Outcomes
 
-- **SC-001**: Em 100% dos testes de formato, arquivos OFX (versões 1 e 2, banco e cartão, com e sem `FITID`) e CSV
-  (vírgula e ponto e vírgula, aspas, cabeçalho precedido de resumo, UTF-8 e Windows-1252) dão as mesmas linhas
-  esperadas, com data, descrição e valor exatos em centavos.
+- **SC-001**: Em 100% dos testes de formato, arquivos OFX (versões 1 e 2, banco e cartão, com e sem `FITID`), CSV
+  (vírgula e ponto e vírgula, aspas, cabeçalho precedido de resumo, UTF-8 e Windows-1252) e PDF (data completa, curta
+  e sem ano, valor com sinal, `D` e `C`, linhas de saldo e de texto ignoradas) dão as mesmas linhas esperadas, com data, descrição e valor exatos em centavos.
 - **SC-002**: Em 100% dos testes, a prévia não grava nada, e um arquivo recusado (formato, tamanho, vazio) não deixa
   prévia parcial nem gravação.
 - **SC-003**: Em 100% dos testes de idempotência, importar o mesmo arquivo duas vezes (em série e em paralelo) deixa
@@ -285,7 +304,8 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 - **SC-010**: Com a proteção de uma das duas camadas de isolamento removida de propósito em teste, 100% das
   tentativas de importar para conta de outro workspace continuam recusadas pela outra camada.
 - **SC-011**: Em 100% dos testes de segurança do arquivo, entidades externas e expansão de entidades não buscam
-  nada nem consomem memória sem limite, e nenhum conteúdo do arquivo aparece nos logs.
+  nada nem consomem memória sem limite, um PDF com script, ação de abertura, anexo ou link não executa nem busca nada
+  e um PDF grande demais, com páginas demais ou corrompido é recusado dentro do limite de tempo, e nenhum conteúdo do arquivo aparece nos logs.
 - **SC-012**: Em 100% dos testes de validação, valores, datas, descrições, chaves, categorias, quantidade de linhas e
   campos extras inválidos são recusados indicando o campo e a linha, e nada é gravado.
 - **SC-013**: Todos os testes das specs 001 a 012 continuam passando sem mudar o resultado esperado (FR-025).
@@ -308,8 +328,11 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
 - A chave sem identificador do banco protege contra reimportar o **mesmo arquivo** e contra sobreposição de extratos
   em que as linhas idênticas mantêm a mesma ordem; não é garantia contra extratos que reordenam movimentos
   idênticos do mesmo dia.
-- Formatos suportados: OFX e CSV genérico por nome de coluna. Layouts específicos de um banco que fujam disso
-  (colunas de crédito e débito separadas, por exemplo) ficam para depois.
+- Formatos suportados: OFX, CSV genérico por nome de coluna e PDF com texto selecionável. Layouts específicos de um
+  banco que fujam disso (colunas de crédito e débito separadas, por exemplo) ficam para depois.
+- O PDF é o formato menos confiável: não tem campos, então o movimento é achado pelo padrão da linha (data no começo,
+  valor no fim). Não há identificador do banco, então a chave é derivada (a proteção contra duplicar vale como nos CSV
+  sem identificador). Reconhecimento de imagem (OCR) fica fora de escopo.
 - A descrição vem do banco e pode ser pouco amigável; renomear é a edição comum (spec 004).
 - Moeda única (BRL).
 - Depende da `001-autenticacao-workspace` (sessão, papéis e isolamento), da `002-contas`, da `003-categorias`, da

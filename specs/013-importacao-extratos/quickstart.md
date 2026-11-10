@@ -36,9 +36,10 @@ Esperado: todos passam, inclusive os das specs 001 a 012 **sem alteração de re
    arquivo, com data, descrição, `amountCents` com sinal (`500000`, `-2350`, `-18090`, `-2350`), `type` pelo sinal e `key`
    `id:1` a `id:4`. Nada gravado: `GET .../transactions` mantém só os dois lançamentos do preparo.
 2. As linhas `PADARIA DO ZE` vêm com `suggestedCategoryId` = `$ALIM`; o salário vem sem sugestão.
-3. O mesmo extrato em `extrato2.ofx` (XML) e em `extrato.csv` → **200**, mesmas descrições e valores (no CSV, `key` começa
+3. O mesmo extrato em `extrato2.ofx` (XML), em `extrato.csv` e em `extrato.pdf` (texto, uma linha por movimento, começando
+   pela data e terminando pelo valor, com a linha `SALDO FINAL` que deve ser ignorada) → **200**, mesmas descrições e valores (no CSV, `key` começa
    com `h:`, e as duas padarias têm chaves **diferentes**).
-4. Arquivo inválido: texto qualquer → **400** `file`; arquivo vazio → **400**; arquivo de 2,5 MB → **413**; CSV com 1.001
+4. Arquivo inválido: texto qualquer → **400** `file`; PDF só de imagem ou protegido por senha → **400** `file`; arquivo vazio → **400**; arquivo de 2,5 MB → **413**; CSV com 1.001
    linhas → **400**; OFX com uma data `20261301` → **200** com essa linha em `problems` e as outras normais.
 5. Conta da Intrusa na rota da Dona e `$POUP` arquivada → **404** e **409**.
 

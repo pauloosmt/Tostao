@@ -141,7 +141,31 @@ um lançamento sem categoria; ela não toca `import_key` porque a coluna não es
 do que faltou ("nenhum movimento encontrado", "linha 12: data inválida"), nunca do texto lido. Um teste captura a saída do
 processo e prova que descrição, valor e chave de um arquivo de teste não aparecem.
 
-## 13. Efeito em specs anteriores
+## 13. PDF: texto extraído e movimentos pelo padrão da linha
+
+**Decisão**: o `PdfReader` usa Apache PDFBox 3 (`Loader.loadPDF` sobre os bytes, com cache só em memória) e
+`PDFTextStripper` com ordenação por posição, para obter o texto linha a linha. Antes de extrair: recusa PDF criptografado
+(com ou sem senha de usuário), com mais de 20 páginas ou sem texto; o texto é cortado em 500.000 caracteres (acima
+disso, recusa). Nada do documento é executado (o PDFBox não roda JavaScript, ações nem anexos) e nenhuma URL é aberta.
+Cada linha de texto é um movimento se **começar** com uma data (`dd/MM/yyyy`, `dd/MM/yy` ou `dd/MM`) e **terminar** com
+um valor; a descrição é o que há entre os dois. `dd/MM` usa o ano da primeira data completa do documento. O valor segue as
+regras do CSV (milhar e decimal brasileiros), com sinal no começo ou no fim, ou a letra `D` (negativo) ou `C` (positivo)
+depois do número. Linhas cuja descrição começa com `SALDO` (anterior, final, do dia) e linhas que não casam com o
+padrão são ignoradas, sem virar linhas com problema.
+
+**Por quê**: PDF não tem campos; é a aparência do texto que carrega os movimentos. O padrão "data no começo, valor no fim" é
+o que a maioria dos extratos bancários impressos tem, e a prévia obrigatória deixa a pessoa conferir o que foi lido. Sem
+identificador do banco, a chave é a derivada (dos CSV sem `id`).
+
+**Segurança**: PDF é entrada hostil clássica (laços de objetos, fluxos que expandem muito, dicionários gigantes). Os limites
+de tamanho (2 MB), de páginas (20) e de texto (500.000) ficam aquém do que um ataque precisa; o `ImportFileSafetyTest`
+usa PDFs gerados no teste com script, ação de abertura, anexo e link, com muitas páginas e truncado.
+
+**Descartado**: OCR para PDF digitalizado (envia imagem para um serviço ou traz um motor pesado; fica fora de escopo);
+layouts por banco (a pessoa usa OFX ou CSV, que os bancos também oferecem); extração por tabela/coordenada (frágil e
+cada banco é diferente).
+
+## 14. Efeito em specs anteriores
 
 - `TransactionResponse` (spec 004): campo novo `imported`; os campos existentes não mudam. Todos os construtores no
   código de produção e nos testes recebem o valor.
