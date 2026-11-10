@@ -45,7 +45,7 @@ description: "Tarefas da feature 010-compra-parcelada"
 
 ## Phase 3: Regras que atravessam outras specs (P1)
 
-- [ ] T008 [US1] `TEST/transaction/InstallmentCountsTest.java` (**o coração da integração**): num workspace gêmeo comparado campo a campo, conferir que as parcelas **pendentes não entram** em `GET /accounts` e `/reports/balance` (saldo; o previsto sim), `GET /dashboard` (totais, categorias, dias, comparação e saldos; o bloco `pending` sim), `GET /monthly-budgets` e `GET /budgets` (gasto) e na fatura de um cartão (`GET .../invoices/{mês}`, a lista e o `card-summary`); que efetivar uma parcela a inclui em exatos centavos em cada um desses lugares; que as parcelas de meses diferentes caem nas faturas do mês de cada data; que cancelar não muda nenhum desses números realizados. Não altera nenhuma classe de produção
+- [X] T008 [US1] `TEST/transaction/InstallmentCountsTest.java` (**o coração da integração**): num workspace gêmeo comparado campo a campo, conferir que as parcelas **pendentes não entram** em `GET /accounts` e `/reports/balance` (saldo; o previsto sim), `GET /dashboard` (totais, categorias, dias, comparação e saldos; o bloco `pending` sim), `GET /monthly-budgets` e `GET /budgets` (gasto) e na fatura de um cartão (`GET .../invoices/{mês}`, a lista e o `card-summary`); que efetivar uma parcela a inclui em exatos centavos em cada um desses lugares; que as parcelas de meses diferentes caem nas faturas do mês de cada data; que cancelar não muda nenhum desses números realizados. Não altera nenhuma classe de produção
 
 ---
 
