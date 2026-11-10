@@ -54,6 +54,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path RECURRENCES_CONTRACT = Path.of("..", "specs", "011-recorrencias-agendamentos", "contracts",
 			"openapi.yaml");
+	private static final Path MEMBERSHIP_CONTRACT = Path.of("..", "specs", "012-membros-convites", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -415,6 +417,76 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void membershipContractFileDeclaresTheSevenRoutes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(MEMBERSHIP_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/members",
+				"/api/v1/workspaces/{wid}/members/{userId}",
+				"/api/v1/workspaces/{wid}/invitations",
+				"/api/v1/workspaces/{wid}/invitations/{id}",
+				"/api/v1/invitations/accept");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/members")).containsExactly("get");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/members/{userId}")).containsExactlyInAnyOrder("put", "delete");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/invitations")).containsExactlyInAnyOrder("post", "get");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/invitations/{id}")).containsExactly("delete");
+		assertThat(operations.get("/api/v1/invitations/accept")).containsExactly("post");
+	}
+
+	@Test
+	void theMembershipRoutesAndFieldsAreInTheGeneratedDocsAndNothingElse() throws Exception {
+		String members = "$.paths['/api/v1/workspaces/{wid}/members']";
+		String member = "$.paths['/api/v1/workspaces/{wid}/members/{userId}']";
+		String invitations = "$.paths['/api/v1/workspaces/{wid}/invitations']";
+		String invitation = "$.paths['/api/v1/workspaces/{wid}/invitations/{id}']";
+		String accept = "$.paths['/api/v1/invitations/accept']";
+		String schemas = "$.components.schemas.";
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				// o vínculo nasce só por convite aceito: não há POST em /members, e o convite não se edita nem se consulta por id
+				.andExpect(jsonPath(members + ".get").exists())
+				.andExpect(jsonPath(members + ".post").doesNotExist())
+				.andExpect(jsonPath(member + ".put").exists())
+				.andExpect(jsonPath(member + ".delete").exists())
+				.andExpect(jsonPath(member + ".get").doesNotExist())
+				.andExpect(jsonPath(member + ".patch").doesNotExist())
+				.andExpect(jsonPath(invitations + ".post").exists())
+				.andExpect(jsonPath(invitations + ".get").exists())
+				.andExpect(jsonPath(invitations + ".put").doesNotExist())
+				.andExpect(jsonPath(invitation + ".delete").exists())
+				.andExpect(jsonPath(invitation + ".get").doesNotExist())
+				.andExpect(jsonPath(invitation + ".put").doesNotExist())
+				.andExpect(jsonPath(accept + ".post").exists())
+				.andExpect(jsonPath(accept + ".get").doesNotExist())
+				// o membro: o que se vê, nunca senha nem hash nem versão de sessão
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.userId").exists())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.name").exists())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.email").exists())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.role").exists())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.joinedAt").exists())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.password").doesNotExist())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.passwordHash").doesNotExist())
+				.andExpect(jsonPath(schemas + "MemberResponse.properties.sessionVersion").doesNotExist())
+				 // o código: só a resposta que cria o convite o tem; a lista de pendentes não
+				.andExpect(jsonPath(schemas + "InvitationCreatedResponse.properties.code").exists())
+				.andExpect(jsonPath(schemas + "InvitationResponse.properties.code").doesNotExist())
+				.andExpect(jsonPath(schemas + "InvitationResponse.properties.codeHash").doesNotExist())
+				.andExpect(jsonPath(schemas + "InvitationResponse.properties.email").exists())
+				.andExpect(jsonPath(schemas + "InvitationResponse.properties.role").exists())
+				.andExpect(jsonPath(schemas + "InvitationResponse.properties.expiresAt").exists())
+				// os pedidos: só os campos permitidos
+				.andExpect(jsonPath(schemas + "CreateInvitationRequest.properties.email").exists())
+				.andExpect(jsonPath(schemas + "CreateInvitationRequest.properties.role").exists())
+				.andExpect(jsonPath(schemas + "CreateInvitationRequest.properties.createdBy").doesNotExist())
+				.andExpect(jsonPath(schemas + "CreateInvitationRequest.properties.workspaceId").doesNotExist())
+				.andExpect(jsonPath(schemas + "CreateInvitationRequest.properties.code").doesNotExist())
+				.andExpect(jsonPath(schemas + "ChangeRoleRequest.properties.role").exists())
+				.andExpect(jsonPath(schemas + "AcceptInvitationRequest.properties.code").exists())
+				.andExpect(jsonPath(schemas + "AcceptInvitationResponse.properties.workspaceId").exists())
+				.andExpect(jsonPath(schemas + "AcceptInvitationResponse.properties.name").exists())
+				.andExpect(jsonPath(schemas + "AcceptInvitationResponse.properties.role").exists());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -441,7 +513,7 @@ class OpenApiContractTest {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
 				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT,
-				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT)) {
+				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT, MEMBERSHIP_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
