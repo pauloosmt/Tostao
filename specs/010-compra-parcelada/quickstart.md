@@ -7,7 +7,7 @@ modelo em [data-model.md](data-model.md).
 
 - Docker Desktop ligado e stack local reconstruída: `docker compose up -d --build` (a migration `V9` roda na
   subida; confira `select version from flyway_schema_history order by installed_rank desc limit 1` → `9`).
-- `BASE=http://127.0.0.1:8080/api/v1`. JSON com acento vai como arquivo UTF-8 no Windows.
+- `BASE=http://127.0.0.1:8080/api/v1`. JSON com acento vai como arquivo UTF-8 no Windows (o `curl` do Git Bash recusa a descrição acentuada no corpo, então nos exemplos de linha de comando use "Cafe" e "Fim de mes").
 
 ## 1. Testes automatizados
 
@@ -40,7 +40,7 @@ Esperado: todos passam, inclusive os das specs 001 a 009 **sem alteração de re
    `"firstInstallmentStatus":"PENDING"` → 4 parcelas de **-1000** em **2027-01-31, 2027-02-28, 2027-03-31,
    2027-04-30**, todas **PENDING**. `Corrente`: `balanceCents` **396666** (não mudou), `pendingCents` **-210666**.
 5. `GET .../transactions?size=100` → cada parcela traz `installmentGroupId`, `installmentNumber` e
-   `installmentCount`; um lançamento comum (crie um qualquer) traz os três **nulos**.
+   `installmentCount`; um lançamento comum traz os três **nulos** (crie uma receita de 100 na `Poupança` em **2026-10-01**, que não mexe em nenhum número abaixo).
 
 ## 4. Só o efetivado conta (US1, cenário 3)
 
@@ -63,7 +63,7 @@ Anote `totalItems` da listagem antes e confira que **não muda** depois de todos
 | `totalCents` 0, -1, 1000000000001, `10.5`, ausente | 400, campo `totalCents` |
 | `firstOccurredOn` 1999-12-31; 2099-12-31 com 24 parcelas; texto inválido | 400, campo `firstOccurredOn` |
 | `description` vazia, só espaços, 191 caracteres | 400, campo `description` |
-| `description` com 190 caracteres | 201 |
+| `description` com 190 caracteres (no `Visa`, `firstOccurredOn` **2030-01-01**, para não mexer nos números abaixo) | 201 (a descrição de cada parcela cabe nos 200 do lançamento) |
 | `firstInstallmentStatus` "OUTRO", "" | 400, campo `firstInstallmentStatus` |
 | campo extra (`createdBy`, `workspaceId`, `installmentGroupId`, `status`) | 400 |
 | categoria de receita (`Salário`) | 400, campo `categoryId` |

@@ -62,9 +62,9 @@ description: "Tarefas da feature 010-compra-parcelada"
 
 ## Phase 5: Polish
 
-- [ ] T015 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 009 pode ter sido alterado** (conferir com `git diff` dos arquivos de teste antigos)
+- [X] T015 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 009 pode ter sido alterado** (conferir com `git diff` dos arquivos de teste antigos)
 - [X] T016 [P] Atualizar `README.md`: seção de compra parcelada (as três rotas, divisão em centavos, datas mês a mês, primeira efetivada e demais pendentes, cancelar só as pendentes, parcela = lançamento comum) e a nota de que os campos de parcela aparecem em cada lançamento
-- [ ] T017 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 9 e limpeza ao fim; marcar as tarefas restantes como `[X]` junto do último commit de código ou documento que as fecha; não fazer push
+- [X] T017 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 9 e limpeza ao fim; marcar as tarefas restantes como `[X]` junto do último commit de código ou documento que as fecha; não fazer push
 
 ---
 
