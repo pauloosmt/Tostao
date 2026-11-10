@@ -48,7 +48,7 @@ public class InvoiceService {
 			       -t.amount_cents as charge_cents
 			from transactions t
 			left join categories c on c.id = t.category_id and c.workspace_id = t.workspace_id
-			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null
+			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null and t.status = 'CLEARED'
 			  and t.occurred_on between :start and :end
 			  and not (t.type = 'TRANSFER' and t.amount_cents > 0)
 			order by t.occurred_on, t.id
@@ -58,7 +58,7 @@ public class InvoiceService {
 	static final String TOTAL_SQL = """
 			select coalesce(-sum(t.amount_cents), 0)::bigint
 			from transactions t
-			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null
+			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null and t.status = 'CLEARED'
 			  and t.occurred_on between :start and :end
 			  and not (t.type = 'TRANSFER' and t.amount_cents > 0)
 			""";
@@ -67,7 +67,7 @@ public class InvoiceService {
 	static final String PAID_SQL = """
 			select coalesce(sum(t.amount_cents), 0)::bigint
 			from transactions t
-			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null
+			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null and t.status = 'CLEARED'
 			  and t.type = 'TRANSFER' and t.amount_cents > 0
 			  and t.occurred_on > :closing and t.occurred_on <= :nextClosing
 			""";
@@ -76,7 +76,7 @@ public class InvoiceService {
 	static final String DAILY_SQL = """
 			select t.occurred_on, t.type, (t.amount_cents > 0) as inflow, sum(t.amount_cents)::bigint as cents
 			from transactions t
-			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null
+			where t.workspace_id = :workspaceId and t.account_id = :accountId and t.deleted_at is null and t.status = 'CLEARED'
 			  and t.occurred_on between :min and :max
 			group by t.occurred_on, t.type, (t.amount_cents > 0)
 			""";
