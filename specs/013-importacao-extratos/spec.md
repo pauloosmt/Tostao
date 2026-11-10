@@ -149,7 +149,8 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
   um lançamento nunca muda, spec 004): a pessoa exclui a linha e cria a transferência.
 - Data do OFX com horário e fuso (`20261105120000[-3:BRT]`): vale a data como escrita, sem converter fuso.
 - Valor do OFX com vírgula decimal ou sinal explícito (`+`): aceito, sempre em centavos exatos, sem ponto flutuante.
-- Valor com mais de duas casas decimais (`10.505`): linha com problema (não se arredonda dinheiro em silêncio).
+- Valor com mais de duas casas decimais (`10.505` no OFX, `10,5050` no CSV): linha com problema (não se arredonda
+  dinheiro em silêncio). No CSV, `10.505` é dez mil quinhentos e cinco (milhar).
 - Valor acima do limite de 1.000.000.000.000 centavos: linha com problema.
 - OFX sem `FITID`, ou CSV sem coluna de identificador: a chave é derivada da data, do valor, da descrição normalizada
   e da ordem entre linhas idênticas do arquivo; o mesmo arquivo gera sempre as mesmas chaves.
@@ -184,8 +185,10 @@ grava; um arquivo com entidade externa XML não busca nada nem trava a resposta.
   `histórico`, `lançamento`, `memo`, `description`) e valor (`valor`, `amount`); uma coluna opcional `id` ou
   `identificador` vale como identificador.
 - **FR-004**: Valores MUST ser lidos para centavos inteiros exatos, sem ponto flutuante, aceitando vírgula ou ponto
-  decimal, milhar com ponto ou vírgula, sinal `+` ou `-` e o prefixo `R$`. Mais de duas casas decimais, valor zero ou
-  fora de 1 a 1.000.000.000.000 centavos em módulo MUST ser uma linha com problema.
+  decimal, sinal `+` ou `-` e o prefixo `R$`. No OFX, que não usa separador de milhar, o último ponto ou vírgula é o
+  decimal. No CSV, com os dois separadores o último é o decimal; com um só tipo, seguido de exatamente três dígitos
+  vale como milhar (`1.234` = 1.234,00) e seguido de um ou dois como decimal (`12,5` = 12,50). Mais de duas casas
+  decimais, valor zero ou fora de 1 a 1.000.000.000.000 centavos em módulo MUST ser uma linha com problema.
 - **FR-005**: Datas MUST estar entre 2000-01-01 e 2100-12-31; no CSV, em `dd/MM/yyyy` ou `yyyy-MM-dd`; no OFX, no
   formato `AAAAMMDD` com horário e fuso opcionais, que são ignorados. Fora disso MUST ser uma linha com problema.
 - **FR-006**: A descrição MUST sair sem espaços nas pontas, com sequências de espaços reduzidas a um e cortada em

@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Importação de extratos
+  version: 0.13.0
+  description: >
+    Contrato da spec 013. A pessoa envia o extrato do banco (OFX ou CSV) para uma conta e vê uma prévia que não grava
+    nada; depois confirma as linhas escolhidas, que viram lançamentos efetivados da conta. Cada movimento tem uma chave
+    de importação, única por conta (inclusive para lançamentos excluídos): importar o mesmo extrato, ou um que se
+    sobrepõe ao anterior, não duplica nada e não recria o que a pessoa excluiu. A categoria é opcional e pode ser
+    sugerida. Exige o papel OWNER ou EDITOR. Quem não é membro de um workspace recebe 404, igual a um workspace
+    inexistente. Todas as rotas exigem sessão (cookie tostao_session). Erros seguem Problem Details (RFC 7807). A
+    listagem de lançamentos (spec 004) ganha o filtro `uncategorized`, e a resposta de lançamento ganha `imported`.
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/accounts/{accountId}/import/preview:
+    post:
+      summary: Lê o extrato e devolve a prévia (não grava nada)
+      description: >
+        O formato é reconhecido pelo conteúdo. Até 2 MB e 1.000 movimentos; acima disso, vazio, sem movimento ou
+        ilegível, o arquivo inteiro é recusado (400 no campo `file`; 413 se passa de 2 MB). Linha com problema vem
+        marcada e não impede as outras. Conta arquivada é 409.
+      operationId: previewImport
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary, description: 'Extrato OFX ou CSV, até 2 MB' }
+      responses:
+        '200':
+          description: As linhas encontradas, na ordem do arquivo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportPreview' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+  /workspaces/{wid}/accounts/{accountId}/import:
+    post:
+      summary: Confirma a importação das linhas escolhidas
+      description: >
+        Cada linha vira um lançamento efetivado da conta: receita se o valor é positivo, despesa se é negativo.
+        Linhas cuja chave já existe na conta (inclusive excluída) são ignoradas e contadas em `skipped`. Qualquer linha
+        inválida recusa a confirmação inteira (400, campo `lines[N].campo`) sem gravar nada. Repetir a confirmação, mesmo
+        ao mesmo tempo, não duplica. Responde 201 quando cria ao menos um lançamento e 200 quando tudo já existia.
+      operationId: confirmImport
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImportConfirmRequest' }
+      responses:
+        '200':
+          description: Nada novo para criar (todas as linhas já existiam)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportConfirmResponse' }
+        '201':
+          description: Lançamentos criados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportConfirmResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Arquivo ou campo inválido (campo em errors[].field, por exemplo `file` ou `lines[2].categoryId`)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, conta ou categoria inexistente ou de outro workspace, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conta ou categoria arquivada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    TooLarge:
+      description: O arquivo passa de 2 MB
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    ImportPreview:
+      type: object
+      required: [format, total, valid, existing, invalid, lines]
+      properties:
+        format: { type: string, enum: [OFX, CSV] }
+        total: { type: integer }
+        valid: { type: integer, description: 'Sem problema e ainda não existentes na conta' }
+        existing: { type: integer, description: 'Já existentes na conta (inclusive excluídos)' }
+        invalid: { type: integer, description: 'Com problema' }
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/ImportLinePreview' }
+    ImportLinePreview:
+      type: object
+      required: [line, description, existing, possibleDuplicate, problems]
+      properties:
+        line: { type: integer, description: 'Número da linha no arquivo (OFX: ordem do movimento)' }
+        occurredOn: { type: [string, 'null'], format: date }
+        description: { type: string, maxLength: 200 }
+        amountCents: { type: [integer, 'null'], format: int64, description: 'Com sinal: entrada positiva, saída negativa' }
+        type: { type: [string, 'null'], enum: [INCOME, EXPENSE, null] }
+        key: { type: [string, 'null'], description: 'Chave de importação; nula quando a linha tem problema' }
+        existing: { type: boolean }
+        possibleDuplicate: { type: boolean, description: 'Mesma data e valor de um lançamento sem chave da conta; só um aviso' }
+        suggestedCategoryId: { type: [string, 'null'], format: uuid }
+        problems: { type: array, items: { type: string } }
+    ImportConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items: { $ref: '#/components/schemas/ImportLineRequest' }
+    ImportLineRequest:
+      type: object
+      additionalProperties: false
+      required: [key, occurredOn, description, amountCents]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 200 }
+        occurredOn: { type: string, format: date, description: 'De 2000-01-01 a 2100-12-31' }
+        description: { type: string, minLength: 1, maxLength: 200 }
+        amountCents: { type: integer, format: int64, description: 'Com sinal, diferente de zero, módulo até 1.000.000.000.000' }
+        categoryId: { type: [string, 'null'], format: uuid, description: 'Opcional; do tipo da linha e ativa' }
+    ImportConfirmResponse:
+      type: object
+      required: [created, skipped]
+      properties:
+        created:
+          type: array
+          items: { $ref: '#/components/schemas/Transaction' }
+        skipped: { type: integer, description: 'Linhas ignoradas porque a chave já existia na conta' }
+    Transaction:
+      type: object
+      description: Lançamento (spec 004), com o campo `imported` acrescentado por esta spec
+      required: [id, accountId, type, amountCents, occurredOn, description, imported]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        type: { type: string, enum: [INCOME, EXPENSE, TRANSFER] }
+        amountCents: { type: integer, format: int64 }
+        occurredOn: { type: string, format: date }
+        description: { type: string }
+        categoryId: { type: [string, 'null'], format: uuid }
+        status: { type: string, enum: [PENDING, CLEARED] }
+        imported: { type: boolean, description: 'Veio de uma importação de extrato' }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
