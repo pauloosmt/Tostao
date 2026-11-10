@@ -16,7 +16,14 @@ public record TransactionFilter(
 		UUID accountId,
 		UUID categoryId,
 		TransactionType type,
-		String q) {
+		String q,
+		TransactionStatus status) {
+
+	/** Sem filtro de estado: lista pendentes e efetivados. */
+	public TransactionFilter(int page, int size, LocalDate from, LocalDate to, UUID accountId, UUID categoryId,
+			TransactionType type, String q) {
+		this(page, size, from, to, accountId, categoryId, type, q, null);
+	}
 
 	public static final int DEFAULT_SIZE = 20;
 	public static final int MAX_SIZE = 100;

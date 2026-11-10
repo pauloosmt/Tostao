@@ -201,7 +201,7 @@ class CreateTransactionTest {
 		for (String extra : new String[] { "\"workspaceId\":\"" + UUID.randomUUID() + "\"",
 				"\"createdBy\":\"" + UUID.randomUUID() + "\"", "\"transferGroupId\":\"" + UUID.randomUUID() + "\"",
 				"\"deletedAt\":\"2020-01-01T00:00:00Z\"", "\"createdAt\":\"2020-01-01T00:00:00Z\"",
-				"\"status\":\"PENDING\"" }) {
+				"\"status\":\"OUTRO\"" }) {
 			String json = valid.substring(0, valid.length() - 1) + "," + extra + "}";
 			assertThat(create(s.fx(), json).getResponse().getStatus()).as(extra).isEqualTo(400);
 		}

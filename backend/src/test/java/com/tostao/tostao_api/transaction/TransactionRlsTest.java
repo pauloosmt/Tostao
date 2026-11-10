@@ -195,7 +195,7 @@ class TransactionRlsTest {
 
 		for (String change : new String[] { "created_by = '" + UUID.randomUUID() + "'", "type = 'INCOME'",
 				"workspace_id = '" + UUID.randomUUID() + "'", "transfer_group_id = '" + UUID.randomUUID() + "'",
-				"created_at = now()", "status = 'PENDING'", "id = '" + UUID.randomUUID() + "'" }) {
+				"created_at = now()", "id = '" + UUID.randomUUID() + "'" }) {
 			assertThatThrownBy(() -> run(wd.owner().userId(), w, "update transactions set " + change + where))
 					.as(change).hasMessageContaining("permission denied");
 		}

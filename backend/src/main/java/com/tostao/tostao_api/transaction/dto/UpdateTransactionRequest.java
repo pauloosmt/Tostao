@@ -41,7 +41,10 @@ public record UpdateTransactionRequest(
 		@Size(max = 1000, message = "deve ter no máximo 1.000 caracteres")
 		String notes,
 
-		UUID categoryId) {
+		UUID categoryId,
+
+		/** Estado: ausente = mantém o atual; só CLEARED e PENDING são aceitos (texto vazio e minúsculas não). */
+		String status) {
 
 	public UpdateTransactionRequest {
 		description = description == null ? null : description.strip();

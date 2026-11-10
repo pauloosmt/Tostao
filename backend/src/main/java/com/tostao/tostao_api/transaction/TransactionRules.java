@@ -19,6 +19,22 @@ public final class TransactionRules {
 	}
 
 	/**
+	 * Estado informado pelo cliente: ausente (nulo) fica nulo; senão tem de ser exatamente {@code CLEARED} ou
+	 * {@code PENDING}. Texto vazio, minúsculas e qualquer outro valor são recusados com o campo {@code status}.
+	 */
+	public static TransactionStatus parseStatus(String raw) {
+		if (raw == null) {
+			return null;
+		}
+		for (TransactionStatus status : TransactionStatus.values()) {
+			if (status.name().equals(raw)) {
+				return status;
+			}
+		}
+		throw new FieldValidationException("status", "deve ser CLEARED ou PENDING");
+	}
+
+	/**
 	 * Valor com sinal a partir do valor positivo que o cliente informa: receita positiva, despesa
 	 * negativa. A transferência não tem sinal próprio (cada ponta tem o seu, ver {@link #transferLegs}).
 	 */

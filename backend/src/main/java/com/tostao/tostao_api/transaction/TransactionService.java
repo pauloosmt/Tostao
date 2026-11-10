@@ -40,7 +40,7 @@ public class TransactionService {
 	private static final String SELECT = """
 			select t.id, t.account_id, t.type, t.amount_cents, t.occurred_on, t.description, t.notes,
 			       t.category_id, t.transfer_group_id, o.account_id as counterpart_account_id, t.created_by,
-			       t.created_at, t.updated_at
+			       t.created_at, t.updated_at, t.status
 			from transactions t
 			left join transactions o
 			       on o.workspace_id = t.workspace_id and o.transfer_group_id = t.transfer_group_id
@@ -61,7 +61,8 @@ public class TransactionService {
 			rs.getObject("counterpart_account_id", UUID.class),
 			rs.getObject("created_by", UUID.class),
 			rs.getObject("created_at", OffsetDateTime.class).toInstant(),
-			rs.getObject("updated_at", OffsetDateTime.class).toInstant());
+			rs.getObject("updated_at", OffsetDateTime.class).toInstant(),
+			TransactionStatus.valueOf(rs.getString("status")));
 
 	private final JdbcClient jdbc;
 
@@ -77,8 +78,9 @@ public class TransactionService {
 	@Transactional
 	public TransactionResponse create(UUID workspaceId, CreateTransactionRequest request) {
 		TransactionRules.requireDateInRange(request.occurredOn());
+		TransactionStatus status = TransactionRules.parseStatus(request.status());
 		if (request.type() == TransactionType.TRANSFER) {
-			return createTransfer(workspaceId, request);
+			return createTransfer(workspaceId, request, status);
 		}
 
 		if (request.destinationAccountId() != null) {
@@ -91,7 +93,7 @@ public class TransactionService {
 		requireUsableCategory(workspaceId, request.categoryId(), request.type());
 
 		UUID id = insertRow(workspaceId, request.accountId(), request.categoryId(), request.type(),
-				TransactionRules.signedAmount(request.type(), request.amountCents()), request, null);
+				TransactionRules.signedAmount(request.type(), request.amountCents()), request, null, status);
 		return load(workspaceId, id);
 	}
 
@@ -99,26 +101,27 @@ public class TransactionService {
 	 * Transferência: duas pontas ligadas por um grupo, gravadas na mesma transação. As duas contas são
 	 * travadas em ordem de id (evita impasse entre transferências opostas) e conferidas antes de gravar.
 	 */
-	private TransactionResponse createTransfer(UUID workspaceId, CreateTransactionRequest request) {
+	private TransactionResponse createTransfer(UUID workspaceId, CreateTransactionRequest request,
+			TransactionStatus status) {
 		requireTransferFields(request.accountId(), request.destinationAccountId(), request.categoryId());
 		requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
 
 		UUID group = UUID.randomUUID();
 		long[] legs = TransactionRules.transferLegs(request.amountCents());
 		UUID outflow = insertRow(workspaceId, request.accountId(), null, TransactionType.TRANSFER, legs[0], request,
-				group);
+				group, status);
 		insertRow(workspaceId, request.destinationAccountId(), null, TransactionType.TRANSFER, legs[1], request,
-				group);
+				group, status);
 		return load(workspaceId, outflow);
 	}
 
 	private UUID insertRow(UUID workspaceId, UUID accountId, UUID categoryId, TransactionType type, long signedCents,
-			CreateTransactionRequest request, UUID transferGroupId) {
+			CreateTransactionRequest request, UUID transferGroupId, TransactionStatus status) {
 		return jdbc.sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
-				                          description, notes, transfer_group_id, created_by)
+				                          description, notes, transfer_group_id, status, created_by)
 				values (:workspaceId, :accountId, :categoryId, :type, :amount, :occurredOn, :description, :notes,
-				        :transferGroupId, :createdBy)
+				        :transferGroupId, :status, :createdBy)
 				returning id
 				""")
 				.param("workspaceId", workspaceId)
@@ -130,6 +133,8 @@ public class TransactionService {
 				.param("description", request.description())
 				.param("notes", request.notes())
 				.param("transferGroupId", transferGroupId)
+				// sem estado informado, o lançamento é efetivado, como antes desta funcionalidade
+				.param("status", (status == null ? TransactionStatus.CLEARED : status).name())
 				.param("createdBy", CurrentUser.id())
 				.query(UUID.class)
 				.single();
@@ -145,6 +150,7 @@ public class TransactionService {
 	@Transactional
 	public TransactionResponse update(UUID workspaceId, UUID transactionId, UpdateTransactionRequest request) {
 		TransactionRules.requireDateInRange(request.occurredOn());
+		TransactionStatus status = TransactionRules.parseStatus(request.status());
 		Peek peek = peek(workspaceId, transactionId);
 		if (request.type() != null && request.type() != peek.type()) {
 			throw new FieldValidationException("type", "não pode ser mudado");
@@ -183,9 +189,9 @@ public class TransactionService {
 			}
 
 			long[] legs = TransactionRules.transferLegs(request.amountCents());
-			updateRow(workspaceId, outflow.id(), request.accountId(), outflow.categoryId(), legs[0], request);
+			updateRow(workspaceId, outflow.id(), request.accountId(), outflow.categoryId(), legs[0], request, status);
 			updateRow(workspaceId, inflow.id(), request.destinationAccountId(), inflow.categoryId(), legs[1],
-					request);
+					request, status);
 		}
 		else {
 			Row row = rows.get(0);
@@ -196,7 +202,7 @@ public class TransactionService {
 				requireUsableCategory(workspaceId, request.categoryId(), peek.type());
 			}
 			updateRow(workspaceId, row.id(), request.accountId(), request.categoryId(),
-					TransactionRules.signedAmount(peek.type(), request.amountCents()), request);
+					TransactionRules.signedAmount(peek.type(), request.amountCents()), request, status);
 		}
 		return load(workspaceId, transactionId);
 	}
@@ -215,11 +221,12 @@ public class TransactionService {
 	}
 
 	private void updateRow(UUID workspaceId, UUID id, UUID accountId, UUID categoryId, long signedCents,
-			UpdateTransactionRequest request) {
+			UpdateTransactionRequest request, TransactionStatus status) {
 		jdbc.sql("""
 				update transactions
 				set account_id = :accountId, category_id = :categoryId, amount_cents = :amount,
-				    occurred_on = :occurredOn, description = :description, notes = :notes, updated_at = now()
+				    occurred_on = :occurredOn, description = :description, notes = :notes,
+				    status = coalesce(cast(:status as text), status), updated_at = now()
 				where id = :id and workspace_id = :workspaceId and deleted_at is null
 				""")
 				.param("accountId", accountId)
@@ -228,6 +235,8 @@ public class TransactionService {
 				.param("occurredOn", request.occurredOn())
 				.param("description", request.description())
 				.param("notes", request.notes())
+				// estado ausente mantém o atual (um pendente não vira efetivado por acaso)
+				.param("status", status == null ? null : status.name())
 				.param("id", id)
 				.param("workspaceId", workspaceId)
 				.update();
@@ -249,6 +258,28 @@ public class TransactionService {
 				.param("workspaceId", workspaceId)
 				.param("ids", rows.stream().map(Row::id).toList())
 				.update();
+	}
+
+	/**
+	 * Efetiva um lançamento pendente (numa transferência, as duas pontas juntas). Idempotente: o {@code UPDATE} só
+	 * toca linhas ainda pendentes, então efetivar de novo não altera nem {@code updated_at}. Não confere conta nem
+	 * categoria ativas: efetivar não é passar a usá-las. A unidade é travada em ordem de id, como na edição e na
+	 * exclusão, então duas efetivações (ou uma efetivação e uma exclusão) simultâneas nunca deixam as pontas em
+	 * estados diferentes.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public TransactionResponse clear(UUID workspaceId, UUID transactionId) {
+		Peek peek = peek(workspaceId, transactionId);
+		List<Row> rows = lockUnit(workspaceId, transactionId, peek);
+		jdbc.sql("""
+				update transactions set status = 'CLEARED', updated_at = now()
+				where workspace_id = :workspaceId and id in (:ids) and deleted_at is null and status <> 'CLEARED'
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", rows.stream().map(Row::id).toList())
+				.update();
+		return load(workspaceId, transactionId);
 	}
 
 	/** Linha de lançamento lida e travada para alteração. */
@@ -345,6 +376,10 @@ public class TransactionService {
 		if (filter.type() != null) {
 			conditions.append("  and t.type = :type\n");
 			params.put("type", filter.type().name());
+		}
+		if (filter.status() != null) {
+			conditions.append("  and t.status = :status\n");
+			params.put("status", filter.status().name());
 		}
 		if (filter.q() != null && !filter.q().isEmpty()) {
 			conditions.append("  and lower(t.description) like lower(:pattern) escape '\\'\n");

@@ -108,34 +108,48 @@ public class WorkspaceFixtures {
 	 */
 	public UUID insertLedgerTransaction(UUID workspaceId, UUID accountId, UUID userId, UUID categoryId, String type,
 			long absAmountCents, java.time.LocalDate date, String description, boolean deleted) {
+		return insertLedgerTransaction(workspaceId, accountId, userId, categoryId, type, absAmountCents, date,
+				description, deleted, "CLEARED");
+	}
+
+	/** Como a anterior, com o estado do lançamento: {@code "CLEARED"} (efetivado) ou {@code "PENDING"} (pendente). */
+	public UUID insertLedgerTransaction(UUID workspaceId, UUID accountId, UUID userId, UUID categoryId, String type,
+			long absAmountCents, java.time.LocalDate date, String description, boolean deleted, String status) {
 		long signed = "EXPENSE".equals(type) ? -absAmountCents : absAmountCents;
 		return owner.client().sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
-				                          description, created_by, deleted_at)
-				values (:w, :a, :c, :t, :m, :d, :s, :u, case when :x then now() else null end)
+				                          description, created_by, deleted_at, status)
+				values (:w, :a, :c, :t, :m, :d, :s, :u, case when :x then now() else null end, :st)
 				returning id""")
 				.param("w", workspaceId).param("a", accountId).param("c", categoryId).param("t", type)
 				.param("m", signed).param("d", date).param("s", description).param("u", userId)
-				.param("x", deleted).query(UUID.class).single();
+				.param("x", deleted).param("st", status).query(UUID.class).single();
 	}
 
 	/** Transferência completa: devolve {@code {idDaSaída, idDaEntrada}}, com o mesmo grupo. */
 	public UUID[] insertTransferPair(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents,
 			java.time.LocalDate date, String description) {
+		return insertTransferPair(workspaceId, fromAccount, toAccount, userId, cents, date, description, "CLEARED");
+	}
+
+	/** Como a anterior, com o estado das duas pontas: {@code "CLEARED"} ou {@code "PENDING"}. */
+	public UUID[] insertTransferPair(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents,
+			java.time.LocalDate date, String description, String status) {
 		UUID group = UUID.randomUUID();
-		UUID out = insertLeg(workspaceId, fromAccount, userId, -cents, date, description, group);
-		UUID in = insertLeg(workspaceId, toAccount, userId, cents, date, description, group);
+		UUID out = insertLeg(workspaceId, fromAccount, userId, -cents, date, description, group, status);
+		UUID in = insertLeg(workspaceId, toAccount, userId, cents, date, description, group, status);
 		return new UUID[] { out, in };
 	}
 
 	private UUID insertLeg(UUID workspaceId, UUID accountId, UUID userId, long signedCents, java.time.LocalDate date,
-			String description, UUID group) {
+			String description, UUID group, String status) {
 		return owner.client().sql("""
 				insert into transactions (workspace_id, account_id, type, amount_cents, occurred_on, description,
-				                          transfer_group_id, created_by)
-				values (:w, :a, 'TRANSFER', :m, :d, :s, :g, :u) returning id""")
+				                          transfer_group_id, created_by, status)
+				values (:w, :a, 'TRANSFER', :m, :d, :s, :g, :u, :st) returning id""")
 				.param("w", workspaceId).param("a", accountId).param("m", signedCents).param("d", date)
-				.param("s", description).param("g", group).param("u", userId).query(UUID.class).single();
+				.param("s", description).param("g", group).param("u", userId).param("st", status)
+				.query(UUID.class).single();
 	}
 
 	/**

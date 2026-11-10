@@ -43,9 +43,10 @@ class TransactionController {
 			@RequestParam(name = "accountId", required = false) UUID accountId,
 			@RequestParam(name = "categoryId", required = false) UUID categoryId,
 			@RequestParam(name = "type", required = false) TransactionType type,
-			@RequestParam(name = "q", required = false) String q) {
+			@RequestParam(name = "q", required = false) String q,
+			@RequestParam(name = "status", required = false) TransactionStatus status) {
 		return transactions.list(workspaceId,
-				new TransactionFilter(page, size, from, to, accountId, categoryId, type, q));
+				new TransactionFilter(page, size, from, to, accountId, categoryId, type, q, status));
 	}
 
 	@GetMapping("/{id}")
@@ -57,6 +58,12 @@ class TransactionController {
 	TransactionResponse update(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID transactionId,
 			@Valid @RequestBody UpdateTransactionRequest request) {
 		return transactions.update(workspaceId, transactionId, request);
+	}
+
+	/** Efetiva o lançamento (numa transferência, as duas pontas); já efetivado responde 200 sem efeito. */
+	@PostMapping("/{id}/clear")
+	TransactionResponse clear(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID transactionId) {
+		return transactions.clear(workspaceId, transactionId);
 	}
 
 	@DeleteMapping("/{id}")
