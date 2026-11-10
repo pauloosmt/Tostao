@@ -56,6 +56,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path MEMBERSHIP_CONTRACT = Path.of("..", "specs", "012-membros-convites", "contracts",
 			"openapi.yaml");
+	private static final Path IMPORT_CONTRACT = Path.of("..", "specs", "013-importacao-extratos", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -417,6 +419,76 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void importContractFileDeclaresTheTwoRoutes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(IMPORT_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/accounts/{accountId}/import/preview",
+				"/api/v1/workspaces/{wid}/accounts/{accountId}/import");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/accounts/{accountId}/import/preview")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/accounts/{accountId}/import")).containsExactly("post");
+	}
+
+	@Test
+	void theImportRoutesAndFieldsAreInTheGeneratedDocsAndNothingElse() throws Exception {
+		String preview = "$.paths['/api/v1/workspaces/{wid}/accounts/{accountId}/import/preview']";
+		String confirm = "$.paths['/api/v1/workspaces/{wid}/accounts/{accountId}/import']";
+		String schemas = "$.components.schemas.";
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				// só POST: a prévia não grava e a confirmação é a única que grava; nada é consultado nem editado depois
+				.andExpect(jsonPath(preview + ".post").exists())
+				.andExpect(jsonPath(preview + ".get").doesNotExist())
+				.andExpect(jsonPath(preview + ".put").doesNotExist())
+				.andExpect(jsonPath(preview + ".delete").doesNotExist())
+				.andExpect(jsonPath(confirm + ".post").exists())
+				.andExpect(jsonPath(confirm + ".get").doesNotExist())
+				.andExpect(jsonPath(confirm + ".put").doesNotExist())
+				.andExpect(jsonPath(confirm + ".delete").doesNotExist())
+				// o arquivo vai como multipart na parte "file"; a confirmação é JSON
+				.andExpect(jsonPath(preview + ".post.requestBody.content['multipart/form-data']").exists())
+				.andExpect(jsonPath(preview + ".post.requestBody.content['application/json']").doesNotExist())
+				.andExpect(jsonPath(confirm + ".post.requestBody.content['application/json']").exists())
+				// a prévia
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.format").exists())
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.total").exists())
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.valid").exists())
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.existing").exists())
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.invalid").exists())
+				.andExpect(jsonPath(schemas + "ImportPreview.properties.lines").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.line").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.occurredOn").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.description").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.amountCents").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.type").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.key").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.existing").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.possibleDuplicate").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.suggestedCategoryId").exists())
+				.andExpect(jsonPath(schemas + "ImportLinePreview.properties.problems").exists())
+				// a confirmação: só os campos permitidos, nada de workspace, autoria, estado nem tipo
+				.andExpect(jsonPath(schemas + "ImportConfirmRequest.properties.lines").exists())
+				.andExpect(jsonPath(schemas + "ImportConfirmRequest.properties.workspaceId").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportConfirmRequest.properties.accountId").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.key").exists())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.occurredOn").exists())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.description").exists())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.amountCents").exists())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.categoryId").exists())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.createdBy").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.workspaceId").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.type").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportLineRequest.properties.status").doesNotExist())
+				.andExpect(jsonPath(schemas + "ImportConfirmResponse.properties.created").exists())
+				.andExpect(jsonPath(schemas + "ImportConfirmResponse.properties.skipped").exists())
+				// o lançamento diz se foi importado, e a chave de importação nunca sai
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.imported").exists())
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.importKey").doesNotExist())
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.key").doesNotExist())
+				// a listagem ganha o filtro "sem categoria"
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transactions'].get.parameters[?(@.name=='uncategorized')]").exists());
+	}
+
+	@Test
 	void membershipContractFileDeclaresTheSevenRoutes() throws IOException {
 		Map<String, List<String>> operations = contractOperations(MEMBERSHIP_CONTRACT);
 
@@ -513,7 +585,7 @@ class OpenApiContractTest {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
 				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT,
-				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT, MEMBERSHIP_CONTRACT)) {
+				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT, MEMBERSHIP_CONTRACT, IMPORT_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
