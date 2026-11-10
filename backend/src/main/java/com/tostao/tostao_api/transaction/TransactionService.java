@@ -35,7 +35,7 @@ import com.tostao.tostao_api.workspace.WorkspaceScoped;
 public class TransactionService {
 
 	/** Lançamento vigente (não excluído) do workspace, com a conta da outra ponta se for transferência. */
-	static final String SELECT = """
+	public static final String SELECT = """
 			select t.id, t.account_id, t.type, t.amount_cents, t.occurred_on, t.description, t.notes,
 			       t.category_id, t.transfer_group_id, o.account_id as counterpart_account_id, t.created_by,
 			       t.created_at, t.updated_at, t.status,
@@ -48,7 +48,7 @@ public class TransactionService {
 			where t.workspace_id = :workspaceId and t.deleted_at is null
 			""";
 
-	static final RowMapper<TransactionResponse> ROW_MAPPER = (rs, i) -> new TransactionResponse(
+	public static final RowMapper<TransactionResponse> ROW_MAPPER = (rs, i) -> new TransactionResponse(
 			rs.getObject("id", UUID.class),
 			rs.getObject("account_id", UUID.class),
 			TransactionType.valueOf(rs.getString("type")),

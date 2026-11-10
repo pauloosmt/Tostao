@@ -15,11 +15,11 @@ import com.tostao.tostao_api.common.error.TransactionConflictException;
  * parcelada, para as duas terem exatamente a mesma regra. Não é um bean: cada serviço a cria a partir do seu
  * {@link JdbcClient}, e as consultas rodam na transação do serviço que a chama.
  */
-final class UsableRefs {
+public final class UsableRefs {
 
 	private final JdbcClient jdbc;
 
-	UsableRefs(JdbcClient jdbc) {
+	public UsableRefs(JdbcClient jdbc) {
 		this.jdbc = jdbc;
 	}
 
@@ -27,7 +27,7 @@ final class UsableRefs {
 	 * A conta existe no workspace e está ativa. A linha fica travada em modo compartilhado: arquivar a conta
 	 * (um {@code UPDATE}) espera este lançamento confirmar, e o arquivamento que chegar antes é visto aqui.
 	 */
-	void requireUsableAccount(UUID workspaceId, UUID accountId) {
+	public void requireUsableAccount(UUID workspaceId, UUID accountId) {
 		boolean archived = jdbc.sql("""
 				select archived from accounts
 				where id = :accountId and workspace_id = :workspaceId
@@ -44,7 +44,7 @@ final class UsableRefs {
 	}
 
 	/** A categoria existe no workspace, está ativa e tem o tipo do lançamento. Também travada ({@code FOR SHARE}). */
-	void requireUsableCategory(UUID workspaceId, UUID categoryId, TransactionType type) {
+	public void requireUsableCategory(UUID workspaceId, UUID categoryId, TransactionType type) {
 		record Category(CategoryKind kind, boolean archived) {
 		}
 		Category category = jdbc.sql("""

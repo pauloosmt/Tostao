@@ -176,6 +176,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
 	}
 
+	@ExceptionHandler(RecurrenceNotFoundException.class)
+	ResponseEntity<ProblemDetail> recurrenceNotFound(RecurrenceNotFoundException ex) {
+		return problem(HttpStatus.NOT_FOUND, "Não encontrado", ex.getMessage());
+	}
+
 	@ExceptionHandler(BudgetConflictException.class)
 	ResponseEntity<ProblemDetail> budgetConflict(BudgetConflictException ex) {
 		return problem(HttpStatus.CONFLICT, "Conflito de estado", ex.getMessage());
