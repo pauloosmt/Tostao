@@ -1,6 +1,12 @@
 package com.tostao.tostao_api.transaction;
 
+import static com.tostao.tostao_api.support.AuthSupport.session;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 import java.util.UUID;
+
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import com.tostao.tostao_api.support.WorkspaceFixtures;
 import com.tostao.tostao_api.support.WorkspaceFixtures.Fixture;
@@ -24,6 +30,15 @@ public record InstallmentScenario(Fixture owner, UUID checking, UUID savings, UU
 		UUID gadgets = fixtures.insertCategory(w, null, "Eletrônicos", "EXPENSE", false);
 		UUID salary = fixtures.insertCategory(w, null, "Salário", "INCOME", false);
 		return new InstallmentScenario(fx, checking, savings, card, food, gadgets, salary);
+	}
+
+	public static String purchasesUrl(UUID workspaceId) {
+		return "/api/v1/workspaces/" + workspaceId + "/installment-purchases";
+	}
+
+	/** {@code GET /installment-purchases/{groupId}}; o grupo é texto para os testes de identificador malformado. */
+	public static ResultActions plan(MockMvc mvc, Fixture who, Object groupId) throws Exception {
+		return mvc.perform(get(purchasesUrl(who.workspaceId()) + "/" + groupId).cookie(session(who.token())));
 	}
 
 }
