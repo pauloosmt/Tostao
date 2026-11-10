@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tostao.tostao_api.transaction.dto.CancelInstallmentsResponse;
 import com.tostao.tostao_api.transaction.dto.CreateInstallmentPurchaseRequest;
 import com.tostao.tostao_api.transaction.dto.InstallmentPlanResponse;
 
@@ -38,6 +39,12 @@ class InstallmentController {
 		InstallmentPlanResponse plan = installments.create(workspaceId, request);
 		URI location = URI.create("/api/v1/workspaces/" + workspaceId + "/installment-purchases/" + plan.groupId());
 		return ResponseEntity.created(location).body(plan);
+	}
+
+	/** Cancela as parcelas ainda pendentes; sem pendentes, ou repetido, responde 200 com zero. */
+	@PostMapping("/{groupId}/cancel")
+	CancelInstallmentsResponse cancel(@PathVariable("wid") UUID workspaceId, @PathVariable("groupId") UUID groupId) {
+		return installments.cancel(workspaceId, groupId);
 	}
 
 }

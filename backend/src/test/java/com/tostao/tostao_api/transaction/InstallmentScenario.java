@@ -57,4 +57,9 @@ public record InstallmentScenario(Fixture owner, UUID checking, UUID savings, UU
 		return s + (status == null ? "" : ",\"firstInstallmentStatus\":\"" + status + "\"") + "}";
 	}
 
+	/** {@code POST /installment-purchases/{groupId}/cancel}; o grupo é texto para os testes de identificador malformado. */
+	public static ResultActions cancel(MockMvc mvc, Fixture who, Object groupId) throws Exception {
+		return mvc.perform(post(purchasesUrl(who.workspaceId()) + "/" + groupId + "/cancel").cookie(session(who.token())));
+	}
+
 }

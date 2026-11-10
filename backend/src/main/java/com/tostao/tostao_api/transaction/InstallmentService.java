@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tostao.tostao_api.common.error.InstallmentPlanNotFoundException;
+import com.tostao.tostao_api.transaction.dto.CancelInstallmentsResponse;
 import com.tostao.tostao_api.transaction.dto.CreateInstallmentPurchaseRequest;
 import com.tostao.tostao_api.transaction.dto.InstallmentPlanResponse;
 import com.tostao.tostao_api.transaction.dto.TransactionResponse;
@@ -86,6 +87,53 @@ public class InstallmentService {
 				.param("number", number)
 				.param("count", count)
 				.update();
+	}
+
+	/**
+	 * Cancela o plano: exclui logicamente só as parcelas que ainda estão pendentes e vivas e informa quantas foram. As
+	 * efetivadas e as já excluídas ficam como estão, então nenhum número realizado muda. O plano existe enquanto houver
+	 * qualquer linha do grupo (excluída ou não): plano só com efetivadas, ou já cancelado, responde zero. As pendentes
+	 * são travadas em ordem de número antes do {@code UPDATE} (dois cancelamentos simultâneos não se bloqueiam em
+	 * ordens opostas) e a condição de estado é repetida nele: uma parcela efetivada ao mesmo tempo, depois de a trava
+	 * ser conquistada, é relida como efetivada e fica de fora; uma parcela já excluída nunca é contada de novo.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public CancelInstallmentsResponse cancel(UUID workspaceId, UUID groupId) {
+		boolean exists = jdbc.sql("""
+				select exists (select 1 from transactions
+				               where workspace_id = :workspaceId and installment_group_id = :groupId)
+				""")
+				.param("workspaceId", workspaceId)
+				.param("groupId", groupId)
+				.query(Boolean.class)
+				.single();
+		if (!exists) {
+			throw new InstallmentPlanNotFoundException();
+		}
+
+		List<UUID> pending = jdbc.sql("""
+				select id from transactions
+				where workspace_id = :workspaceId and installment_group_id = :groupId
+				  and status = 'PENDING' and deleted_at is null
+				order by installment_number
+				for update
+				""")
+				.param("workspaceId", workspaceId)
+				.param("groupId", groupId)
+				.query(UUID.class)
+				.list();
+		if (pending.isEmpty()) {
+			return new CancelInstallmentsResponse(0);
+		}
+		int cancelled = jdbc.sql("""
+				update transactions set deleted_at = now(), updated_at = now()
+				where workspace_id = :workspaceId and id in (:ids) and status = 'PENDING' and deleted_at is null
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", pending)
+				.update();
+		return new CancelInstallmentsResponse(cancelled);
 	}
 
 	/**
