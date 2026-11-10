@@ -52,6 +52,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path INSTALLMENTS_CONTRACT = Path.of("..", "specs", "010-compra-parcelada", "contracts",
 			"openapi.yaml");
+	private static final Path RECURRENCES_CONTRACT = Path.of("..", "specs", "011-recorrencias-agendamentos", "contracts",
+			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
 	private static final Pattern METHOD_LINE = Pattern.compile("^    (get|post|put|delete):\\s*$");
 
@@ -339,6 +341,80 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void recurrencesContractFileDeclaresTheFourRoutesAndTheChangedOnes() throws IOException {
+		Map<String, List<String>> operations = contractOperations(RECURRENCES_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/recurrences",
+				"/api/v1/workspaces/{wid}/recurrences/{id}",
+				"/api/v1/workspaces/{wid}/recurrences/{id}/end",
+				"/api/v1/workspaces/{wid}/transactions",
+				"/api/v1/workspaces/{wid}/transactions/{id}",
+				"/api/v1/workspaces/{wid}/installment-purchases");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences")).containsExactlyInAnyOrder("get", "post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences/{id}")).containsExactly("get");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences/{id}/end")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions")).containsExactly("post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/transactions/{id}")).containsExactly("put");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/installment-purchases")).containsExactly("post");
+	}
+
+	@Test
+	void theRecurrenceRoutesAndFieldsAreInTheGeneratedDocsAndNothingElse() throws Exception {
+		String recurrences = "$.paths['/api/v1/workspaces/{wid}/recurrences']";
+		String one = "$.paths['/api/v1/workspaces/{wid}/recurrences/{id}']";
+		String end = "$.paths['/api/v1/workspaces/{wid}/recurrences/{id}/end']";
+		String schemas = "$.components.schemas.";
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				// a regra da recorrência não é editável nem se apaga: só criar, listar, consultar e encerrar
+				.andExpect(jsonPath(recurrences + ".post").exists())
+				.andExpect(jsonPath(recurrences + ".get").exists())
+				.andExpect(jsonPath(recurrences + ".put").doesNotExist())
+				.andExpect(jsonPath(recurrences + ".delete").doesNotExist())
+				.andExpect(jsonPath(one + ".get").exists())
+				.andExpect(jsonPath(one + ".post").doesNotExist())
+				.andExpect(jsonPath(one + ".put").doesNotExist())
+				.andExpect(jsonPath(one + ".patch").doesNotExist())
+				.andExpect(jsonPath(one + ".delete").doesNotExist())
+				.andExpect(jsonPath(end + ".post").exists())
+				.andExpect(jsonPath(end + ".get").doesNotExist())
+				.andExpect(jsonPath(end + ".put").doesNotExist())
+				.andExpect(jsonPath(end + ".delete").doesNotExist())
+				// o marcador de efetivação automática em lançamentos e na compra parcelada
+				.andExpect(jsonPath(schemas + "CreateTransactionRequest.properties.autoClear").exists())
+				.andExpect(jsonPath(schemas + "UpdateTransactionRequest.properties.autoClear").exists())
+				.andExpect(jsonPath(schemas + "CreateInstallmentPurchaseRequest.properties.autoClear").exists())
+				// os campos acrescentados a todo lançamento
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.autoClear").exists())
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.recurrenceId").exists())
+				.andExpect(jsonPath(schemas + "TransactionResponse.properties.occurrenceNumber").exists())
+				// o resumo e o detalhe da recorrência
+				.andExpect(jsonPath(schemas + "RecurrenceResponse.properties.nextOccurrenceOn").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceResponse.properties.ended").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceResponse.properties.frequency").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceDetailResponse.properties.totalCents").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceDetailResponse.properties.clearedCents").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceDetailResponse.properties.pendingCents").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceDetailResponse.properties.occurrences").exists())
+				.andExpect(jsonPath(schemas + "EndRecurrenceResponse.properties.cancelled").exists())
+				// o corpo da criação: só os campos permitidos, e nada de autor, workspace, estado ou recorrência de origem
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.accountId").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.categoryId").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.type").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.amountCents").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.description").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.notes").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.frequency").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.startOn").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.endOn").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.autoClear").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.createdBy").doesNotExist())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.workspaceId").doesNotExist())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.recurrenceId").doesNotExist())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.status").doesNotExist());
+	}
+
+	@Test
 	void theDashboardIsReadOnlyAndAcceptsMonthOrWeek() throws Exception {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/dashboard'].get").exists())
@@ -365,7 +441,7 @@ class OpenApiContractTest {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
 				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT,
-				INSTALLMENTS_CONTRACT)) {
+				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
