@@ -45,7 +45,10 @@ public record CreateTransactionRequest(
 		UUID categoryId,
 
 		/** Estado: ausente = efetivado; só CLEARED e PENDING são aceitos (texto vazio e minúsculas não). */
-		String status) {
+		String status,
+
+		/** Efetivar sozinho quando a data chegar: ausente = desligado; só vale para lançamento pendente. */
+		Boolean autoClear) {
 
 	public CreateTransactionRequest {
 		description = description == null ? null : description.strip();

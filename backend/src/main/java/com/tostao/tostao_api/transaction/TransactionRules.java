@@ -40,6 +40,16 @@ public final class TransactionRules {
 	}
 
 	/**
+	 * A efetivação automática só vale para lançamento pendente: ligada num lançamento que resulta efetivado, a operação é
+	 * recusada no campo {@code autoClear}. Ausente ou desligada é sempre aceita.
+	 */
+	public static void requireAutoClearPending(Boolean autoClear, TransactionStatus resultingStatus) {
+		if (Boolean.TRUE.equals(autoClear) && resultingStatus == TransactionStatus.CLEARED) {
+			throw new FieldValidationException("autoClear", "só vale para lançamento pendente");
+		}
+	}
+
+	/**
 	 * Valor com sinal a partir do valor positivo que o cliente informa: receita positiva, despesa
 	 * negativa. A transferência não tem sinal próprio (cada ponta tem o seu, ver {@link #transferLegs}).
 	 */

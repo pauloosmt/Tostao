@@ -39,7 +39,8 @@ public class TransactionService {
 			select t.id, t.account_id, t.type, t.amount_cents, t.occurred_on, t.description, t.notes,
 			       t.category_id, t.transfer_group_id, o.account_id as counterpart_account_id, t.created_by,
 			       t.created_at, t.updated_at, t.status,
-			       t.installment_group_id, t.installment_number, t.installment_count
+			       t.installment_group_id, t.installment_number, t.installment_count,
+			       t.auto_clear, t.recurrence_id, t.occurrence_number
 			from transactions t
 			left join transactions o
 			       on o.workspace_id = t.workspace_id and o.transfer_group_id = t.transfer_group_id
@@ -64,7 +65,10 @@ public class TransactionService {
 			TransactionStatus.valueOf(rs.getString("status")),
 			rs.getObject("installment_group_id", UUID.class),
 			rs.getObject("installment_number", Integer.class),
-			rs.getObject("installment_count", Integer.class));
+			rs.getObject("installment_count", Integer.class),
+			rs.getBoolean("auto_clear"),
+			rs.getObject("recurrence_id", UUID.class),
+			rs.getObject("occurrence_number", Integer.class));
 
 	private final JdbcClient jdbc;
 	private final UsableRefs refs;
@@ -83,6 +87,8 @@ public class TransactionService {
 	public TransactionResponse create(UUID workspaceId, CreateTransactionRequest request) {
 		TransactionRules.requireDateInRange(request.occurredOn());
 		TransactionStatus status = TransactionRules.parseStatus(request.status());
+		// sem estado informado o lançamento nasce efetivado, e a efetivação automática só vale para pendente
+		TransactionRules.requireAutoClearPending(request.autoClear(), status == null ? TransactionStatus.CLEARED : status);
 		if (request.type() == TransactionType.TRANSFER) {
 			return createTransfer(workspaceId, request, status);
 		}
@@ -123,9 +129,9 @@ public class TransactionService {
 			CreateTransactionRequest request, UUID transferGroupId, TransactionStatus status) {
 		return jdbc.sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
-				                          description, notes, transfer_group_id, status, created_by)
+				                          description, notes, transfer_group_id, status, auto_clear, created_by)
 				values (:workspaceId, :accountId, :categoryId, :type, :amount, :occurredOn, :description, :notes,
-				        :transferGroupId, :status, :createdBy)
+				        :transferGroupId, :status, :autoClear, :createdBy)
 				returning id
 				""")
 				.param("workspaceId", workspaceId)
@@ -139,6 +145,8 @@ public class TransactionService {
 				.param("transferGroupId", transferGroupId)
 				// sem estado informado, o lançamento é efetivado, como antes desta funcionalidade
 				.param("status", (status == null ? TransactionStatus.CLEARED : status).name())
+				// as duas pontas de uma transferência recebem o mesmo marcador
+				.param("autoClear", Boolean.TRUE.equals(request.autoClear()))
 				.param("createdBy", CurrentUser.id())
 				.query(UUID.class)
 				.single();
@@ -156,6 +164,8 @@ public class TransactionService {
 		TransactionRules.requireDateInRange(request.occurredOn());
 		TransactionStatus status = TransactionRules.parseStatus(request.status());
 		Peek peek = peek(workspaceId, transactionId);
+		// o estado resultante é o pedido ou, ausente, o atual; ligar o marcador num que resulta efetivado é recusado
+		TransactionRules.requireAutoClearPending(request.autoClear(), status == null ? peek.status() : status);
 		if (request.type() != null && request.type() != peek.type()) {
 			throw new FieldValidationException("type", "não pode ser mudado");
 		}
@@ -230,7 +240,10 @@ public class TransactionService {
 				update transactions
 				set account_id = :accountId, category_id = :categoryId, amount_cents = :amount,
 				    occurred_on = :occurredOn, description = :description, notes = :notes,
-				    status = coalesce(cast(:status as text), status), updated_at = now()
+				    status = coalesce(cast(:status as text), status),
+				    auto_clear = case when coalesce(cast(:status as text), status) = 'CLEARED' then false
+				                      else coalesce(cast(:autoClear as boolean), auto_clear) end,
+				    updated_at = now()
 				where id = :id and workspace_id = :workspaceId and deleted_at is null
 				""")
 				.param("accountId", accountId)
@@ -241,6 +254,8 @@ public class TransactionService {
 				.param("notes", request.notes())
 				// estado ausente mantém o atual (um pendente não vira efetivado por acaso)
 				.param("status", status == null ? null : status.name())
+				// marcador ausente mantém o atual; ao efetivar, o marcador sai desligado (uso único)
+				.param("autoClear", request.autoClear())
 				.param("id", id)
 				.param("workspaceId", workspaceId)
 				.update();
@@ -277,7 +292,7 @@ public class TransactionService {
 		Peek peek = peek(workspaceId, transactionId);
 		List<Row> rows = lockUnit(workspaceId, transactionId, peek);
 		jdbc.sql("""
-				update transactions set status = 'CLEARED', updated_at = now()
+				update transactions set status = 'CLEARED', auto_clear = false, updated_at = now()
 				where workspace_id = :workspaceId and id in (:ids) and deleted_at is null and status <> 'CLEARED'
 				""")
 				.param("workspaceId", workspaceId)
@@ -291,18 +306,18 @@ public class TransactionService {
 	}
 
 	/** Tipo e grupo do lançamento, lidos sem travar para saber o que travar. */
-	private record Peek(TransactionType type, UUID transferGroupId) {
+	private record Peek(TransactionType type, UUID transferGroupId, TransactionStatus status) {
 	}
 
 	private Peek peek(UUID workspaceId, UUID transactionId) {
 		return jdbc.sql("""
-				select type, transfer_group_id from transactions
+				select type, transfer_group_id, status from transactions
 				where id = :id and workspace_id = :workspaceId and deleted_at is null
 				""")
 				.param("id", transactionId)
 				.param("workspaceId", workspaceId)
 				.query((rs, i) -> new Peek(TransactionType.valueOf(rs.getString("type")),
-						rs.getObject("transfer_group_id", UUID.class)))
+						rs.getObject("transfer_group_id", UUID.class), TransactionStatus.valueOf(rs.getString("status"))))
 				.optional()
 				.orElseThrow(TransactionNotFoundException::new);
 	}

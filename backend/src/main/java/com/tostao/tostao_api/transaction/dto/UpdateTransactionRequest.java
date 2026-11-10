@@ -44,7 +44,16 @@ public record UpdateTransactionRequest(
 		UUID categoryId,
 
 		/** Estado: ausente = mantém o atual; só CLEARED e PENDING são aceitos (texto vazio e minúsculas não). */
-		String status) {
+		String status,
+
+		/** Efetivar sozinho quando a data chegar: ausente = mantém o atual; só vale para lançamento pendente. */
+		Boolean autoClear) {
+
+	/** Sem o marcador: o marcador ausente mantém o atual. Mantém compiláveis os usos anteriores à spec 011. */
+	public UpdateTransactionRequest(TransactionType type, UUID accountId, UUID destinationAccountId, Long amountCents,
+			LocalDate occurredOn, String description, String notes, UUID categoryId, String status) {
+		this(type, accountId, destinationAccountId, amountCents, occurredOn, description, notes, categoryId, status, null);
+	}
 
 	public UpdateTransactionRequest {
 		description = description == null ? null : description.strip();
