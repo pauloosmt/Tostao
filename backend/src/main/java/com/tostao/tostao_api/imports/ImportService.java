@@ -13,10 +13,21 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tostao.tostao_api.account.MoneyLimits;
+import com.tostao.tostao_api.category.CategoryKind;
+import com.tostao.tostao_api.common.error.CategoryNotFoundException;
+import com.tostao.tostao_api.common.error.FieldValidationException;
+import com.tostao.tostao_api.common.error.TransactionConflictException;
+import com.tostao.tostao_api.imports.dto.ImportConfirmRequest;
+import com.tostao.tostao_api.imports.dto.ImportConfirmResponse;
 import com.tostao.tostao_api.imports.dto.ImportLinePreview;
+import com.tostao.tostao_api.imports.dto.ImportLineRequest;
 import com.tostao.tostao_api.imports.dto.ImportPreview;
+import com.tostao.tostao_api.transaction.TransactionService;
 import com.tostao.tostao_api.transaction.TransactionType;
 import com.tostao.tostao_api.transaction.UsableRefs;
+import com.tostao.tostao_api.transaction.dto.TransactionResponse;
+import com.tostao.tostao_api.workspace.CurrentUser;
 import com.tostao.tostao_api.workspace.WorkspaceScoped;
 
 /**
@@ -144,6 +155,147 @@ public class ImportService {
 					}
 				});
 		return found;
+	}
+
+	// ---- confirmação -------------------------------------------------------------------------------------------
+
+	private static final int INSERT_BLOCK = 100;
+
+	/** O que a confirmação precisa saber de uma categoria. */
+	private record CategoryInfo(CategoryKind kind, boolean archived) {
+	}
+
+	/**
+	 * Confirma a importação: cada linha vira um lançamento <b>efetivado</b> da conta, receita se o valor é positivo e
+	 * despesa se é negativo, com a pessoa logada como autora. Tudo é conferido antes de gravar (conta, linhas, categorias);
+	 * uma linha inválida recusa a confirmação inteira. Linhas cuja chave já existe na conta, inclusive em lançamento
+	 * excluído, são ignoradas. A trava por conta serializa confirmações simultâneas e o índice único é a garantia final de
+	 * não duplicar. Nenhuma exceção é capturada dentro da transação.
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public ImportConfirmResponse confirm(UUID workspaceId, UUID accountId, ImportConfirmRequest request) {
+		refs.requireUsableAccount(workspaceId, accountId);
+		List<ImportLineRequest> lines = request.lines();
+		Map<UUID, CategoryInfo> categories = lockCategories(workspaceId, lines);
+		requireValidLines(lines, categories);
+
+		jdbc.sql("select pg_advisory_xact_lock(hashtextextended(:key, 1))").param("key", accountId.toString())
+				.query((rs, i) -> 1).single();
+
+		UUID userId = CurrentUser.id();
+		List<UUID> createdIds = new ArrayList<>();
+		for (int from = 0; from < lines.size(); from += INSERT_BLOCK) {
+			createdIds.addAll(insertBlock(workspaceId, accountId, userId, lines.subList(from, Math.min(from + INSERT_BLOCK, lines.size()))));
+		}
+		return new ImportConfirmResponse(load(workspaceId, createdIds), lines.size() - createdIds.size());
+	}
+
+	/** As categorias usadas pelas linhas, travadas em modo compartilhado (arquivar espera esta confirmação). */
+	private Map<UUID, CategoryInfo> lockCategories(UUID workspaceId, List<ImportLineRequest> lines) {
+		List<UUID> ids = lines.stream().map(ImportLineRequest::categoryId).filter(java.util.Objects::nonNull).distinct().toList();
+		if (ids.isEmpty()) {
+			return Map.of();
+		}
+		Map<UUID, CategoryInfo> found = new HashMap<>();
+		jdbc.sql("""
+				select id, kind, archived from categories
+				where workspace_id = :workspaceId and id in (:ids)
+				order by id
+				for share
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", ids)
+				.query(rs -> {
+					found.put(rs.getObject("id", UUID.class),
+							new CategoryInfo(CategoryKind.valueOf(rs.getString("kind")), rs.getBoolean("archived")));
+				});
+		return found;
+	}
+
+	/** Confere cada linha, na ordem, e aponta a primeira inválida como {@code lines[N].campo}. */
+	private static void requireValidLines(List<ImportLineRequest> lines, Map<UUID, CategoryInfo> categories) {
+		Set<String> keys = new HashSet<>();
+		for (int i = 0; i < lines.size(); i++) {
+			ImportLineRequest line = lines.get(i);
+			String at = "lines[" + i + "].";
+			if (line.key().indexOf('\u0000') >= 0) {
+				throw new FieldValidationException(at + "key", "contém caractere inválido");
+			}
+			if (line.description().indexOf('\u0000') >= 0) {
+				throw new FieldValidationException(at + "description", "contém caractere inválido");
+			}
+			if (line.occurredOn().isBefore(StatementParser.MIN_DATE) || line.occurredOn().isAfter(StatementParser.MAX_DATE)) {
+				throw new FieldValidationException(at + "occurredOn", "deve estar entre 2000-01-01 e 2100-12-31");
+			}
+			long cents = line.amountCents();
+			if (cents == 0 || Math.abs(cents) > MoneyLimits.MAX_CENTS) {
+				throw new FieldValidationException(at + "amountCents",
+						"deve ser diferente de zero e de até 1.000.000.000.000 centavos em módulo");
+			}
+			if (!keys.add(line.key())) {
+				throw new FieldValidationException(at + "key", "chave repetida na confirmação");
+			}
+			if (line.categoryId() != null) {
+				CategoryInfo category = categories.get(line.categoryId());
+				if (category == null) {
+					throw new CategoryNotFoundException();
+				}
+				CategoryKind wanted = cents > 0 ? CategoryKind.INCOME : CategoryKind.EXPENSE;
+				if (category.kind() != wanted) {
+					throw new FieldValidationException(at + "categoryId",
+							wanted == CategoryKind.INCOME ? "deve ser uma categoria de receita" : "deve ser uma categoria de despesa");
+				}
+				if (category.archived()) {
+					throw new TransactionConflictException("A categoria está arquivada");
+				}
+			}
+		}
+	}
+
+	/** Insere um bloco de linhas e devolve os ids das que entraram (as de chave já existente não voltam). */
+	private List<UUID> insertBlock(UUID workspaceId, UUID accountId, UUID userId, List<ImportLineRequest> block) {
+		StringBuilder sql = new StringBuilder("""
+				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
+				                          description, status, created_by, import_key)
+				values\s""");
+		for (int i = 0; i < block.size(); i++) {
+			sql.append(i == 0 ? "" : ", ").append("(:workspaceId, :accountId, cast(:c%d as uuid), :t%d, :m%d, :d%d, :s%d, 'CLEARED', :userId, :k%d)"
+					.formatted(i, i, i, i, i, i));
+		}
+		sql.append("\non conflict (account_id, import_key) where import_key is not null do nothing\nreturning id");
+
+		JdbcClient.StatementSpec statement = jdbc.sql(sql.toString())
+				.param("workspaceId", workspaceId)
+				.param("accountId", accountId)
+				.param("userId", userId);
+		for (int i = 0; i < block.size(); i++) {
+			ImportLineRequest line = block.get(i);
+			statement = statement
+					.param("c" + i, line.categoryId())
+					.param("t" + i, (line.amountCents() > 0 ? TransactionType.INCOME : TransactionType.EXPENSE).name())
+					.param("m" + i, line.amountCents())
+					.param("d" + i, line.occurredOn())
+					.param("s" + i, line.description())
+					.param("k" + i, line.key());
+		}
+		return statement.query(UUID.class).list();
+	}
+
+	/** Os lançamentos criados, na ordem em que foram inseridos. */
+	private List<TransactionResponse> load(UUID workspaceId, List<UUID> ids) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		Map<UUID, TransactionResponse> byId = new HashMap<>();
+		for (TransactionResponse row : jdbc.sql(TransactionService.SELECT + "  and t.id in (:ids)\n")
+				.param("workspaceId", workspaceId)
+				.param("ids", ids)
+				.query(TransactionService.ROW_MAPPER)
+				.list()) {
+			byId.put(row.id(), row);
+		}
+		return ids.stream().map(byId::get).toList();
 	}
 
 	private static String suggestionKey(String description, TransactionType type) {

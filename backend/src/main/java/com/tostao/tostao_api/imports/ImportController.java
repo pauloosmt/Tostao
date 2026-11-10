@@ -4,15 +4,22 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tostao.tostao_api.imports.dto.ImportConfirmRequest;
+import com.tostao.tostao_api.imports.dto.ImportConfirmResponse;
 import com.tostao.tostao_api.imports.dto.ImportPreview;
+
+import jakarta.validation.Valid;
 
 /** Importação de extratos: prévia (não grava) e, em seguida, a confirmação. */
 @RestController
@@ -33,6 +40,17 @@ class ImportController {
 	ImportPreview preview(@PathVariable("wid") UUID workspaceId, @PathVariable("accountId") UUID accountId,
 			@RequestPart("file") MultipartFile file) {
 		return imports.preview(workspaceId, accountId, bytesOf(file));
+	}
+
+	/**
+	 * Confirma a importação das linhas escolhidas: cada uma vira um lançamento efetivado da conta. Responde 201 quando
+	 * cria ao menos um lançamento e 200 quando todas as linhas já existiam.
+	 */
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+	ResponseEntity<ImportConfirmResponse> confirm(@PathVariable("wid") UUID workspaceId,
+			@PathVariable("accountId") UUID accountId, @Valid @RequestBody ImportConfirmRequest request) {
+		ImportConfirmResponse response = imports.confirm(workspaceId, accountId, request);
+		return ResponseEntity.status(response.created().isEmpty() ? HttpStatus.OK : HttpStatus.CREATED).body(response);
 	}
 
 	private static byte[] bytesOf(MultipartFile file) {
