@@ -27,13 +27,17 @@ import com.tostao.tostao_api.workspace.WorkspaceScoped;
 public class AccountService {
 
 	/**
-	 * Conta com o saldo calculado: saldo inicial mais os lançamentos não excluídos da conta. A soma de
-	 * {@code bigint} no Postgres é {@code numeric}; o resultado volta a {@code bigint}.
+	 * Conta com o saldo calculado: saldo inicial mais os lançamentos <b>efetivados</b> não excluídos da conta. O
+	 * pendente (soma dos lançamentos pendentes não excluídos) vem separado e nunca entra no saldo. A junção não
+	 * filtra o estado porque a mesma consulta soma os dois; a conta sem lançamentos continua com saldo zero. A soma
+	 * de {@code bigint} no Postgres é {@code numeric}; o resultado volta a {@code bigint}.
 	 */
 	private static final String SELECT_WITH_BALANCE = """
 			select a.id, a.name, a.type, a.currency, a.initial_balance_cents, a.credit_limit_cents,
 			       a.closing_day, a.due_day, a.archived, a.created_at, a.updated_at,
-			       (a.initial_balance_cents + coalesce(sum(t.amount_cents), 0))::bigint as balance_cents
+			       (a.initial_balance_cents
+			              + coalesce(sum(t.amount_cents) filter (where t.status = 'CLEARED'), 0))::bigint as balance_cents,
+			       coalesce(sum(t.amount_cents) filter (where t.status = 'PENDING'), 0)::bigint as pending_cents
 			from accounts a
 			left join transactions t
 			       on t.account_id = a.id and t.workspace_id = a.workspace_id and t.deleted_at is null
@@ -52,6 +56,8 @@ public class AccountService {
 			rs.getString("currency").strip(),
 			rs.getLong("initial_balance_cents"),
 			rs.getLong("balance_cents"),
+			rs.getLong("pending_cents"),
+			Math.addExact(rs.getLong("balance_cents"), rs.getLong("pending_cents")),
 			rs.getObject("credit_limit_cents", Long.class),
 			rs.getObject("closing_day", Integer.class),
 			rs.getObject("due_day", Integer.class),

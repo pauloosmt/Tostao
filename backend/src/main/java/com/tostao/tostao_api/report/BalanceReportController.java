@@ -29,13 +29,16 @@ class BalanceReportController {
 	BalanceReportResponse balance(@PathVariable("wid") UUID workspaceId) {
 		List<AccountResponse> active = accounts.list(workspaceId, false);
 		List<BalanceReportResponse.Item> items = active.stream()
-				.map(a -> new BalanceReportResponse.Item(a.id(), a.name(), a.type(), a.balanceCents()))
+				.map(a -> new BalanceReportResponse.Item(a.id(), a.name(), a.type(), a.balanceCents(), a.pendingCents(),
+						a.projectedBalanceCents()))
 				.toList();
 		long total = 0;
+		long totalProjected = 0;
 		for (AccountResponse account : active) {
 			total = Math.addExact(total, account.balanceCents());
+			totalProjected = Math.addExact(totalProjected, account.projectedBalanceCents());
 		}
-		return new BalanceReportResponse(items, total);
+		return new BalanceReportResponse(items, total, totalProjected);
 	}
 
 }
