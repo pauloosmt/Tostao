@@ -79,6 +79,25 @@ curl -b jar.txt $BASE/workspaces/$WID/reports/balance                     # tota
 Para efetivar com outra data, ou voltar um efetivado a pendente, use a edição (`PUT .../transactions/<id>`) com `status`;
 sem `status` na edição, o estado atual é mantido. Só `CLEARED` e `PENDING` são aceitos.
 
+Compra parcelada: uma despesa dividida em **2 a 48 parcelas mensais**, registrada de uma vez (todas as parcelas ou
+nenhuma). O total é dividido em centavos exatos: o resto vai, um centavo por parcela, para as primeiras, e a soma é
+sempre o total (R$ 100,00 em 3 = 33,34 + 33,33 + 33,33). A data de cada parcela é a da primeira mais N-1 meses, sempre
+contada a partir da primeira (31/01, 28/02, 31/03). A **primeira parcela nasce efetivada** (ou pendente, com
+`firstInstallmentStatus`) e **as demais nascem pendentes**, então só a primeira conta no realizado até ser efetivada;
+nada efetiva sozinho com o passar do tempo. Cada parcela é um lançamento comum (despesa): aparece na listagem, e pode
+ser editada, efetivada e excluída; a descrição ganha o sufixo ` (N/T)` e o grupo, o número e o total aparecem em todo
+lançamento (`installmentGroupId`, `installmentNumber`, `installmentCount`; nulos nos que não são parcela). O plano não
+é um registro próprio: é o conjunto das parcelas do grupo. Cancelar exclui só as parcelas ainda pendentes e mantém as
+efetivadas; repetir o cancelamento não tem efeito. Papéis: OWNER e EDITOR registram e cancelam, VIEWER só consulta.
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"accountId":"<conta>","categoryId":"<categoria de despesa>",
+  "totalCents":300000,"installmentCount":3,"firstOccurredOn":"2026-11-10","description":"Notebook"}' \
+  $BASE/workspaces/$WID/installment-purchases               # 201: o plano, com as 3 parcelas e o groupId
+curl -b jar.txt $BASE/workspaces/$WID/installment-purchases/<groupId>          # o plano: totalCents, clearedCents, pendingCents e as parcelas em ordem
+curl -b jar.txt -X POST $BASE/workspaces/$WID/installment-purchases/<groupId>/cancel   # {"cancelled":N}: exclui só as pendentes
+```
+
 Dashboard (só leitura): o resumo de um mês ou de uma semana, com totais, grupos por categoria, evolução
 dia a dia, comparação com o período anterior e saldos. Sem parâmetro, vale o mês corrente.
 
