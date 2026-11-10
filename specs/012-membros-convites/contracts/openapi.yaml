@@ -1,0 +1,282 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Membros e convites
+  version: 0.12.0
+  description: >
+    Contrato da spec 012. O dono de um workspace convida pessoas pelo e-mail, com o papel EDITOR ou VIEWER; a pessoa
+    convidada aceita com um código secreto de uso único. O sistema não envia e-mail: o código volta só na resposta que
+    cria o convite e o dono o repassa. O código vale 7 dias, só para o e-mail convidado, uma só vez. Qualquer membro lista
+    os membros; só o dono convida, lista e revoga convites, muda papéis e remove; quem não é dono pode sair. Um só OWNER por
+    workspace. Mudar o papel, remover e sair valem na próxima requisição da pessoa. Todas as rotas exigem sessão (cookie
+    tostao_session). Quem não é membro de um workspace recebe 404, igual a um workspace inexistente. A rota de aceite é a
+    única sem workspace. Código inexistente, expirado, usado, revogado ou de outro e-mail respondem igual (404). Erros
+    seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/members:
+    get:
+      summary: Lista os membros do workspace (qualquer papel)
+      operationId: listMembers
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      responses:
+        '200':
+          description: O dono primeiro e depois por data de entrada; nunca traz senha, hash nem versão de sessão
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Member' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/members/{userId}:
+    put:
+      summary: Muda o papel de um membro entre EDITOR e VIEWER (só o dono)
+      description: Mudar o papel do OWNER, o próprio papel ou dar o papel OWNER é 409. Vale na próxima requisição da pessoa.
+      operationId: changeMemberRole
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangeRoleRequest' }
+      responses:
+        '200':
+          description: O membro com o novo papel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Member' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      summary: Remove um membro (o dono) ou sai do workspace (o próprio membro que não é dono)
+      description: >
+        O dono remove qualquer não-dono. Um EDITOR ou VIEWER só remove a si mesmo (sair); remover outro é 403. O OWNER não
+        é removido nem sai (409). Vale na próxima requisição da pessoa; os dados que ela criou ficam no workspace.
+      operationId: removeMember
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204': { description: Removido }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /workspaces/{wid}/invitations:
+    post:
+      summary: Convida uma pessoa por e-mail (só o dono); devolve o código uma só vez
+      description: >
+        Convidar um e-mail que já é membro é 409; convidar um e-mail com convite pendente invalida o anterior e cria um novo;
+        o limite é de 20 membros e 20 convites pendentes. O código nunca mais aparece em nenhuma resposta.
+      operationId: createInvitation
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInvitationRequest' }
+      responses:
+        '201':
+          description: Convite criado, com o código secreto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvitationCreated' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      summary: Lista os convites pendentes (só o dono), sem o código
+      operationId: listInvitations
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      responses:
+        '200':
+          description: Convites pendentes (não usados, não revogados e não expirados)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Invitation' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/invitations/{id}:
+    delete:
+      summary: Revoga um convite pendente (só o dono)
+      description: O código deixa de funcionar. Convite já usado, já revogado, de outro workspace ou inexistente é 404.
+      operationId: revokeInvitation
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204': { description: Revogado }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /invitations/accept:
+    post:
+      summary: Aceita um convite com o código (qualquer pessoa autenticada; fora de um workspace)
+      description: >
+        Só funciona se o código existe, não expirou, não foi usado nem revogado e o e-mail da conta de quem aceita é o do
+        convite. Qualquer falha desses casos responde igual (404 "Convite inválido ou expirado"). Já ser membro ou o
+        workspace estar cheio é 409. O aceite é atômico e vale uma só vez.
+      operationId: acceptInvitation
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcceptInvitationRequest' }
+      responses:
+        '200':
+          description: A pessoa passou a ser membro; o workspace e o papel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AcceptInvitationResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InvitationId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, membro, convite ou código inexistente, de outro workspace, inválido ou expirado; ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conflito de estado (já é membro, limite, mexer no dono, workspace cheio)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    InvitableRole:
+      type: string
+      enum: [EDITOR, VIEWER]
+    Role:
+      type: string
+      enum: [OWNER, EDITOR, VIEWER]
+    Member:
+      type: object
+      required: [userId, name, email, role, joinedAt]
+      properties:
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        joinedAt: { type: string, format: date-time }
+    ChangeRoleRequest:
+      type: object
+      additionalProperties: false
+      required: [role]
+      properties:
+        role: { $ref: '#/components/schemas/InvitableRole' }
+    CreateInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 254, description: Normalizado (minúsculas, sem espaços nas pontas) }
+        role: { $ref: '#/components/schemas/InvitableRole' }
+    Invitation:
+      type: object
+      required: [id, email, role, createdBy, createdAt, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        role: { $ref: '#/components/schemas/InvitableRole' }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    InvitationCreated:
+      allOf:
+        - $ref: '#/components/schemas/Invitation'
+        - type: object
+          required: [code]
+          properties:
+            code: { type: string, description: Segredo de uso único, 43 caracteres. Aparece só nesta resposta; o banco guarda só a impressão }
+    AcceptInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, description: O código recebido do dono }
+    AcceptInvitationResponse:
+      type: object
+      required: [workspaceId, name, role]
+      properties:
+        workspaceId: { type: string, format: uuid }
+        name: { type: string }
+        role: { $ref: '#/components/schemas/InvitableRole' }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
