@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tostao.tostao_api.common.error.RecurrenceNotFoundException;
 import com.tostao.tostao_api.dashboard.Period;
 import com.tostao.tostao_api.recurrence.dto.CreateRecurrenceRequest;
+import com.tostao.tostao_api.recurrence.dto.EndRecurrenceResponse;
 import com.tostao.tostao_api.recurrence.dto.RecurrenceDetailResponse;
 import com.tostao.tostao_api.recurrence.dto.RecurrenceResponse;
 import com.tostao.tostao_api.transaction.TransactionService;
@@ -124,6 +125,63 @@ public class RecurrenceService {
 				.query(Integer.class)
 				.single();
 		return loadDetail(workspaceId, id, today);
+	}
+
+	/**
+	 * Encerra a recorrência: para de gerar e exclui logicamente só as ocorrências pendentes e vivas com data depois de
+	 * hoje, mantendo as efetivadas e as pendentes que já venceram. Já encerrada, responde zero, sem efeito. A recorrência
+	 * é travada ({@code FOR UPDATE}): a geração toma {@code FOR SHARE} nela, então uma geração em curso termina antes
+	 * e este encerramento enxerga as ocorrências que ela criou, e uma geração que chega depois relê a linha, vê
+	 * {@code ended_at} e a deixa de fora; em nenhuma ordem sobra ocorrência futura pendente. As ocorrências são
+	 * travadas em ordem de número e a condição de estado é repetida no {@code UPDATE}: uma efetivação simultânea, manual
+	 * ou automática, prevalece (uma efetivada nunca é desfeita).
+	 */
+	@WorkspaceScoped(write = true)
+	@Transactional
+	public EndRecurrenceResponse end(UUID workspaceId, UUID id) {
+		LocalDate today = today();
+		boolean alreadyEnded = jdbc.sql("""
+				select ended_at is not null from recurrences
+				where id = :id and workspace_id = :workspaceId
+				for update
+				""")
+				.param("id", id)
+				.param("workspaceId", workspaceId)
+				.query(Boolean.class)
+				.optional()
+				.orElseThrow(RecurrenceNotFoundException::new);
+		if (alreadyEnded) {
+			return new EndRecurrenceResponse(0);
+		}
+
+		jdbc.sql("update recurrences set ended_at = now(), updated_at = now() where id = :id and workspace_id = :workspaceId")
+				.param("id", id)
+				.param("workspaceId", workspaceId)
+				.update();
+
+		List<UUID> future = jdbc.sql("""
+				select id from transactions
+				where workspace_id = :workspaceId and recurrence_id = :id and status = 'PENDING'
+				  and deleted_at is null and occurred_on > :today
+				order by occurrence_number
+				for update
+				""")
+				.param("workspaceId", workspaceId)
+				.param("id", id)
+				.param("today", today)
+				.query(UUID.class)
+				.list();
+		if (future.isEmpty()) {
+			return new EndRecurrenceResponse(0);
+		}
+		int cancelled = jdbc.sql("""
+				update transactions set deleted_at = now(), updated_at = now()
+				where workspace_id = :workspaceId and id in (:ids) and status = 'PENDING' and deleted_at is null
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", future)
+				.update();
+		return new EndRecurrenceResponse(cancelled);
 	}
 
 	/** As recorrências do workspace, da mais recente para a mais antiga. */

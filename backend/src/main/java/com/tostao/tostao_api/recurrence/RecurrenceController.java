@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tostao.tostao_api.recurrence.dto.CreateRecurrenceRequest;
+import com.tostao.tostao_api.recurrence.dto.EndRecurrenceResponse;
 import com.tostao.tostao_api.recurrence.dto.RecurrenceDetailResponse;
 import com.tostao.tostao_api.recurrence.dto.RecurrenceResponse;
 
@@ -45,6 +46,12 @@ class RecurrenceController {
 	@GetMapping("/{id}")
 	RecurrenceDetailResponse get(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID id) {
 		return recurrences.get(workspaceId, id);
+	}
+
+	/** Encerra a recorrência e exclui as ocorrências pendentes futuras; já encerrada responde 200 com zero. */
+	@PostMapping("/{id}/end")
+	EndRecurrenceResponse end(@PathVariable("wid") UUID workspaceId, @PathVariable("id") UUID id) {
+		return recurrences.end(workspaceId, id);
 	}
 
 }
