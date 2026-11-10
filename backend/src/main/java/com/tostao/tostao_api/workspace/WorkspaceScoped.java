@@ -25,4 +25,11 @@ public @interface WorkspaceScoped {
 	 */
 	boolean write() default false;
 
+	/**
+	 * {@code true} para operações que só o dono do workspace faz (convidar, mudar papéis, remover membros): só o
+	 * papel OWNER passa, e EDITOR e VIEWER recebem 403. Quem não é membro recebe 404 de qualquer forma. É independente
+	 * de {@link #write()}.
+	 */
+	boolean owner() default false;
+
 }

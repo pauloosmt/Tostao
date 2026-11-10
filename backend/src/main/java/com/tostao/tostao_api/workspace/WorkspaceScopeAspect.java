@@ -17,7 +17,7 @@ import com.tostao.tostao_api.common.error.WorkspaceNotFoundException;
  * Aplica a regra de participação no workspace. Roda <b>dentro</b> da transação do serviço (ordem
  * menos prioritária que a do advice transacional, ver {@code TransactionConfig}): confere a
  * associação do usuário, responde 404 se não houver, responde 403 se a operação é de escrita e o papel
- * é VIEWER, e só então define o contexto de workspace do RLS. O usuário vem sempre do {@code SecurityContext}, nunca de argumento do método.
+ * é VIEWER (ou se é só do dono e o papel não é OWNER), e só então define o contexto de workspace do RLS. O usuário vem sempre do {@code SecurityContext}, nunca de argumento do método.
  */
 @Aspect
 @Component
@@ -49,6 +49,9 @@ public class WorkspaceScopeAspect {
 				// workspace inexistente e workspace alheio são indistinguíveis
 				.orElseThrow(WorkspaceNotFoundException::new);
 		if (scoped.write() && !("OWNER".equals(role) || "EDITOR".equals(role))) {
+			throw new InsufficientRoleException();
+		}
+		if (scoped.owner() && !"OWNER".equals(role)) {
 			throw new InsufficientRoleException();
 		}
 
