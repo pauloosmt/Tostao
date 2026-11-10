@@ -68,13 +68,14 @@ public class BudgetService {
 
 	/**
 	 * Despesas de um período (semana ou mês, entre {@code :start} e {@code :end}) por categoria e categoria pai,
-	 * positivas, sem excluídos nem transferências. Compartilhada com o orçamento mensal.
+	 * positivas, só efetivadas (o pendente não conta), sem excluídos nem transferências. Compartilhada com o orçamento mensal.
 	 */
 	static final String PERIOD_SPENT_SQL = """
 			select t.category_id, c.parent_id, -sum(t.amount_cents)::bigint as spent_cents
 			from transactions t
 			left join categories c on c.id = t.category_id and c.workspace_id = t.workspace_id
-			where t.workspace_id = :workspaceId and t.deleted_at is null and t.type = 'EXPENSE'
+			where t.workspace_id = :workspaceId and t.deleted_at is null and t.status = 'CLEARED'
+			  and t.type = 'EXPENSE'
 			  and t.occurred_on between :start and :end
 			group by t.category_id, c.parent_id
 			""";
