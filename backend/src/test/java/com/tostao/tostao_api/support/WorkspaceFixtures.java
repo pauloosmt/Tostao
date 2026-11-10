@@ -126,6 +126,24 @@ public class WorkspaceFixtures {
 				.param("x", deleted).param("st", status).query(UUID.class).single();
 	}
 
+	/**
+	 * Parcela de compra parcelada (spec 010): despesa do valor positivo dado, gravada negativa, com o grupo, o número
+	 * e o total de parcelas. Pela conexão do dono, para os testes não dependerem da rota de registro.
+	 */
+	public UUID insertInstallment(UUID workspaceId, UUID accountId, UUID userId, UUID categoryId, UUID groupId,
+			int number, int count, long absAmountCents, java.time.LocalDate date, String description, String status,
+			boolean deleted) {
+		return owner.client().sql("""
+				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
+				                          description, created_by, deleted_at, status, installment_group_id,
+				                          installment_number, installment_count)
+				values (:w, :a, :c, 'EXPENSE', :m, :d, :s, :u, case when :x then now() else null end, :st, :g, :n, :k)
+				returning id""")
+				.param("w", workspaceId).param("a", accountId).param("c", categoryId).param("m", -absAmountCents)
+				.param("d", date).param("s", description).param("u", userId).param("x", deleted).param("st", status)
+				.param("g", groupId).param("n", number).param("k", count).query(UUID.class).single();
+	}
+
 	/** Transferência completa: devolve {@code {idDaSaída, idDaEntrada}}, com o mesmo grupo. */
 	public UUID[] insertTransferPair(UUID workspaceId, UUID fromAccount, UUID toAccount, UUID userId, long cents,
 			java.time.LocalDate date, String description) {

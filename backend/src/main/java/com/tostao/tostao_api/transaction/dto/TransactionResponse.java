@@ -11,7 +11,9 @@ import com.tostao.tostao_api.transaction.TransactionType;
  * Lançamento como a API o entrega. {@code amountCents} sai com sinal: receita e entrada positivas,
  * despesa e saída negativas. Na transferência, {@code transferGroupId} liga as duas pontas e
  * {@code counterpartAccountId} é a conta da outra ponta. {@code status} é o estado (efetivado ou pendente); só o
- * efetivado conta no realizado. Não expõe o {@code workspace_id}.
+ * efetivado conta no realizado. Numa parcela de compra parcelada, {@code installmentGroupId} liga as parcelas,
+ * {@code installmentNumber} é o número da parcela e {@code installmentCount} o total; nos demais lançamentos os três
+ * vêm nulos. Não expõe o {@code workspace_id}.
  */
 public record TransactionResponse(
 		UUID id,
@@ -27,5 +29,8 @@ public record TransactionResponse(
 		UUID createdBy,
 		Instant createdAt,
 		Instant updatedAt,
-		TransactionStatus status) {
+		TransactionStatus status,
+		UUID installmentGroupId,
+		Integer installmentNumber,
+		Integer installmentCount) {
 }

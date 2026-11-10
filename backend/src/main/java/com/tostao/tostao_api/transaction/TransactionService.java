@@ -38,7 +38,8 @@ public class TransactionService {
 	private static final String SELECT = """
 			select t.id, t.account_id, t.type, t.amount_cents, t.occurred_on, t.description, t.notes,
 			       t.category_id, t.transfer_group_id, o.account_id as counterpart_account_id, t.created_by,
-			       t.created_at, t.updated_at, t.status
+			       t.created_at, t.updated_at, t.status,
+			       t.installment_group_id, t.installment_number, t.installment_count
 			from transactions t
 			left join transactions o
 			       on o.workspace_id = t.workspace_id and o.transfer_group_id = t.transfer_group_id
@@ -60,7 +61,10 @@ public class TransactionService {
 			rs.getObject("created_by", UUID.class),
 			rs.getObject("created_at", OffsetDateTime.class).toInstant(),
 			rs.getObject("updated_at", OffsetDateTime.class).toInstant(),
-			TransactionStatus.valueOf(rs.getString("status")));
+			TransactionStatus.valueOf(rs.getString("status")),
+			rs.getObject("installment_group_id", UUID.class),
+			rs.getObject("installment_number", Integer.class),
+			rs.getObject("installment_count", Integer.class));
 
 	private final JdbcClient jdbc;
 	private final UsableRefs refs;
