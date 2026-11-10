@@ -47,7 +47,17 @@ public record CreateInstallmentPurchaseRequest(
 		String notes,
 
 		/** Estado da primeira parcela: ausente = efetivada; só CLEARED e PENDING (texto vazio e minúsculas não). */
-		String firstInstallmentStatus) {
+		String firstInstallmentStatus,
+
+		/** Efetivar as parcelas pendentes sozinhas na data de cada uma: ausente = desligado. */
+		Boolean autoClear) {
+
+	/** Sem o marcador (desligado). Mantém compiláveis os usos anteriores à spec 011. */
+	public CreateInstallmentPurchaseRequest(UUID accountId, UUID categoryId, Long totalCents, Integer installmentCount,
+			LocalDate firstOccurredOn, String description, String notes, String firstInstallmentStatus) {
+		this(accountId, categoryId, totalCents, installmentCount, firstOccurredOn, description, notes,
+				firstInstallmentStatus, null);
+	}
 
 	public CreateInstallmentPurchaseRequest {
 		description = description == null ? null : description.strip();

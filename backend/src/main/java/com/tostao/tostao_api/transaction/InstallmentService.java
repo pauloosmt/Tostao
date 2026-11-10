@@ -68,10 +68,10 @@ public class InstallmentService {
 			int count, long amountCents, LocalDate date, TransactionStatus status) {
 		jdbc.sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
-				                          description, notes, status, created_by, installment_group_id,
+				                          description, notes, status, auto_clear, created_by, installment_group_id,
 				                          installment_number, installment_count)
 				values (:workspaceId, :accountId, :categoryId, 'EXPENSE', :amount, :occurredOn, :description, :notes,
-				        :status, :createdBy, :groupId, :number, :count)
+				        :status, :autoClear, :createdBy, :groupId, :number, :count)
 				""")
 				.param("workspaceId", workspaceId)
 				.param("accountId", request.accountId())
@@ -82,6 +82,8 @@ public class InstallmentService {
 				.param("description", InstallmentRules.describe(request.description(), number, count))
 				.param("notes", request.notes())
 				.param("status", status.name())
+				// o marcador só vale para as parcelas pendentes: a primeira, se nasce efetivada, fica sem
+				.param("autoClear", Boolean.TRUE.equals(request.autoClear()) && status == TransactionStatus.PENDING)
 				.param("createdBy", CurrentUser.id())
 				.param("groupId", group)
 				.param("number", number)
