@@ -43,8 +43,8 @@ Esperado: todos passam, inclusive os das specs 001 a 011 **sem alteração de re
 3. Marido com `CODE2` → **200** `{workspaceId=$WID, name, role=VIEWER}`. Repetir → **404** (já usado).
 4. `GET /me` do Marido → **2** workspaces (o pessoal, `OWNER`, e o da Dona, `VIEWER`).
 5. Marido tenta lançar uma despesa no workspace da Dona → **403** (VIEWER); `GET .../transactions` → **200**.
-6. Convite expirado: a Dona convida o e-mail da Intrusa (`CODE3`); pelo banco do dono, `update invitations set expires_at =
-   now() - interval '1 minute'`; a Intrusa aceita → **404**; `GET .../invitations` (Dona) já não o lista.
+6. Convite expirado: a Dona convida o e-mail da Intrusa (`CODE3`); pelo banco do dono, `update invitations set created_at =
+   now() - interval '2 days', expires_at = now() - interval '1 minute'` (o vencimento tem de ser posterior à criação); a Intrusa aceita → **404**; `GET .../invitations` (Dona) já não o lista.
 
 ## 5. Membros (US2)
 

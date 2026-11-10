@@ -207,6 +207,29 @@ curl -b jar.txt -H 'Content-Type: application/json' \
 curl -b jar.txt -X POST $BASE/workspaces/$WID/categories/<id>/archive   # arquivar uma principal arquiva as subcategorias
 ```
 
+Membros e convites: só o dono (OWNER) convida, muda papéis e remove; qualquer membro vê a lista de membros. O vínculo
+nasce só de um convite aceito. O convite é para um e-mail e um papel (`EDITOR` ou `VIEWER`) e vale 7 dias. O
+**código** do convite aparece uma única vez, na resposta que o cria: o banco guarda só a impressão dele (SHA-256),
+nenhuma listagem o repete e ele não vai para o log. Quem aceita precisa estar logado com a conta do e-mail
+convidado; código errado, vencido, já usado, revogado ou de outro e-mail respondem todos o mesmo 404. Cada
+workspace tem um único dono, no máximo 20 membros e 20 convites pendentes; convidar de novo o mesmo e-mail revoga o
+convite anterior.
+
+```bash
+curl -b jar.txt $BASE/workspaces/$WID/members                                                   # membros (qualquer papel)
+curl -b jar.txt -X PUT -H 'Content-Type: application/json' \
+  -d '{"role":"VIEWER"}' $BASE/workspaces/$WID/members/<id do usuário>                          # muda o papel (dono)
+curl -b jar.txt -X DELETE $BASE/workspaces/$WID/members/<id do usuário>                         # remove (dono; o membro pode sair sozinho)
+curl -b jar.txt -H 'Content-Type: application/json' \
+  -d '{"email":"marido@exemplo.com","role":"EDITOR"}' $BASE/workspaces/$WID/invitations         # convida: o "code" vem só aqui
+curl -b jar.txt $BASE/workspaces/$WID/invitations                                               # convites pendentes (sem o código)
+curl -b jar.txt -X DELETE $BASE/workspaces/$WID/invitations/<id>                                # revoga
+curl -b jar2.txt -H 'Content-Type: application/json' \
+  -d '{"code":"<código recebido>"}' $BASE/invitations/accept                                    # a pessoa convidada aceita, logada
+```
+
+O dono não sai nem é rebaixado: o workspace sempre tem exatamente um.
+
 Com `SPRING_PROFILES_ACTIVE=local` (o padrão do Compose), a documentação da API fica em
 `http://127.0.0.1:8080/swagger-ui.html`.
 

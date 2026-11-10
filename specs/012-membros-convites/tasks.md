@@ -63,9 +63,9 @@ description: "Tarefas da feature 012-membros-convites"
 
 ## Phase 5: Polish
 
-- [ ] T014 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 011 pode ter sido alterado além de acrescentar** (conferir com `git diff` dos arquivos de teste antigos)
-- [ ] T015 [P] Atualizar `README.md`: seção de membros e convites (convidar por e-mail com papel EDITOR ou VIEWER, o código de uso único mostrado uma vez e repassado pelo dono porque o sistema não envia e-mail, validade de 7 dias, amarrado ao e-mail da conta, aceitar em `/api/v1/invitations/accept`, listar membros, mudar papel, remover e sair, um só dono, limites de 20, efeito imediato, o código nunca é guardado nem registrado)
-- [ ] T016 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 13 e limpeza ao fim (inclusive `invitations`); marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
+- [X] T014 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 011 pode ter sido alterado além de acrescentar** (conferir com `git diff` dos arquivos de teste antigos)
+- [X] T015 [P] Atualizar `README.md`: seção de membros e convites (convidar por e-mail com papel EDITOR ou VIEWER, o código de uso único mostrado uma vez e repassado pelo dono porque o sistema não envia e-mail, validade de 7 dias, amarrado ao e-mail da conta, aceitar em `/api/v1/invitations/accept`, listar membros, mudar papel, remover e sair, um só dono, limites de 20, efeito imediato, o código nunca é guardado nem registrado)
+- [X] T016 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído (`docker compose up -d --build`), com `Flyway` na versão 13 e limpeza ao fim (inclusive `invitations`); marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
 ---
 
