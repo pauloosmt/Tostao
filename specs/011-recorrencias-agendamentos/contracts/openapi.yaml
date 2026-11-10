@@ -1,0 +1,305 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Recorrências e efetivação automática
+  version: 0.11.0
+  description: >
+    Contrato da spec 011. Acrescenta a efetivação automática (o marcador autoClear: um lançamento pendente é efetivado
+    sozinho quando a data chega) e as recorrências (a regra que o sistema repete toda semana, mês ou ano, mantendo as
+    ocorrências geradas como lançamentos pendentes até 12 meses à frente). O marcador vem desligado; sem ele, a data
+    nunca efetiva nada (spec 009). Cada ocorrência é um lançamento comum (spec 004): pode ser listada, editada,
+    efetivada e excluída. A regra da recorrência não é editável: encerra-se e cria-se outra. A execução automática
+    (ao iniciar e a cada hora) não tem rota. Todas as rotas exigem sessão (cookie tostao_session) e ficam sob um
+    workspace. Quem não é membro recebe 404, igual a um workspace inexistente. VIEWER só consulta (403 nas escritas).
+    Valores monetários são inteiros em centavos. Erros seguem Problem Details (RFC 7807). Os campos novos de lançamento
+    são aditivos: nenhum campo existente muda de nome nem de significado.
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/recurrences:
+    post:
+      summary: Cria uma recorrência e gera as ocorrências até 12 meses à frente (tudo ou nada)
+      description: >
+        Gera as ocorrências desde o início (até 366 dias no passado) até 12 meses depois de hoje, como lançamentos
+        pendentes. Com autoClear ligado, as que já venceram são efetivadas na próxima execução automática (no máximo
+        uma hora depois do início dela).
+      operationId: createRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRecurrenceRequest' }
+      responses:
+        '201':
+          description: Recorrência criada; o detalhe com as ocorrências geradas
+          headers:
+            Location:
+              schema: { type: string }
+              description: Caminho da consulta da recorrência
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurrenceDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Conta ou categoria arquivada
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    get:
+      summary: Lista as recorrências do workspace
+      operationId: listRecurrences
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      responses:
+        '200':
+          description: As recorrências, da mais recente para a mais antiga
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Recurrence' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/recurrences/{id}:
+    get:
+      summary: Consulta uma recorrência com as ocorrências não excluídas
+      operationId: getRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/RecurrenceId'
+      responses:
+        '200':
+          description: A recorrência, as ocorrências em ordem de número e os totais
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurrenceDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/recurrences/{id}/end:
+    post:
+      summary: Encerra a recorrência e exclui as ocorrências pendentes futuras
+      description: >
+        Sem corpo. Para de gerar e exclui logicamente só as ocorrências pendentes com data depois de hoje; as
+        efetivadas e as pendentes que já venceram ficam. Já encerrada responde 200 com zero. Nenhum número realizado
+        muda.
+      operationId: endRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/RecurrenceId'
+      responses:
+        '200':
+          description: Quantas ocorrências pendentes futuras foram excluídas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EndRecurrenceResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/transactions:
+    post:
+      summary: Cria um lançamento; o marcador de efetivação automática é opcional (padrão desligado)
+      description: autoClear true só vale para lançamento pendente; com estado efetivado é 400 no campo autoClear
+      operationId: createTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoClear: { type: boolean, default: false }
+      responses:
+        '201':
+          description: Lançamento criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /workspaces/{wid}/transactions/{id}:
+    put:
+      summary: Edita um lançamento; o marcador ausente mantém o atual
+      operationId: updateTransaction
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoClear: { type: boolean }
+      responses:
+        '200':
+          description: Lançamento editado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /workspaces/{wid}/installment-purchases:
+    post:
+      summary: Registra uma compra parcelada; autoClear opcional liga o marcador nas parcelas pendentes
+      operationId: createInstallmentPurchase
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoClear: { type: boolean, default: false }
+      responses:
+        '201':
+          description: Compra registrada
+        '400': { $ref: '#/components/responses/ValidationError' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RecurrenceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, recorrência, conta ou categoria inexistente ou de outro workspace, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    RecurrenceType:
+      type: string
+      enum: [INCOME, EXPENSE]
+    RecurrenceFrequency:
+      type: string
+      enum: [WEEKLY, MONTHLY, YEARLY]
+    CreateRecurrenceRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, categoryId, type, amountCents, description, frequency, startOn]
+      properties:
+        accountId: { type: string, format: uuid, description: Conta ativa do workspace }
+        categoryId: { type: string, format: uuid, description: Categoria ativa do workspace e do tipo da recorrência }
+        type: { $ref: '#/components/schemas/RecurrenceType' }
+        amountCents: { type: integer, format: int64, minimum: 1, maximum: 1000000000000, description: Sempre positivo; o sinal vem do tipo }
+        description: { type: string, minLength: 1, maxLength: 200, description: Sem espaços nas pontas }
+        notes: { type: string, maxLength: 1000 }
+        frequency: { $ref: '#/components/schemas/RecurrenceFrequency' }
+        startOn:
+          type: string
+          format: date
+          description: De 366 dias antes de hoje até 2100-12-31; as ocorrências são contadas sempre a partir desta data (31/01, 28/02, 31/03)
+        endOn: { type: string, format: date, description: Opcional; entre o início e 2100-12-31 }
+        autoClear: { type: boolean, default: false, description: As ocorrências nascem pendentes com o marcador de efetivação automática ligado }
+    Recurrence:
+      type: object
+      required: [id, accountId, categoryId, type, amountCents, description, frequency, startOn, autoClear, ended, createdBy, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/RecurrenceType' }
+        amountCents: { type: integer, format: int64 }
+        description: { type: string }
+        notes: { type: [string, 'null'] }
+        frequency: { $ref: '#/components/schemas/RecurrenceFrequency' }
+        startOn: { type: string, format: date }
+        endOn: { type: [string, 'null'], format: date }
+        autoClear: { type: boolean }
+        ended: { type: boolean }
+        endedAt: { type: [string, 'null'], format: date-time }
+        nextOccurrenceOn: { type: [string, 'null'], format: date, description: Menor data entre as ocorrências pendentes não excluídas, de hoje em diante; nulo se não há }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    RecurrenceDetail:
+      allOf:
+        - $ref: '#/components/schemas/Recurrence'
+        - type: object
+          required: [totalCents, clearedCents, pendingCents, occurrences]
+          properties:
+            totalCents: { type: integer, format: int64, description: Soma (positiva) das ocorrências não excluídas }
+            clearedCents: { type: integer, format: int64, description: Soma (positiva) das efetivadas }
+            pendingCents: { type: integer, format: int64, description: Soma (positiva) das pendentes }
+            occurrences:
+              type: array
+              description: Ocorrências não excluídas, em ordem de número
+              items: { $ref: '#/components/schemas/Transaction' }
+    EndRecurrenceResponse:
+      type: object
+      required: [cancelled]
+      properties:
+        cancelled: { type: integer, minimum: 0, description: Quantas ocorrências pendentes futuras foram excluídas }
+    Transaction:
+      type: object
+      description: Lançamento (spec 004), com os campos acrescentados pela spec 011
+      required: [id, autoClear]
+      properties:
+        id: { type: string, format: uuid }
+        autoClear: { type: boolean, description: Efetivar sozinho quando a data chegar; só vale para pendente; some ao efetivar }
+        recurrenceId: { type: [string, 'null'], format: uuid }
+        occurrenceNumber: { type: [integer, 'null'], minimum: 0 }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
