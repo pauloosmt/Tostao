@@ -1,6 +1,19 @@
 import react from '@vitejs/plugin-react'
+import type { ProxyOptions } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// A API só aceita a origem de CORS_ORIGIN (por padrão http://localhost:5173). O proxy local fala com ela por essa origem, qualquer que
+// seja o endereço aberto no navegador (127.0.0.1, ou a porta 4173 do `vite preview`); sem isso a API responderia 403.
+const API_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173'
+const apiProxy: Record<string, ProxyOptions> = {
+  '/api': {
+    target: 'http://localhost:8080',
+    configure: (proxy) => {
+      proxy.on('proxyReq', (request) => request.setHeader('origin', API_ORIGIN))
+    },
+  },
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -41,6 +54,6 @@ export default defineConfig({
   },
   // Em dev (`vite`) e no `vite preview` o navegador fala só com o Vite; /api vai para a API local,
   // espelhando o rewrite de /api/* que a Vercel faz em produção.
-  server: { proxy: { '/api': 'http://localhost:8080' } },
-  preview: { proxy: { '/api': 'http://localhost:8080' } },
+  server: { proxy: apiProxy },
+  preview: { proxy: apiProxy },
 })
