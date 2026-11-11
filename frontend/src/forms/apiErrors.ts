@@ -30,6 +30,8 @@ export interface DescribeOptions<F extends string> {
   conflictField?: F
   /** A mensagem do `409`; pode depender do `detail` da API (por exemplo, o restaurar de categoria). */
   conflictMessage?: string | ((detail: string | undefined) => string)
+  /** Quando o `409` tem causas diferentes (nome em uso, categoria principal arquivada), decide pelo detalhe da API o campo e a mensagem. Tem prioridade sobre os dois de cima. */
+  conflict?: (detail: string | undefined) => { field?: F; message: string }
 }
 
 export function describeFailure<F extends string>(error: unknown, options: DescribeOptions<F> = {}): Failure<F> {
@@ -65,7 +67,11 @@ function describeValidation<F extends string>(error: ApiError, options: Describe
 }
 
 function describeConflict<F extends string>(error: ApiError, options: DescribeOptions<F>): Failure<F> {
-  const { conflictField, conflictMessage } = options
+  const { conflictField, conflictMessage, conflict } = options
+  if (conflict) {
+    const { field, message } = conflict(error.detail)
+    return field !== undefined ? { kind: 'conflict', fields: { [field]: message } as Partial<Record<F, string>>, retry: false } : { kind: 'conflict', fields: {}, general: message, retry: false }
+  }
   const message = typeof conflictMessage === 'function' ? conflictMessage(error.detail) : (conflictMessage ?? error.detail ?? FAILURE_MESSAGES.other)
   if (conflictField !== undefined) {
     return { kind: 'conflict', fields: { [conflictField]: message } as Partial<Record<F, string>>, retry: false }

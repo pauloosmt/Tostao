@@ -84,6 +84,31 @@ describe('409: conflito', () => {
   })
 })
 
+describe('409 com causas diferentes', () => {
+  const conflict = (detail: string | undefined) => (detail?.includes('principal') ? { message: 'Restaure antes a principal.' } : { field: 'name' as const, message: 'Nome em uso.' })
+
+  it('o detalhe da API decide o campo e a mensagem', () => {
+    expect(describeFailure<Field>(api(409, { detail: 'nome repetido' }), { conflict })).toEqual({ kind: 'conflict', fields: { name: 'Nome em uso.' }, retry: false })
+    expect(describeFailure<Field>(api(409, { detail: 'A categoria principal está arquivada' }), { conflict })).toEqual({
+      kind: 'conflict',
+      fields: {},
+      general: 'Restaure antes a principal.',
+      retry: false,
+    })
+  })
+
+  it('tem prioridade sobre o campo e a mensagem fixos', () => {
+    const failure = describeFailure<Field>(api(409, { detail: 'principal' }), { conflict, conflictField: 'name', conflictMessage: 'fixa' })
+
+    expect(failure.fields).toEqual({})
+    expect(failure.general).toBe('Restaure antes a principal.')
+  })
+
+  it('só vale para o 409', () => {
+    expect(describeFailure<Field>(api(403), { conflict }).kind).toBe('forbidden')
+  })
+})
+
 describe('os outros erros', () => {
   it('403: sem permissão', () => {
     expect(describeFailure(api(403))).toEqual({ kind: 'forbidden', fields: {}, general: FAILURE_MESSAGES.forbidden, retry: false })
