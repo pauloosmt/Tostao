@@ -26,7 +26,7 @@ export interface Reply {
   rawText?: string
 }
 
-type Handler = Reply | ((call: Call) => Reply | Promise<Reply>)
+export type Handler = Reply |((call: Call) => Reply | Promise<Reply>)
 
 export interface FakeApi {
   calls: Call[]
