@@ -63,6 +63,14 @@ export function toDisplayRow(tx: Transaction, names: Names): DisplayRow {
   }
 }
 
+/** O que a confirmação de excluir diz sobre o efeito, conforme o tipo do lançamento. */
+export function deleteText(transaction: Pick<Transaction, 'type' | 'installmentNumber' | 'recurrenceId'>): string {
+  if (transaction.type === 'TRANSFER') return 'A transferência sai da lista e do saldo das duas contas.'
+  if (transaction.installmentNumber !== null) return 'O lançamento sai da lista e do saldo da conta. Só esta parcela é excluída.'
+  if (transaction.recurrenceId !== null) return 'O lançamento sai da lista e do saldo da conta. Só esta ocorrência é excluída.'
+  return 'O lançamento sai da lista e do saldo da conta.'
+}
+
 /** Agrupa as linhas consecutivas do mesmo dia (a API já entrega em ordem; a ordem das linhas é preservada). */
 export function groupByDay(rows: DisplayRow[]): DayGroup[] {
   const groups: DayGroup[] = []
