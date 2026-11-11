@@ -25,7 +25,7 @@ description: "Tarefas da feature 015-frontend-esqueleto-auth"
 
 ## Phase 1: Arquivos e ferramentas
 
-- [ ] T001 Mover os arquivos de `public/public/` da raiz para `FE/public/` (`git mv`; `favicon.svg` substitui o do modelo do Vite; `apple-touch-icon.png`, `favicon.ico`, `icons/icon-192.png`, `icons/icon-512.png`, `icons/icon-maskable-512.png`, `icons/favicon-32.png`) e apagar `FE/public/icons.svg` (modelo do Vite), deixando a pasta `public/` da raiz de fora do repositório. Commit só dos ícones (`feat(frontend): add the app icons`)
+- [X] T001 Mover os arquivos de `public/public/` da raiz para `FE/public/` (`git mv`; `favicon.svg` substitui o do modelo do Vite; `apple-touch-icon.png`, `favicon.ico`, `icons/icon-192.png`, `icons/icon-512.png`, `icons/icon-maskable-512.png`, `icons/favicon-32.png`) deixando a pasta `public/` da raiz de fora do repositório (o `icons.svg` do modelo do Vite sai na T015). Dois commits: o favicon (`feat(frontend): add the favicon`) e os ícones de instalação (`feat(frontend): add the app install icons`)
 - [ ] T002 [P] Em `FE/vite.config.ts` listar no manifest os ícones de 192, 512 e maskable e as cores da marca (`theme_color` `#0f5f63`, `background_color` `#f6f4ef`), e no `FE/index.html` ligar o `favicon.svg`/`.ico` e o `apple-touch-icon`, `theme-color` e a descrição. Conferir no build que `dist/manifest.webmanifest` lista os ícones e que todos existem em `dist/`
 - [ ] T003 [P] Instalar `@fontsource/fraunces` e `@fontsource/ibm-plex-sans` e trocar o conteúdo de `SRC/design-system/src/fonts.css` pelos `import` dos pesos do subconjunto `latin` (Fraunces 500 e 600; IBM Plex Sans 400, 500 e 600). Conferir no build que os `woff2` saem em `dist/` e que o CSS final não tem URL externa
 - [ ] T004 Em `FE/scripts/check-guardrails.mjs` exportar a função de varredura, acrescentar a regra de **origem externa** (`http://` ou `https://` fora de `localhost`, `127.0.0.1` e dos namespaces W3C de SVG/XML) para `.ts`, `.tsx`, `.css` e `index.html`, e criar `FE/scripts/check-guardrails.test.mjs` (`node:test`, diretórios temporários): cada regra pega o que deve e deixa passar o que deve (inclusive o caso do `xmlns` do SVG). Acrescentar o script `test:guardrails` ao `package.json`
@@ -78,7 +78,7 @@ description: "Tarefas da feature 015-frontend-esqueleto-auth"
 
 ## Commits previstos (cada um pequeno, com os testes que o provam)
 
-1. `feat(frontend): add the app icons` — T001
+1. `feat(frontend): add the favicon` e `feat(frontend): add the app install icons` — T001
 2. `feat(frontend): describe the PWA with the brand icons` — T002
 3. `feat(frontend): serve the fonts from the app` — T003
 4. `feat(frontend): forbid external origins in the guard-rails` — T004
