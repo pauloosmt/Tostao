@@ -39,7 +39,7 @@ description: "Tarefas da feature 017-frontend-lancamentos"
 - [X] T007 [P] `SRC/ui/TextAreaField.tsx` e `SRC/ui/textarea.test.tsx`: rótulo, dica, erro ligados, contador de caracteres, teclado, desabilitada, axe
 - [X] T008 `SRC/transactions/useFilters.ts` e `filters.tsx` (`TransactionFiltersProvider`, `useTransactionFilters`) com `filters.test.tsx`: o padrão vazio e página 1; aplicar volta à página 1; limpar; outro workspace vê o padrão (derivado); sobrevive a desmontar e montar telas dentro do provider; o `key` por pessoa os zera; nada vai ao endereço nem ao armazenamento
 - [X] T009 [P] `SRC/transactions/reference.ts` e `reference.test.tsx`: `useReferenceData` (contas e categorias com as arquivadas, mapas de nome, listas ativas, opções de categoria por tipo com "Principal › Sub", opção da conta ou categoria arquivada que o lançamento já usa), carregando e erro com nova tentativa, descarte ao trocar de workspace
-- [ ] T010 [P] `SRC/transactions/Pager.tsx` e `pager.test.tsx`: "Página N de M", "Anterior" e "Próxima" indisponíveis nos extremos, uma só página sem controles, nomes acessíveis, axe
+- [X] T010 [P] `SRC/transactions/Pager.tsx` e `pager.test.tsx`: "Página N de M", "Anterior" e "Próxima" indisponíveis nos extremos, uma só página sem controles, nomes acessíveis, axe
 
 **Checkpoint**: datas, API, validação, linhas, a API de mentira e as peças estão provadas sem nenhuma tela
 
