@@ -79,6 +79,7 @@ h1, h2, h3, p { margin: 0; }
 .button-link { text-decoration: none; }
 .account-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .account-list__item { display: grid; gap: var(--space-2); }
+.item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 
 /* Formulários */
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); }

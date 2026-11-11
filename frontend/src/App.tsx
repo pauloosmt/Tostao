@@ -1,5 +1,5 @@
 import { Route, Routes } from 'react-router'
-import { NewAccountPage } from './accounts/AccountFormPage'
+import { EditAccountPage, NewAccountPage } from './accounts/AccountFormPage'
 import { AccountsPage } from './accounts/AccountsPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { useAuth } from './auth/useAuth'
@@ -36,6 +36,7 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="contas" element={<AccountsPage />} />
         <Route path="contas/nova" element={<NewAccountPage />} />
+        <Route path="contas/:id" element={<EditAccountPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

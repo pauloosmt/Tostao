@@ -84,6 +84,13 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
                     note={cardNote(account)}
                     archived={account.archived}
                   />
+                  {canWrite && !account.archived ? (
+                    <div className="item-actions">
+                      <ButtonLink size="sm" to={`/contas/${account.id}`} aria-label={`Editar ${account.name}`}>
+                        Editar
+                      </ButtonLink>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
