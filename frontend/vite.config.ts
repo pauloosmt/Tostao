@@ -51,6 +51,9 @@ export default defineConfig({
     restoreMocks: true,
     // O axe no jsdom é lento na primeira execução e, com os arquivos de teste em paralelo, passava dos 5 s padrão (falha intermitente).
     testTimeout: 30_000,
+    // Cada arquivo de teste sobe um jsdom (~200 MB). Com 11 processos em paralelo (12 núcleos) e dezenas de arquivos, uma máquina com pouca
+    // memória livre começava a paginar e os testes estouravam o tempo. Dois processos cabem na memória de uma máquina apertada e continuam rápidos o bastante.
+    maxWorkers: 2,
   },
   // Em dev (`vite`) e no `vite preview` o navegador fala só com o Vite; /api vai para a API local,
   // espelhando o rewrite de /api/* que a Vercel faz em produção.

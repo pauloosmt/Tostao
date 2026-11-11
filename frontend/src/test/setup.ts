@@ -6,7 +6,7 @@ import { installMatchMedia, resetViewport } from './media'
 
 // Os findBy/waitFor esperam 1 s por padrão; renderizar o aplicativo inteiro a frio, com os arquivos de teste em paralelo, passava disso (falha
 // intermitente). Um teste que de fato falha continua falhando, só que depois de esperar mais.
-configure({ asyncUtilTimeout: 5000 })
+configure({ asyncUtilTimeout: 10_000 })
 
 // O jsdom não implementa o <dialog> modal: o mínimo para os testes (abrir, fechar e o evento close).
 if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
