@@ -54,7 +54,7 @@ description: "Tarefas da feature 014-transferencia-recorrente"
 
 ## Phase 5: Provas (US4 e integração)
 
-- [ ] T007 [P] [US1] Criar `TEST/recurrence/TransferRecurrenceEffectsTest.java`: ocorrências pendentes nunca entram no saldo, no dashboard, nos orçamentos nem na fatura; efetivadas entram em exatos centavos nas duas contas; um pagamento recorrente do cartão efetivado conta como pagamento na fatura; o detalhe e a listagem de lançamentos mostram as duas pontas
+- [X] T007 [P] [US1] Criar `TEST/recurrence/TransferRecurrenceEffectsTest.java`: ocorrências pendentes nunca entram no saldo, no dashboard, nos orçamentos nem na fatura; efetivadas entram em exatos centavos nas duas contas; um pagamento recorrente do cartão efetivado conta como pagamento na fatura; o detalhe e a listagem de lançamentos mostram as duas pontas
 - [ ] T008 [P] [US4] Criar `TEST/recurrence/TransferRecurrenceAccessTest.java` (VIEWER lista e consulta e não cria nem encerra; não membro tem a mesma resposta de um workspace inexistente; sem sessão 401; conta de outro workspace 404; identificadores malformados) e `TEST/recurrence/TransferRecurrenceLayersTest.java` (camada de dados: o SQL como `tostao_app` sem filtro de workspace é barrado pelo RLS, inclusive a geração entre workspaces; camada de serviço: com a conexão do dono o filtro explícito isola sozinho)
 - [ ] T009 [P] [US2] Criar `TEST/recurrence/TransferRecurrencePerformanceTest.java`: execução automática com 20.000 lançamentos, 200 recorrências (um terço de transferência) e 2.000 vencidos com marcador em menos de 5 s; criar, consultar e listar em menos de 1 s (mediana de três, com aquecimento)
 
