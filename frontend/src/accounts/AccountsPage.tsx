@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { balanceReport, listAccounts } from '../api/accounts'
-import { AccountCard, Alert, Card, StatTile } from '../design-system/src'
+import { archiveAccount, balanceReport, listAccounts, restoreAccount } from '../api/accounts'
+import type { Account } from '../api/types'
+import { AccountCard, Alert, Button, Card, StatTile } from '../design-system/src'
 import { useResource } from '../data/useResource'
+import { describeFailure } from '../forms/apiErrors'
+import { useSubmit } from '../forms/useSubmit'
 import { usePermissions } from '../permissions/usePermissions'
 import { ButtonLink } from '../ui/ButtonLink'
 import { CheckboxField } from '../ui/CheckboxField'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { cardNote, toCardType } from './accountTypes'
+
+const RESTORE_CONFLICT = 'Já existe uma conta ativa com este nome. Renomeie a ativa antes de restaurar esta.'
 
 export function AccountsPage() {
   const { current } = useWorkspace()
@@ -28,22 +34,49 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
   const { canWrite } = usePermissions()
   const location = useLocation()
   const navigate = useNavigate()
+  const { submitting, run } = useSubmit()
   const [showArchived, setShowArchived] = useState(false)
+  const [archiving, setArchiving] = useState<Account | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
 
-  // O aviso do que acabou de acontecer (a conta foi criada) vem no estado do roteador, é lido uma vez e tirado do histórico.
-  const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice ?? null)
+  // O aviso do que acabou de acontecer vem no estado do roteador (a conta foi criada ou salva), é lido uma vez e tirado do histórico;
+  // os avisos das ações desta tela (arquivada, restaurada) entram no mesmo lugar.
+  const [initialNotice] = useState(() => (location.state as { notice?: string } | null)?.notice ?? null)
+  const [notice, setNotice] = useState<string | null>(initialNotice)
   useEffect(() => {
-    if (notice !== null) void navigate(location.pathname, { replace: true, state: null })
-  }, [notice, navigate, location.pathname])
+    if (initialNotice !== null) void navigate(location.pathname, { replace: true, state: null })
+  }, [initialNotice, navigate, location.pathname])
 
   // A chave leva o workspace e a opção: trocar qualquer um volta a "carregando" e descarta a resposta que ficou para trás.
   const resource = useResource(`accounts:${workspaceId}:${showArchived}`, () =>
     Promise.all([listAccounts(workspaceId, showArchived), balanceReport(workspaceId)]).then(([accounts, report]) => ({ accounts, total: report.totalBalanceCents })),
   )
+  const { reload } = resource
+
+  /** Uma ação sobre uma conta (arquivar, restaurar): o sucesso recarrega a lista e o total; a falha deixa tudo como estava e explica. */
+  async function act(action: () => Promise<unknown>, done: string, conflict?: string) {
+    await run(async () => {
+      setNotice(null)
+      setProblem(null)
+      try {
+        await action()
+        setNotice(done)
+        reload()
+      } catch (error) {
+        const failure = describeFailure(error, { conflictMessage: conflict })
+        setProblem(failure.general ?? null)
+        // A conta deixou de existir em outro aparelho: a lista se atualiza para refletir isso.
+        if (failure.kind === 'notFound') reload()
+      } finally {
+        setArchiving(null)
+      }
+    })
+  }
 
   return (
     <>
       {notice ? <Alert tone="info">{notice}</Alert> : null}
+      {problem ? <Alert tone="danger">{problem}</Alert> : null}
 
       <div className="list-toolbar">
         <CheckboxField label="Mostrar arquivadas" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
@@ -84,11 +117,28 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
                     note={cardNote(account)}
                     archived={account.archived}
                   />
-                  {canWrite && !account.archived ? (
+                  {canWrite ? (
                     <div className="item-actions">
-                      <ButtonLink size="sm" to={`/contas/${account.id}`} aria-label={`Editar ${account.name}`}>
-                        Editar
-                      </ButtonLink>
+                      {account.archived ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={submitting}
+                          aria-label={`Restaurar ${account.name}`}
+                          onClick={() => void act(() => restoreAccount(workspaceId, account.id), 'Conta restaurada.', RESTORE_CONFLICT)}
+                        >
+                          Restaurar
+                        </Button>
+                      ) : (
+                        <>
+                          <ButtonLink size="sm" to={`/contas/${account.id}`} aria-label={`Editar ${account.name}`}>
+                            Editar
+                          </ButtonLink>
+                          <Button size="sm" variant="secondary" disabled={submitting} aria-label={`Arquivar ${account.name}`} onClick={() => setArchiving(account)}>
+                            Arquivar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ) : null}
                 </li>
@@ -97,6 +147,20 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
           )}
         </>
       ) : null}
+
+      <ConfirmDialog
+        open={archiving !== null}
+        tone="primary"
+        title={`Arquivar "${archiving?.name ?? ''}"?`}
+        confirmLabel="Arquivar"
+        busy={submitting}
+        onConfirm={() => {
+          if (archiving) void act(() => archiveAccount(workspaceId, archiving.id), 'Conta arquivada.')
+        }}
+        onCancel={() => setArchiving(null)}
+      >
+        A conta sai da lista e do saldo total. Os lançamentos dela continuam existindo, e você pode restaurá-la quando quiser.
+      </ConfirmDialog>
     </>
   )
 }
