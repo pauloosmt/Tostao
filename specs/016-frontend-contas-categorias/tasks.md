@@ -76,9 +76,9 @@ description: "Tarefas da feature 016-frontend-contas-categorias"
 ## Phase 5: Papéis, workspace e prova
 
 - [X] T022 [US8] `SRC/accounts/access.test.tsx` (ou o nome que couber): com leitor, as duas listas sem nenhuma ação e os cinco endereços de formulário mostram o aviso de papel com a volta; com editor e dono as ações aparecem; a recusa `403` da API vira a mensagem de permissão; trocar de workspace no perfil recarrega as duas listas do novo workspace e nenhum dado do anterior fica; a resposta atrasada do workspace anterior é descartada; conta e categoria de outro workspace ou inexistentes são "não encontrada"; a sessão terminada (401) leva à entrada com o aviso
-- [ ] T023 Rodar `npm run verify` completo e o `./mvnw -B verify` do back-end; conferir o orçamento (dividir por rota se passar de 130 KB); corrigir qualquer falha nova sem enfraquecer testes; registrar as contagens
-- [ ] T024 [P] Atualizar `FE/README.md` (estrutura: `accounts/`, `categories/`, `money/`, `data/`, `forms/`, `permissions/`; a regra de dinheiro em centavos) e o `README.md` da raiz se preciso
-- [ ] T025 Executar o [quickstart.md](quickstart.md): o roteiro HTTP contra a API do Compose (contas, cartão, arquivar e restaurar, categorias, ícone preservado, papéis, limpeza de `qs16*`) e o que dá para conferir no navegador; registrar no quickstart o que foi e o que ficou para quem usa o projeto; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
+- [X] T023 Rodar `npm run verify` completo e o `./mvnw -B verify` do back-end; conferir o orçamento (dividir por rota se passar de 130 KB); corrigir qualquer falha nova sem enfraquecer testes; registrar as contagens
+- [X] T024 [P] (Mudou a pedido do usuário: os READMEs ficaram curtos e simples, e o README completo do projeto só entra ao fim da implementação.) Atualizar `FE/README.md` (estrutura: `accounts/`, `categories/`, `money/`, `data/`, `forms/`, `permissions/`; a regra de dinheiro em centavos) e o `README.md` da raiz se preciso
+- [X] T025 Executar o [quickstart.md](quickstart.md): o roteiro HTTP contra a API do Compose (contas, cartão, arquivar e restaurar, categorias, ícone preservado, papéis, limpeza de `qs16*`) e o que dá para conferir no navegador; registrar no quickstart o que foi e o que ficou para quem usa o projeto; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
 ---
 
