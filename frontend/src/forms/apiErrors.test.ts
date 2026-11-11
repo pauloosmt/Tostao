@@ -128,6 +128,10 @@ describe('os outros erros', () => {
     }
   })
 
+  it('outro 4xx com detalhe da API (regra de negócio): mostra o que a API disse', () => {
+    expect(describeFailure(api(422, { detail: 'A conta está arquivada' }))).toEqual({ kind: 'other', fields: {}, general: 'A conta está arquivada', retry: false })
+  })
+
   it('outro 4xx: aviso genérico, sem nova tentativa', () => {
     expect(describeFailure(api(422))).toEqual({ kind: 'other', fields: {}, general: FAILURE_MESSAGES.other, retry: false })
     expect(describeFailure(api(429)).retry).toBe(false)

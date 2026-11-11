@@ -50,7 +50,8 @@ export function describeFailure<F extends string>(error: unknown, options: Descr
     case 409:
       return describeConflict(error, options)
     default:
-      return { kind: 'other', fields: {}, general: FAILURE_MESSAGES.other, retry: false }
+      // Outro 4xx sem regra própria (a API recusou por uma regra de negócio): mostra o que ela disse, e só sem isso o texto genérico.
+      return { kind: 'other', fields: {}, general: error.detail ?? FAILURE_MESSAGES.other, retry: false }
   }
 }
 
