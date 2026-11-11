@@ -3,7 +3,7 @@ import { EditAccountPage, NewAccountPage } from './accounts/AccountFormPage'
 import { AccountsPage } from './accounts/AccountsPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { CategoriesPage } from './categories/CategoriesPage'
-import { NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
+import { EditCategoryPage, NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
 import { useAuth } from './auth/useAuth'
 import { Logo } from './design-system/src'
 import { HomePage } from './pages/HomePage'
@@ -41,6 +41,7 @@ export function App() {
         <Route path="contas/:id" element={<EditAccountPage />} />
         <Route path="categorias" element={<CategoriesPage />} />
         <Route path="categorias/nova" element={<NewCategoryPage />} />
+        <Route path="categorias/:id" element={<EditCategoryPage />} />
         <Route path="categorias/:id/subcategorias/nova" element={<NewSubcategoryPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
