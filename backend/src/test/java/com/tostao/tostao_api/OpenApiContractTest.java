@@ -56,6 +56,8 @@ class OpenApiContractTest {
 			"openapi.yaml");
 	private static final Path MEMBERSHIP_CONTRACT = Path.of("..", "specs", "012-membros-convites", "contracts",
 			"openapi.yaml");
+	private static final Path TRANSFER_RECURRENCE_CONTRACT = Path.of("..", "specs", "014-transferencia-recorrente", "contracts",
+			"openapi.yaml");
 	private static final Path IMPORT_CONTRACT = Path.of("..", "specs", "013-importacao-extratos", "contracts",
 			"openapi.yaml");
 	private static final Pattern PATH_LINE =Pattern.compile("^  (/[^:\\s]+):\\s*$");
@@ -419,6 +421,37 @@ class OpenApiContractTest {
 	}
 
 	@Test
+	void transferRecurrenceContractFileDeclaresTheSameFourRoutesAsTheRecurrences() throws IOException {
+		Map<String, List<String>> operations = contractOperations(TRANSFER_RECURRENCE_CONTRACT);
+
+		assertThat(operations).containsOnlyKeys(
+				"/api/v1/workspaces/{wid}/recurrences",
+				"/api/v1/workspaces/{wid}/recurrences/{id}",
+				"/api/v1/workspaces/{wid}/recurrences/{id}/end");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences")).containsExactlyInAnyOrder("get", "post");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences/{id}")).containsExactly("get");
+		assertThat(operations.get("/api/v1/workspaces/{wid}/recurrences/{id}/end")).containsExactly("post");
+	}
+
+	@Test
+	void theTransferRecurrenceFieldsAreInTheGeneratedDocsWithNoNewRoute() throws Exception {
+		String schemas = "$.components.schemas.";
+		mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+				// o destino entra no pedido e nas duas respostas; a categoria deixa de ser obrigatória no pedido
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.destinationAccountId").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.categoryId").exists())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.required[?(@ == 'categoryId')]").isEmpty())
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.required[?(@ == 'accountId')]").isNotEmpty())
+				.andExpect(jsonPath(schemas + "RecurrenceResponse.properties.destinationAccountId").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceDetailResponse.properties.destinationAccountId").exists())
+				.andExpect(jsonPath(schemas + "RecurrenceResponse.properties.categoryId").exists())
+				// o tipo da recorrência aceita transferência; nenhuma rota nova (a transferência recorrente usa as da recorrência)
+				.andExpect(jsonPath(schemas + "CreateRecurrenceRequest.properties.type.enum[?(@ == 'TRANSFER')]").isNotEmpty())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/transfer-recurrences']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/workspaces/{wid}/recurrences'].post").exists());
+	}
+
+	@Test
 	void importContractFileDeclaresTheTwoRoutes() throws IOException {
 		Map<String, List<String>> operations = contractOperations(IMPORT_CONTRACT);
 
@@ -585,7 +618,7 @@ class OpenApiContractTest {
 		var docs = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
 		for (Path contract : List.of(AUTH_CONTRACT, ACCOUNTS_CONTRACT, CATEGORIES_CONTRACT, TRANSACTIONS_CONTRACT,
 				DASHBOARD_CONTRACT, BUDGETS_CONTRACT, MONTHLY_BUDGETS_CONTRACT, INVOICES_CONTRACT, PENDING_CONTRACT,
-				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT, MEMBERSHIP_CONTRACT, IMPORT_CONTRACT)) {
+				INSTALLMENTS_CONTRACT, RECURRENCES_CONTRACT, MEMBERSHIP_CONTRACT, IMPORT_CONTRACT, TRANSFER_RECURRENCE_CONTRACT)) {
 			for (var entry : contractOperations(contract).entrySet()) {
 				for (String method : entry.getValue()) {
 					docs.andExpect(jsonPath("$.paths['" + entry.getKey() + "']." + method).exists());
