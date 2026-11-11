@@ -75,8 +75,9 @@ destino), para o código e os testes que os usam. Nenhum campo existente muda de
 ## 8. O que muda nos testes da 011
 
 Três testes registravam a recusa do tipo transferência e passam a registrar o novo comportamento: a lista de tipos inválidos em
-`CreateRecurrenceTest`, a regra de tipo em `RecurrenceRulesTest` e a recusa do banco em `RecurrenceSchemaTest` (esta continua recusando,
-agora porque uma transferência com categoria viola a forma). Mais nenhum teste anterior muda.
+`CreateRecurrenceTest`, a regra de tipo em `RecurrenceRulesTest` e, no banco, o caso de `RecurrenceSchemaTest` que recusava uma ponta de
+transferência como ocorrência (agora aceita; continua recusada a parcela que é ocorrência). O caso de `RecurrenceSchemaTest` que recusa
+uma recorrência de transferência com categoria segue como está (recusada, agora pela forma). Mais nenhum teste anterior muda.
 
 ## 9. Efeito em outras specs
 

@@ -176,17 +176,18 @@ class RecurrenceSchemaTest {
 	}
 
 	@Test
-	void onlyAnIncomeOrAnExpenseIsAnOccurrenceAndNeverAnInstallmentAtTheSameTime() {
+	void anIncomeExpenseOrTransferLegIsAnOccurrenceButNeverAnInstallmentAtTheSameTime() {
 		World w = world();
 		UUID r = recurrence(w);
 
 		assertThat(line(w, "INCOME", w.income(), "PENDING", false, r, 1)).isNotNull();
-		assertThatThrownBy(() -> owner.client().sql("""
+		// desde a spec 014 uma ponta de transferência também pode ser ocorrência (antes só receita e despesa)
+		int transferLeg = owner.client().sql("""
 				insert into transactions (workspace_id, account_id, type, amount_cents, occurred_on, description,
 				                          created_by, transfer_group_id, recurrence_id, occurrence_number)
 				values (:w, :a, 'TRANSFER', -1000, date '2026-11-10', 'Transf', :u, gen_random_uuid(), :r, 2)""")
-				.param("w", w.fx().workspaceId()).param("a", w.account()).param("u", w.fx().userId()).param("r", r).update())
-				.isInstanceOf(DataIntegrityViolationException.class);
+				.param("w", w.fx().workspaceId()).param("a", w.account()).param("u", w.fx().userId()).param("r", r).update();
+		assertThat(transferLeg).isEqualTo(1);
 		assertThatThrownBy(() -> owner.client().sql("""
 				insert into transactions (workspace_id, account_id, category_id, type, amount_cents, occurred_on,
 				                          description, created_by, recurrence_id, occurrence_number,
