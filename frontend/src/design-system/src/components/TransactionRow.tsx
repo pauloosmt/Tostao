@@ -20,8 +20,8 @@ export interface TransactionRowProps {
 
 export function TransactionRow({ description, cents, kind = 'expense', account, category, date, pending, onClick, className }: TransactionRowProps) {
   const meta = [account, category, date].filter(Boolean).join(' \u00b7 ');
-  return (
-    <div className={cx('tx-row', className)} onClick={onClick}>
+  const content = (
+    <>
       <span className="tx-row__icon"><Icon name={ICON[kind]} size={18} /></span>
       <span className="tx-row__main">
         <span className="tx-row__title text-body">{description}</span>
@@ -31,6 +31,15 @@ export function TransactionRow({ description, cents, kind = 'expense', account, 
         </span>
       </span>
       <Money cents={cents} kind={kind} size="md" />
-    </div>
+    </>
   );
+  // Com ação, a linha é um botão de verdade: alcançável por Tab e acionada por Enter e Espaço, com nome para leitor de tela.
+  if (onClick) {
+    return (
+      <button type="button" className={cx('tx-row', className)} onClick={onClick}>
+        {content}
+      </button>
+    );
+  }
+  return <div className={cx('tx-row', className)}>{content}</div>;
 }
