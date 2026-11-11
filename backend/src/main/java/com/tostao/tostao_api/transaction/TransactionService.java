@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tostao.tostao_api.common.error.AccountNotFoundException;
 import com.tostao.tostao_api.common.error.FieldValidationException;
-import com.tostao.tostao_api.common.error.TransactionConflictException;
 import com.tostao.tostao_api.common.error.TransactionNotFoundException;
 import com.tostao.tostao_api.transaction.dto.CreateTransactionRequest;
 import com.tostao.tostao_api.transaction.dto.TransactionPageResponse;
@@ -115,7 +113,7 @@ public class TransactionService {
 	private TransactionResponse createTransfer(UUID workspaceId, CreateTransactionRequest request,
 			TransactionStatus status) {
 		requireTransferFields(request.accountId(), request.destinationAccountId(), request.categoryId());
-		requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
+		refs.requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
 
 		UUID group = UUID.randomUUID();
 		long[] legs = TransactionRules.transferLegs(request.amountCents());
@@ -200,7 +198,7 @@ public class TransactionService {
 				refs.requireUsableAccount(workspaceId, changed.get(0));
 			}
 			else if (changed.size() == 2) {
-				requireUsableAccounts(workspaceId, changed.get(0), changed.get(1));
+				refs.requireUsableAccounts(workspaceId, changed.get(0), changed.get(1));
 			}
 
 			long[] legs = TransactionRules.transferLegs(request.amountCents());
@@ -463,28 +461,6 @@ public class TransactionService {
 				.query(ROW_MAPPER)
 				.optional()
 				.orElseThrow(TransactionNotFoundException::new);
-	}
-
-	/** As duas contas existem no workspace e estão ativas; travadas em modo compartilhado, em ordem de id. */
-	private void requireUsableAccounts(UUID workspaceId, UUID first, UUID second) {
-		record Row(UUID id, boolean archived) {
-		}
-		List<Row> rows = jdbc.sql("""
-				select id, archived from accounts
-				where workspace_id = :workspaceId and id in (:ids)
-				order by id
-				for share
-				""")
-				.param("workspaceId", workspaceId)
-				.param("ids", List.of(first, second))
-				.query((rs, i) -> new Row(rs.getObject("id", UUID.class), rs.getBoolean("archived")))
-				.list();
-		if (rows.size() != 2) {
-			throw new AccountNotFoundException();
-		}
-		if (rows.stream().anyMatch(Row::archived)) {
-			throw new TransactionConflictException("A conta está arquivada");
-		}
 	}
 
 }

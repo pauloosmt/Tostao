@@ -1,5 +1,6 @@
 package com.tostao.tostao_api.transaction;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -39,6 +40,28 @@ public final class UsableRefs {
 				.optional()
 				.orElseThrow(AccountNotFoundException::new);
 		if (archived) {
+			throw new TransactionConflictException("A conta está arquivada");
+		}
+	}
+
+	/** As duas contas existem no workspace e estão ativas; travadas em modo compartilhado, em ordem de id. */
+	public void requireUsableAccounts(UUID workspaceId, UUID first, UUID second) {
+		record Row(UUID id, boolean archived) {
+		}
+		List<Row> rows = jdbc.sql("""
+				select id, archived from accounts
+				where workspace_id = :workspaceId and id in (:ids)
+				order by id
+				for share
+				""")
+				.param("workspaceId", workspaceId)
+				.param("ids", List.of(first, second))
+				.query((rs, i) -> new Row(rs.getObject("id", UUID.class), rs.getBoolean("archived")))
+				.list();
+		if (rows.size() != 2) {
+			throw new AccountNotFoundException();
+		}
+		if (rows.stream().anyMatch(Row::archived)) {
 			throw new TransactionConflictException("A conta está arquivada");
 		}
 	}
