@@ -9,13 +9,15 @@ export interface ConfirmDialogProps {
   cancelLabel?: string
   /** Enquanto a ação roda: os dois botões ficam indisponíveis e o diálogo não fecha por engano. */
   busy?: boolean
+  /** `danger` (padrão) para o que não se desfaz; `primary` para o que tem volta (arquivar, por exemplo). */
+  tone?: 'danger' | 'primary'
   onConfirm: () => void
   /** O botão "Cancelar" e a tecla Esc. */
   onCancel: () => void
 }
 
 /** Confirmação com o `<dialog>` nativo: prende o foco, fecha com Esc e devolve o foco a quem o abriu. */
-export function ConfirmDialog({ open, title, children, confirmLabel, cancelLabel = 'Cancelar', busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, children, confirmLabel, cancelLabel = 'Cancelar', busy = false, tone = 'danger', onConfirm, onCancel }: ConfirmDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const bodyId = useId()
@@ -57,7 +59,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, cancelLabel
           <Button variant="secondary" onClick={onCancel} disabled={busy} data-initial-focus>
             {cancelLabel}
           </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={busy}>
+          <Button variant={tone} onClick={onConfirm} disabled={busy}>
             {confirmLabel}
           </Button>
         </div>

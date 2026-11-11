@@ -198,3 +198,26 @@ describe('ConfirmDialog', () => {
     expect(escape.defaultPrevented).toBe(false)
   })
 })
+
+describe('ConfirmDialog: o tom da confirmação', () => {
+  const open = (tone?: 'danger' | 'primary') =>
+    render(
+      <ConfirmDialog open title="Arquivar?" confirmLabel="Arquivar" tone={tone} onConfirm={() => {}} onCancel={() => {}}>
+        A conta sai da lista.
+      </ConfirmDialog>,
+    )
+
+  it('por padrão a confirmação é de perigo (o que não se desfaz)', () => {
+    open()
+
+    expect(screen.getByRole('button', { name: 'Arquivar' })).toHaveClass('tx-btn--danger')
+  })
+
+  it('com tom primário, a confirmação não parece destrutiva', () => {
+    open('primary')
+
+    expect(screen.getByRole('button', { name: 'Arquivar' })).toHaveClass('tx-btn--primary')
+    expect(screen.getByRole('button', { name: 'Arquivar' })).not.toHaveClass('tx-btn--danger')
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveClass('tx-btn--secondary')
+  })
+})

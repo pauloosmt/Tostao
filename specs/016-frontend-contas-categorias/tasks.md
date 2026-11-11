@@ -27,7 +27,7 @@ description: "Tarefas da feature 016-frontend-contas-categorias"
 ## Phase 1: Design system e base pura
 
 - [X] T001 `SRC/design-system/src/components/AccountCard.tsx`: tipo desconhecido cai em "Conta" com o ícone de banco (hoje cai em "Conta corrente"); `AccountCard.test.tsx`: os cinco tipos, o desconhecido com o rótulo genérico, arquivada marcada, saldo negativo anunciado
-- [ ] T002 `SRC/ui/ConfirmDialog.tsx`: opção `tone` (`danger`, o atual, ou `primary`), com os testes novos em `SRC/ui/ui.test.tsx` (os existentes passam sem mudar)
+- [X] T002 `SRC/ui/ConfirmDialog.tsx`: opção `tone` (`danger`, o atual, ou `primary`), com os testes novos em `SRC/ui/ui.test.tsx` (os existentes passam sem mudar)
 - [ ] T003 [P] `SRC/money/reais.ts` (`parseReais`, `formatReaisInput`, constantes de limite e mensagens) e `SRC/money/reais.test.ts`: a tabela de [research.md](research.md) §4, limites exatos (±R$ 10.000.000.000,00 e um centavo além), três casas decimais, ponto de milhar mal formado, `R$` e espaços, sinais `-` e `−`, vazio, texto, `1,2,3`, e ida e volta (`format` depois `parse`) para valores variados
 - [ ] T004 [P] `SRC/data/useResource.ts` e `useResource.test.tsx`: carrega, erro e `reload`; mudar a chave volta a "carregando" sem dado antigo; a resposta de uma chave que ficou para trás e a de componente desmontado são descartadas; erro não vira dado
 - [ ] T005 [P] `SRC/forms/useSubmit.ts` e `useSubmit.test.tsx`: executa uma ação por vez (duas chamadas seguidas executam uma), expõe `submitting`, libera ao fim e também quando a ação falha
