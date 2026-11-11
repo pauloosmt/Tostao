@@ -33,7 +33,7 @@ description: "Tarefas da feature 016-frontend-contas-categorias"
 - [X] T005 [P] `SRC/forms/useSubmit.ts` e `useSubmit.test.tsx`: executa uma ação por vez (duas chamadas seguidas executam uma), expõe `submitting`, libera ao fim e também quando a ação falha
 - [X] T006 `SRC/pages/LoginPage.tsx` e `SRC/pages/RegisterPage.tsx` passam a usar `useSubmit` no lugar do guarda local, sem mudar comportamento (os testes das duas páginas passam sem alteração)
 - [X] T007 [P] `SRC/forms/apiErrors.ts` e `apiErrors.test.ts`: `400` com `errors[]` vira mensagens por campo (campos desconhecidos viram o aviso geral, o primeiro por campo vence), `409` com o campo do nome, `403` permissão, `404` não encontrada, rede e `5xx` o aviso de servidor com nova tentativa, outros `4xx` o aviso genérico
-- [ ] T008 [P] `SRC/permissions/usePermissions.ts`, `WriteGate.tsx` e `permissions.test.tsx`: `canWrite` para dono e editor e não para leitor, sem workspace nenhum não escreve; o `WriteGate` mostra o filho a quem escreve e o aviso de papel com o caminho de volta ao leitor; axe
+- [X] T008 [P] `SRC/permissions/usePermissions.ts`, `WriteGate.tsx` e `permissions.test.tsx`: `canWrite` para dono e editor e não para leitor, sem workspace nenhum não escreve; o `WriteGate` mostra o filho a quem escreve e o aviso de papel com o caminho de volta ao leitor; axe
 
 **Checkpoint**: dinheiro, carregamento, envio, erros e papéis estão provados sem nenhuma tela nova
 
