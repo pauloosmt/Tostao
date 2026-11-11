@@ -153,3 +153,10 @@ h1, h2, h3, p { margin: 0; }
   white-space: nowrap;
   border: 0;
 }
+
+/* Área de texto (observações) */
+.tx-field__control--area { align-items: stretch; padding: var(--space-3); }
+.tx-field__control--area .tx-field__input { min-height: 72px; resize: vertical; line-height: 24px; }
+.text-field-footer { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.text-field-count { color: var(--muted); margin-left: auto; flex: none; }
+.text-field-count--over { color: var(--danger); }
