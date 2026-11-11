@@ -1,7 +1,7 @@
 // O formulário de lançamento: as regras (que espelham a API; a API é a autoridade), a montagem do corpo da requisição e a ida e volta com o lançamento.
 import { validateDateText, todayISO } from '../dates/dates'
 import { MAX_CENTS, formatReaisInput, parseReais } from '../money/reais'
-import type { CreateTransaction, Transaction, TransactionType, UpdateTransaction } from '../api/types'
+import type { CategoryKind, CreateTransaction, Transaction, TransactionType, UpdateTransaction } from '../api/types'
 import type { FieldMessages } from './account'
 
 export type TransactionField = 'type' | 'amount' | 'date' | 'description' | 'account' | 'destination' | 'category' | 'notes'
@@ -84,7 +84,7 @@ export function transactionToForm(tx: Transaction): TransactionFormValues {
  * Trocar o tipo na criação: descarta o que não vale para o novo tipo. Para a transferência, a categoria; para receita e despesa, o destino;
  * e, ao ir de receita para despesa (ou o contrário), a categoria escolhida só fica se `fits` disser que serve ao novo tipo.
  */
-export function withType(values: TransactionFormValues, type: TransactionType, fits: (categoryId: string, kind: TransactionType) => boolean): TransactionFormValues {
+export function withType(values: TransactionFormValues, type: TransactionType, fits: (categoryId: string, kind: CategoryKind) => boolean): TransactionFormValues {
   const next = { ...values, type }
   if (type === 'TRANSFER') return { ...next, categoryId: '' }
   return { ...next, destinationAccountId: '', categoryId: values.categoryId !== '' && fits(values.categoryId, type) ? values.categoryId : '' }
