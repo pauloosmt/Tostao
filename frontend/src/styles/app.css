@@ -50,6 +50,12 @@ h1, h2, h3, p { margin: 0; }
 }
 .auth-page__brand { display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
 
+.auth-page__footer { text-align: center; }
+
+.link { color: var(--brand); font-weight: 500; text-underline-offset: 3px; }
+.link:hover { color: var(--brand-hover); }
+.link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+
 .password-field { display: grid; gap: var(--space-1); justify-items: start; }
 .password-field > .tx-field { width: 100%; }
 
