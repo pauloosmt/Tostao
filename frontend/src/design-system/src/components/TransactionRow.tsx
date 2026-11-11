@@ -14,11 +14,13 @@ export interface TransactionRowProps {
   /** Já formatada, ex.: "3 nov". */
   date?: string;
   pending?: boolean;
+  /** Selos extras ao lado de "Pendente" (ex.: "Parcela 2 de 10", "Recorrente"). Fazem parte da linha: não são controles. */
+  tags?: string[];
   onClick?: () => void;
   className?: string;
 }
 
-export function TransactionRow({ description, cents, kind = 'expense', account, category, date, pending, onClick, className }: TransactionRowProps) {
+export function TransactionRow({ description, cents, kind = 'expense', account, category, date, pending, tags, onClick, className }: TransactionRowProps) {
   const meta = [account, category, date].filter(Boolean).join(' \u00b7 ');
   const content = (
     <>
@@ -28,6 +30,7 @@ export function TransactionRow({ description, cents, kind = 'expense', account, 
         <span className="tx-row__meta text-body-sm">
           <span className="tx-row__metatext">{meta}</span>
           {pending ? <Badge tone="warning">Pendente</Badge> : null}
+          {tags?.map((tag) => <Badge key={tag} tone="neutral">{tag}</Badge>)}
         </span>
       </span>
       <Money cents={cents} kind={kind} size="md" />

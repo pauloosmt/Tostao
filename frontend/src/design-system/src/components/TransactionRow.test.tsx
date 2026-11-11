@@ -78,3 +78,33 @@ describe('TransactionRow', () => {
     await expectNoSeriousViolations(container)
   })
 })
+
+describe('TransactionRow: selos extras', () => {
+  it('sem tags nada muda', () => {
+    const { container } = render(<TransactionRow {...row} />)
+
+    expect(container.querySelectorAll('.tx-badge')).toHaveLength(0)
+  })
+
+  it('as tags aparecem como selos ao lado de "Pendente", dentro da mesma linha (um botão só)', () => {
+    render(<TransactionRow {...row} onClick={() => {}} pending tags={['Parcela 2 de 10', 'Recorrente']} />)
+
+    const button = screen.getByRole('button', { name: /Padaria do Zé/ })
+    expect(button).toHaveTextContent('Pendente')
+    expect(button).toHaveTextContent('Parcela 2 de 10')
+    expect(button).toHaveTextContent('Recorrente')
+    expect(screen.getAllByRole('button')).toHaveLength(1) // os selos não são controles
+  })
+
+  it('uma lista de tags vazia não desenha nada', () => {
+    const { container } = render(<TransactionRow {...row} tags={[]} />)
+
+    expect(container.querySelectorAll('.tx-badge')).toHaveLength(0)
+  })
+
+  it('passa no axe com as tags', async () => {
+    const { container } = render(<TransactionRow {...row} onClick={() => {}} tags={['Importado']} />)
+
+    await expectNoSeriousViolations(container)
+  })
+})
