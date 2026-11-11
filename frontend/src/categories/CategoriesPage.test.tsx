@@ -105,9 +105,15 @@ describe('as categorias arquivadas', () => {
 
 describe('os estados da tela', () => {
   it('carrega com "Carregando categorias…"', async () => {
-    open([alimentacao()])
+    let release!: () => void
+    const wait = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { api } = open([alimentacao()])
+    api.on(wsRoute('GET', WID, '/categories'), async () => (await wait, ok([alimentacao()])))
 
     expect(await screen.findByText('Carregando categorias…')).toBeInTheDocument()
+    release()
     await tree()
     expect(screen.queryByText('Carregando categorias…')).toBeNull()
   })

@@ -91,7 +91,8 @@ describe('as regras no campo, antes de enviar', () => {
     const { user } = renderRoutes(routes, ['/cadastro'])
     await heading()
 
-    await user.type(name(), 'a'.repeat(101))
+    await user.click(name())
+    await user.paste('a'.repeat(101))
     await user.type(email(), 'sem-arroba')
     await user.type(password(), 'sosletras')
     await user.click(submit())

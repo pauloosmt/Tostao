@@ -169,7 +169,8 @@ describe('as regras no campo, antes de enviar', () => {
   it('cada campo mostra o seu erro e o foco vai ao primeiro (nome longo, saldo ruim, limite negativo, dias fora de 1 a 31)', async () => {
     const { api, user } = open()
     await ready()
-    await user.type(name(), 'a'.repeat(101))
+    await user.click(name())
+    await user.paste('a'.repeat(101))
     await user.selectOptions(type(), 'CREDIT_CARD')
     await user.clear(balance())
     await user.type(balance(), 'abc')

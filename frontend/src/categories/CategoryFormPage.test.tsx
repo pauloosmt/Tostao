@@ -105,7 +105,8 @@ describe('as regras no campo, antes de enviar', () => {
     expect(name()).toHaveAccessibleDescription('Informe o nome.')
     expect(name()).toHaveFocus()
 
-    await user.type(name(), 'a'.repeat(61))
+    await user.click(name())
+    await user.paste('a'.repeat(61))
     await user.click(save())
     expect(name()).toHaveAccessibleDescription('Use no máximo 60 caracteres.')
     expect(api.callsTo(POST)).toHaveLength(0)

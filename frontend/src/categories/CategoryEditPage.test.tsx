@@ -146,7 +146,8 @@ describe('editar uma categoria', () => {
     expect(name()).toHaveAccessibleDescription('Informe o nome.')
     expect(name()).toHaveFocus()
 
-    await user.type(name(), 'a'.repeat(61))
+    await user.click(name())
+    await user.paste('a'.repeat(61))
     await user.click(save())
     expect(name()).toHaveAccessibleDescription('Use no máximo 60 caracteres.')
     expect(api.callsTo(PUT)).toHaveLength(0)

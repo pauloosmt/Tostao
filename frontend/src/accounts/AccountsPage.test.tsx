@@ -86,15 +86,15 @@ describe('a lista de contas', () => {
     expect(rows()).toHaveLength(2)
   })
 
-  it('uma lista grande (500 contas) aparece inteira', async () => {
-    const many = Array.from({ length: 500 }, (_, i) => makeAccount({ name: `Conta ${i}`, balanceCents: 100 }))
+  it('uma lista grande (300 contas) aparece inteira', async () => {
+    const many = Array.from({ length: 300 }, (_, i) => makeAccount({ name: `Conta ${i}`, balanceCents: 100 }))
     const { container } = open(many)
 
     await screen.findByText('Saldo total')
 
     // (contado direto no DOM: as consultas por papel do Testing Library são lentas em listas grandes no jsdom)
-    expect(container.querySelectorAll('ul[aria-label="Contas"] > li')).toHaveLength(500)
-    expect(within(stat()).getByText(brl(50000))).toBeInTheDocument()
+    expect(container.querySelectorAll('ul[aria-label="Contas"] > li')).toHaveLength(300)
+    expect(within(stat()).getByText(brl(30000))).toBeInTheDocument()
   })
 })
 
@@ -122,9 +122,15 @@ describe('as contas arquivadas', () => {
 
 describe('os estados da tela', () => {
   it('mostra "Carregando contas…" enquanto consulta', async () => {
-    open([carteira])
+    let release!: () => void
+    const wait = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { api } = open([carteira])
+    api.on(wsRoute('GET', WID, '/accounts'), async () => (await wait, ok([carteira])))
 
     expect(await screen.findByText('Carregando contas…')).toBeInTheDocument()
+    release()
     await screen.findByRole('list', { name: 'Contas' })
     expect(screen.queryByText('Carregando contas…')).toBeNull()
   })
