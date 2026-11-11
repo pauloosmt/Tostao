@@ -48,7 +48,7 @@ description: "Tarefas da feature 014-transferencia-recorrente"
 
 ## Phase 4: US2 - Efetivar sozinha (P1)
 
-- [ ] T006 [US2] Criar `TEST/recurrence/TransferOccurrencesTest.java`: a execução automática (`runOnce`) gera as ocorrências e efetiva as duas pontas juntas com o marcador (saldos em exatos centavos, soma inalterada, marcador desligado nas duas); sem marcador nada é efetivado; execuções repetidas e simultâneas deixam um par por ocorrência e nunca uma ponta só; excluída não volta; conta arquivada pausa a geração e restaurar volta; uma recorrência com problema não impede as outras; dois workspaces sem mistura
+- [X] T006 [US2] Criar `TEST/recurrence/TransferOccurrencesTest.java`: a execução automática (`runOnce`) gera as ocorrências e efetiva as duas pontas juntas com o marcador (saldos em exatos centavos, soma inalterada, marcador desligado nas duas); sem marcador nada é efetivado; execuções repetidas e simultâneas deixam um par por ocorrência e nunca uma ponta só; excluída não volta; conta arquivada pausa a geração e restaurar volta; uma recorrência com problema não impede as outras; dois workspaces sem mistura
 
 ---
 
