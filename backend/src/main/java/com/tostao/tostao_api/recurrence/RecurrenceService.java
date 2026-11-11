@@ -141,8 +141,8 @@ public class RecurrenceService {
 	 * hoje, mantendo as efetivadas e as pendentes que já venceram. Já encerrada, responde zero, sem efeito. A recorrência
 	 * é travada ({@code FOR UPDATE}): a geração toma {@code FOR SHARE} nela, então uma geração em curso termina antes
 	 * e este encerramento enxerga as ocorrências que ela criou, e uma geração que chega depois relê a linha, vê
-	 * {@code ended_at} e a deixa de fora; em nenhuma ordem sobra ocorrência futura pendente. As ocorrências são
-	 * travadas em ordem de número e a condição de estado é repetida no {@code UPDATE}: uma efetivação simultânea, manual
+	 * {@code ended_at} e a deixa de fora; em nenhuma ordem sobra ocorrência futura pendente. As linhas são
+	 * travadas em ordem de id (a mesma da execução automática e das operações de uma transferência) e a condição de estado é repetida no {@code UPDATE}: uma efetivação simultânea, manual
 	 * ou automática, prevalece (uma efetivada nunca é desfeita).
 	 */
 	@WorkspaceScoped(write = true)
@@ -172,7 +172,7 @@ public class RecurrenceService {
 				select id from transactions
 				where workspace_id = :workspaceId and recurrence_id = :id and status = 'PENDING'
 				  and deleted_at is null and occurred_on > :today
-				order by occurrence_number
+				order by id
 				for update
 				""")
 				.param("workspaceId", workspaceId)
@@ -183,14 +183,17 @@ public class RecurrenceService {
 		if (future.isEmpty()) {
 			return new EndRecurrenceResponse(0);
 		}
-		int cancelled = jdbc.sql("""
+		// uma ocorrência de transferência tem duas pontas: conta ocorrências (números distintos), não linhas
+		List<Integer> cancelledNumbers = jdbc.sql("""
 				update transactions set deleted_at = now(), updated_at = now()
 				where workspace_id = :workspaceId and id in (:ids) and status = 'PENDING' and deleted_at is null
+				returning occurrence_number
 				""")
 				.param("workspaceId", workspaceId)
 				.param("ids", future)
-				.update();
-		return new EndRecurrenceResponse(cancelled);
+				.query(Integer.class)
+				.list();
+		return new EndRecurrenceResponse((int) cancelledNumbers.stream().distinct().count());
 	}
 
 	/** As recorrências do workspace, da mais recente para a mais antiga. */

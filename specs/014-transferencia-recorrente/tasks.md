@@ -42,7 +42,7 @@ description: "Tarefas da feature 014-transferencia-recorrente"
 
 ## Phase 3: US3 - Ver e encerrar (P2)
 
-- [ ] T005 [US3] Em `MAIN/recurrence/RecurrenceService.java`: em `end`, travar por id, excluir as duas pontas das pendentes futuras e contar ocorrências distintas (`RETURNING occurrence_number`). Criar `TEST/recurrence/EndTransferRecurrenceTest.java` (lista com transferência e demais; detalhe com as duas pontas e totais por ocorrência; encerrar mantém efetivadas e vencidas e exclui os pares futuros; conta ocorrências; idempotente; encerrar e gerar em corrida não deixa par futuro; editar, efetivar e excluir uma ocorrência como transferência comum)
+- [X] T005 [US3] Em `MAIN/recurrence/RecurrenceService.java`: em `end`, travar por id, excluir as duas pontas das pendentes futuras e contar ocorrências distintas (`RETURNING occurrence_number`). Criar `TEST/recurrence/EndTransferRecurrenceTest.java` (lista com transferência e demais; detalhe com as duas pontas e totais por ocorrência; encerrar mantém efetivadas e vencidas e exclui os pares futuros; conta ocorrências; idempotente; encerrar e gerar em corrida não deixa par futuro; editar, efetivar e excluir uma ocorrência como transferência comum)
 
 ---
 
