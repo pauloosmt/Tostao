@@ -12,6 +12,7 @@ import { MissingItem } from '../ui/MissingItem'
 import { buildCreateTransaction, buildUpdateTransaction, emptyTransactionForm, transactionToForm } from '../validation/transactionForm'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { useReferenceData } from './reference'
+import { TransactionActions } from './TransactionActions'
 import { TransactionDetails } from './TransactionDetails'
 import { TransactionForm } from './TransactionForm'
 
@@ -113,6 +114,7 @@ function TransactionOf({ workspaceId, transactionId }: { workspaceId: string; tr
           }}
         />
       </Card>
+      <TransactionActions workspaceId={workspaceId} transaction={transaction} />
     </>
   )
 }

@@ -31,7 +31,7 @@ export type Handler = Reply |((call: Call) => Reply | Promise<Reply>)
 export interface FakeApi {
   calls: Call[]
   on: (route: string, handler: Handler) => FakeApi
-  /** Uma rota com identificador (`/transactions/:id`): vale quando nenhuma rota exata casa. O padrão é testado só no caminho, sem a consulta. */
+  /** Uma rota com identificador (`/transactions/:id`): vale quando nenhuma rota exata casa; entre elas, a registrada por último vale primeiro. O padrão é testado só no caminho, sem a consulta. */
   onMatch: (method: string, pattern: RegExp, handler: (call: Call, match: RegExpExecArray) => Reply | Promise<Reply>) => FakeApi
   /** Quantas vezes a rota foi chamada. */
   count: (route: string) => number
@@ -78,7 +78,8 @@ export function fakeApi(routes: Record<string, Handler> = {}): FakeApi {
       return api
     },
     onMatch(method, pattern, handler) {
-      matchers.push({ method: method.toUpperCase(), pattern, handler })
+      // a registrada por último vale primeiro (como nas rotas exatas): um teste pode trocar a resposta de uma rota que uma API de mentira já definiu
+      matchers.unshift({ method: method.toUpperCase(), pattern, handler })
       return api
     },
     count: (route) => api.callsTo(route).length,

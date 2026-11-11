@@ -50,3 +50,39 @@ describe('fakeApi', () => {
     expect(takeUnhandledCalls()).toEqual(['GET /api/v1/outra'])
   })
 })
+
+describe('fakeApi: rotas com identificador (onMatch)', () => {
+  it('casa pelo caminho sem a consulta e entrega o que o padrão capturou', async () => {
+    const api = fakeApi()
+    api.onMatch('GET', /^\/api\/v1\/itens\/([^/]+)$/, (_call, match) => ok({ id: match[1] }))
+
+    const response = await fetch('/api/v1/itens/abc?x=1')
+
+    expect(await response.json()).toEqual({ id: 'abc' })
+    expect(api.calls).toHaveLength(1)
+  })
+
+  it('uma rota exata vale antes de qualquer padrão, e o método precisa casar', async () => {
+    const api = fakeApi({ 'GET /api/v1/itens/especial': ok({ id: 'exata' }) })
+    api.onMatch('GET', /^\/api\/v1\/itens\/([^/]+)$/, (_call, match) => ok({ id: match[1] }))
+    api.onMatch('DELETE', /^\/api\/v1\/itens\/([^/]+)$/, () => noContent())
+
+    expect(await (await fetch('/api/v1/itens/especial')).json()).toEqual({ id: 'exata' })
+    expect((await fetch('/api/v1/itens/x', { method: 'DELETE' })).status).toBe(204)
+  })
+
+  it('entre dois padrões que casam, o registrado por último vale (o teste pode trocar a resposta)', async () => {
+    const api = fakeApi()
+    api.onMatch('GET', /^\/api\/v1\/itens\/([^/]+)$/, () => ok({ de: 'primeiro' }))
+    api.onMatch('GET', /^\/api\/v1\/itens\/([^/]+)$/, () => ok({ de: 'segundo' }))
+
+    expect(await (await fetch('/api/v1/itens/x')).json()).toEqual({ de: 'segundo' })
+  })
+
+  it('sem rota nem padrão, é uma chamada sem rota (o teste falha, não passa em silêncio)', async () => {
+    fakeApi().onMatch('GET', /^\/api\/v1\/itens\/x$/, () => ok({}))
+
+    await expect(fetch('/api/v1/outra')).rejects.toThrow('nenhuma rota')
+    expect(takeUnhandledCalls()).toEqual(['GET /api/v1/outra'])
+  })
+})
