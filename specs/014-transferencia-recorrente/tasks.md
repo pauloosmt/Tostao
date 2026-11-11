@@ -63,9 +63,9 @@ description: "Tarefas da feature 014-transferencia-recorrente"
 ## Phase 6: Polish
 
 - [X] T010 Em `TEST/OpenApiContractTest.java` acrescentar `TRANSFER_RECURRENCE_CONTRACT` (`specs/014-transferencia-recorrente/contracts/openapi.yaml`) e conferir que declara as mesmas quatro rotas da 011, que `/v3/api-docs` expõe `destinationAccountId` no pedido e nas respostas, que `categoryId` não é obrigatório no pedido, e incluir o contrato no teste de "todas as operações do contrato existem"
-- [ ] T011 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 013 pode ter sido alterado além dos três que registravam a recusa da transferência** (conferir com `git diff`)
-- [ ] T012 [P] Atualizar `README.md`: transferência recorrente (o tipo `TRANSFER` na rota de recorrências, destino e sem categoria, as duas pontas pendentes, efetivação automática juntas, encerrar conta ocorrências, cartão como destino)
-- [ ] T013 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído, com `Flyway` na versão 15 e limpeza ao fim (inclusive `recurrences`); marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
+- [X] T011 Rodar `./mvnw -B verify` completo; corrigir qualquer falha **nova** sem enfraquecer testes e registrar a contagem. **Nenhum teste das specs 001 a 013 pode ter sido alterado além dos três que registravam a recusa da transferência** (conferir com `git diff`)
+- [X] T012 [P] Atualizar `README.md`: transferência recorrente (o tipo `TRANSFER` na rota de recorrências, destino e sem categoria, as duas pontas pendentes, efetivação automática juntas, encerrar conta ocorrências, cartão como destino)
+- [X] T013 Executar o [quickstart.md](quickstart.md) contra o Docker Compose reconstruído, com `Flyway` na versão 15 e limpeza ao fim (inclusive `recurrences`); marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
 ---
 

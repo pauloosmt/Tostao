@@ -103,7 +103,7 @@ pessoa). Quem quiser, liga o marcador `autoClear` num lançamento pendente (na c
 parcelada, que o liga nas parcelas pendentes): no dia da data o sistema o efetiva, com o mesmo efeito da efetivação
 manual (as duas pontas de uma transferência juntas). O marcador é **de uso único**: some quando o lançamento é efetivado
 por qualquer caminho, e devolvido a pendente não volta a ser efetivado sozinho; só vale para pendente (efetivado com
-`autoClear` ligado é 400). Uma **recorrência** repete uma receita ou despesa toda semana, mês ou ano (`WEEKLY`,
+`autoClear` ligado é 400). Uma **recorrência** repete uma receita, despesa ou transferência (abaixo) toda semana, mês ou ano (`WEEKLY`,
 `MONTHLY`, `YEARLY`): o sistema mantém geradas, como lançamentos pendentes comuns, as ocorrências até 12 meses à frente.
 As datas são sempre contadas a partir do início (31/01, 28/02, 31/03, sem acumular o ajuste), o início pode ficar até
 366 dias no passado, e uma ocorrência excluída à mão não é recriada. A regra da recorrência não se edita: encerra-se e
@@ -118,6 +118,22 @@ curl -b jar.txt -H 'Content-Type: application/json' -d '{"accountId":"<conta>","
 curl -b jar.txt $BASE/workspaces/$WID/recurrences               # lista, com a próxima ocorrência pendente
 curl -b jar.txt $BASE/workspaces/$WID/recurrences/<id>          # detalhe: ocorrências em ordem, totais efetivado e pendente
 curl -b jar.txt -X POST $BASE/workspaces/$WID/recurrences/<id>/end   # {"cancelled":N}: exclui só as pendentes futuras
+```
+
+Transferência recorrente: a mesma recorrência, com `"type":"TRANSFER"`, repete uma transferência entre duas contas do
+workspace (por exemplo, todo dia 5, R$ 500 da corrente para a poupança). Informe `accountId` (origem) e
+`destinationAccountId` (destino, diferente da origem) e **não** informe `categoryId` (transferência não tem categoria; em
+receita e despesa é o contrário: categoria obrigatória e destino recusado). Cada ocorrência é uma transferência comum de
+**duas pontas** (saída na origem, entrada no destino, mesmo grupo), que nasce pendente e, com `autoClear`, é efetivada
+sozinha no dia, as duas pontas juntas; nunca existe uma ponta só. As duas contas precisam estar ativas (arquivar uma pausa a
+geração; restaurar a retoma). O destino pode ser um cartão de crédito: a ocorrência efetivada conta como pagamento da
+fatura. No detalhe, a lista traz as duas pontas e os totais contam cada ocorrência uma vez; encerrar exclui as duas pontas das
+pendentes futuras e `cancelled` conta **ocorrências**, não pontas.
+
+```bash
+curl -b jar.txt -H 'Content-Type: application/json' -d '{"type":"TRANSFER","accountId":"<corrente>",
+  "destinationAccountId":"<poupança>","amountCents":50000,"description":"Reserva","frequency":"MONTHLY",
+  "startOn":"2026-11-05","autoClear":true}' $BASE/workspaces/$WID/recurrences    # 201: 13 pares de pontas pendentes
 ```
 
 A **execução automática** (gerar as ocorrências que faltam e efetivar o que venceu) roda sem pessoa logada, 10 segundos
