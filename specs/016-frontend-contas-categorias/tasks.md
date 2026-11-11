@@ -42,7 +42,7 @@ description: "Tarefas da feature 016-frontend-contas-categorias"
 ## Phase 2: Peças de interface e API
 
 - [X] T009 [P] `SRC/ui/SelectField.tsx` e `CheckboxField.tsx` com `SRC/ui/fields.test.tsx`: rótulo, dica e erro ligados ao campo, opções, valor controlado, teclado, estado desabilitado, axe
-- [ ] T010 `SRC/ui/MoneyField.tsx` com `SRC/ui/MoneyField.test.tsx`: prefixo "R$", valor em texto, o erro de `parseReais` mostrado como erro do campo, `inputMode="decimal"`, ligado ao `Field` do design system; axe
+- [X] T010 `SRC/ui/MoneyField.tsx` com `SRC/ui/MoneyField.test.tsx`: prefixo "R$", valor em texto, o erro de `parseReais` mostrado como erro do campo, `inputMode="decimal"`, ligado ao `Field` do design system; axe
 - [ ] T011 [P] `SRC/categories/palette.ts` e `SRC/ui/ColorPicker.tsx` com `SRC/ui/ColorPicker.test.tsx`: dez cores com nome em português e "Sem cor", cada uma um rádio com nome acessível, a escolhida marcada, o valor controlado, uma cor fora da paleta aparece como "Cor atual", teclado (setas e Espaço), axe
 - [ ] T012 `SRC/api/types.ts` (os tipos de [data-model.md](data-model.md)), `SRC/api/accounts.ts`, `SRC/api/categories.ts` e `SRC/api/resources.test.ts`; ajudante do prefixo do workspace em `SRC/test/fakeApi.ts`: caminhos e métodos de cada chamada, `includeArchived` só quando marcado, o corpo em centavos inteiros e sem campos de cartão fora de cartão, a subcategoria sem `kind`, a edição de categoria sem `kind` nem `parentId`, nada de credencial no endereço
 
