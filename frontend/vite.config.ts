@@ -36,6 +36,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    // O axe no jsdom é lento na primeira execução e, com os arquivos de teste em paralelo, passava dos 5 s padrão (falha intermitente).
+    testTimeout: 30_000,
   },
   server: {
     // Em dev o navegador fala só com o Vite; /api vai para a API local,
