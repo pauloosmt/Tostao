@@ -105,6 +105,13 @@ function CategoriesOf({ workspaceId }: { workspaceId: string }) {
                 <Card>
                   <div className="stack stack--tight">
                     <CategoryName category={category} />
+                    {canWrite && !category.archived ? (
+                      <div className="item-actions">
+                        <ButtonLink size="sm" to={`/categorias/${category.id}/subcategorias/nova`} aria-label={`Adicionar subcategoria em ${category.name}`}>
+                          Adicionar subcategoria
+                        </ButtonLink>
+                      </div>
+                    ) : null}
                     {category.subcategories.length > 0 ? (
                       <ul className="category-tree__subs" aria-label={`Subcategorias de ${category.name}`}>
                         {category.subcategories.map((sub) => (
