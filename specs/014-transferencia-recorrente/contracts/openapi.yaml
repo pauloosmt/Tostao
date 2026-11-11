@@ -1,0 +1,232 @@
+openapi: 3.1.0
+info:
+  title: Tostão API — Transferência recorrente
+  version: 0.14.0
+  description: >
+    Contrato da spec 014. Estende as rotas de recorrência da spec 011: o tipo TRANSFER repete uma transferência entre duas
+    contas do workspace (conta de origem, conta de destino, sem categoria), com a mesma frequência, início, fim e efetivação
+    automática das recorrências de receita e despesa. Cada ocorrência é uma transferência comum de duas pontas (saída na origem,
+    entrada no destino, mesmo grupo), pendente, que a execução automática pode efetivar sozinha, as duas pontas juntas. Receita
+    e despesa não mudam: continuam exigindo categoria e recusando destino. As rotas são as mesmas da 011; aqui ficam só o que
+    a transferência acrescenta. Todas exigem sessão (cookie tostao_session). Quem não é membro de um workspace recebe 404, igual a
+    um workspace inexistente. Erros seguem Problem Details (RFC 7807).
+servers:
+  - url: /api/v1
+paths:
+  /workspaces/{wid}/recurrences:
+    post:
+      summary: Cria uma recorrência de receita, despesa ou transferência
+      description: >
+        Transferência: `destinationAccountId` obrigatório e diferente de `accountId`, `categoryId` recusado. Receita e despesa:
+        `categoryId` obrigatório, `destinationAccountId` recusado. As contas (e a categoria) são conferidas e travadas antes de
+        gravar; arquivada é 409, de outro workspace ou inexistente é 404. A criação gera as ocorrências até 12 meses depois de
+        hoje, tudo ou nada.
+      operationId: createRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRecurrenceRequest' }
+      responses:
+        '201':
+          description: A recorrência com as ocorrências geradas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurrenceDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      summary: Lista as recorrências do workspace (qualquer papel)
+      operationId: listRecurrences
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+      responses:
+        '200':
+          description: Da mais recente para a mais antiga
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Recurrence' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/recurrences/{id}:
+    get:
+      summary: Uma recorrência com as ocorrências não excluídas
+      description: >
+        Numa recorrência de transferência, `occurrences` traz as duas pontas de cada ocorrência (cada ponta como um lançamento) e
+        os totais contam cada ocorrência uma vez.
+      operationId: getRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/RecurrenceId'
+      responses:
+        '200':
+          description: O detalhe
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecurrenceDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{wid}/recurrences/{id}/end:
+    post:
+      summary: Encerra a recorrência
+      description: >
+        Para de gerar e exclui as ocorrências pendentes com data depois de hoje (numa transferência, as duas pontas de cada uma). As
+        efetivadas e as pendentes vencidas ficam. Já encerrada: zero, sem efeito. `cancelled` conta ocorrências, não pontas.
+      operationId: endRecurrence
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Wid'
+        - $ref: '#/components/parameters/RecurrenceId'
+      responses:
+        '200':
+          description: Quantas ocorrências foram excluídas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EndRecurrenceResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tostao_session
+  parameters:
+    Wid:
+      name: wid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RecurrenceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Campo inválido (campo em errors[].field)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+    Unauthenticated:
+      description: Sem sessão válida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O papel da pessoa neste workspace (VIEWER) não permite a operação
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Workspace, recorrência, conta ou categoria inexistente ou de outro workspace, ou workspace do qual a pessoa não é membro (indistinguíveis)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conta ou categoria arquivada
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CreateRecurrenceRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, type, amountCents, description, frequency, startOn]
+      properties:
+        accountId: { type: string, format: uuid, description: 'Conta (na transferência, a de origem)' }
+        destinationAccountId: { type: [string, 'null'], format: uuid, description: 'Obrigatório e diferente da origem na transferência; recusado nos demais' }
+        categoryId: { type: [string, 'null'], format: uuid, description: 'Obrigatório em receita e despesa; recusado na transferência' }
+        type: { type: string, enum: [INCOME, EXPENSE, TRANSFER] }
+        amountCents: { type: integer, format: int64, minimum: 1, maximum: 1000000000000 }
+        description: { type: string, minLength: 1, maxLength: 200 }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+        frequency: { type: string, enum: [WEEKLY, MONTHLY, YEARLY] }
+        startOn: { type: string, format: date }
+        endOn: { type: [string, 'null'], format: date }
+        autoClear: { type: [boolean, 'null'], description: 'Ausente = desligado' }
+    Recurrence:
+      type: object
+      required: [id, accountId, type, amountCents, description, frequency, startOn, autoClear, ended]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        destinationAccountId: { type: [string, 'null'], format: uuid, description: 'Nulo em receita e despesa' }
+        categoryId: { type: [string, 'null'], format: uuid, description: 'Nulo na transferência' }
+        type: { type: string, enum: [INCOME, EXPENSE, TRANSFER] }
+        amountCents: { type: integer, format: int64, description: 'Sempre positivo' }
+        description: { type: string }
+        notes: { type: [string, 'null'] }
+        frequency: { type: string, enum: [WEEKLY, MONTHLY, YEARLY] }
+        startOn: { type: string, format: date }
+        endOn: { type: [string, 'null'], format: date }
+        autoClear: { type: boolean }
+        ended: { type: boolean }
+        endedAt: { type: [string, 'null'], format: date-time }
+        nextOccurrenceOn: { type: [string, 'null'], format: date }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    RecurrenceDetail:
+      allOf:
+        - $ref: '#/components/schemas/Recurrence'
+        - type: object
+          required: [totalCents, clearedCents, pendingCents, occurrences]
+          properties:
+            totalCents: { type: integer, format: int64, description: 'Cada ocorrência de transferência conta uma vez' }
+            clearedCents: { type: integer, format: int64 }
+            pendingCents: { type: integer, format: int64 }
+            occurrences:
+              type: array
+              items: { $ref: '#/components/schemas/Transaction' }
+    EndRecurrenceResponse:
+      type: object
+      required: [cancelled]
+      properties:
+        cancelled: { type: integer, description: 'Ocorrências excluídas (numa transferência, cada par conta uma)' }
+    Transaction:
+      type: object
+      description: Lançamento (spec 004); numa transferência, uma ponta
+      required: [id, accountId, type, amountCents, occurredOn, description, status]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        type: { type: string, enum: [INCOME, EXPENSE, TRANSFER] }
+        amountCents: { type: integer, format: int64, description: 'Com sinal: a saída é negativa e a entrada positiva' }
+        occurredOn: { type: string, format: date }
+        description: { type: string }
+        categoryId: { type: [string, 'null'], format: uuid }
+        transferGroupId: { type: [string, 'null'], format: uuid, description: 'Liga as duas pontas' }
+        counterpartAccountId: { type: [string, 'null'], format: uuid }
+        status: { type: string, enum: [PENDING, CLEARED] }
+        recurrenceId: { type: [string, 'null'], format: uuid }
+        occurrenceNumber: { type: [integer, 'null'] }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
