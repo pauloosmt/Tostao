@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router'
+import { AccountsPage } from './accounts/AccountsPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { useAuth } from './auth/useAuth'
 import { Logo } from './design-system/src'
@@ -32,6 +33,7 @@ export function App() {
       <Route path="/cadastro" element={<RegisterPage />} />
       <Route element={<RequireAuth />}>
         <Route index element={<HomePage />} />
+        <Route path="contas" element={<AccountsPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
