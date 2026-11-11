@@ -8,15 +8,23 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'icons/favicon-32.png'],
       manifest: {
         name: 'Tostão',
         short_name: 'Tostão',
         description: 'Finanças pessoais',
         lang: 'pt-BR',
-        theme_color: '#0f766e',
-        background_color: '#ffffff',
+        start_url: '/',
+        scope: '/',
+        // as cores da marca (tokens do design system, tema claro)
+        theme_color: '#0f5f63',
+        background_color: '#f6f4ef',
         display: 'standalone',
-        icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       // Chamadas à API nunca passam pelo cache do service worker
       workbox: { navigateFallbackDenylist: [/^\/api\//] },
