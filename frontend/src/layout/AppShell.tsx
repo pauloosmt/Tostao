@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { Nav, type NavItem } from '../design-system/src'
 import { useMediaQuery } from './useMediaQuery'
@@ -17,6 +18,15 @@ export function AppShell() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
+  // Ao trocar de tela, o foco vai para o conteúdo novo: quem usa teclado ou leitor de tela nunca fica com o foco perdido no menu.
+  const main = useRef<HTMLElement>(null)
+  const lastPath = useRef(pathname)
+  useEffect(() => {
+    if (lastPath.current === pathname) return
+    lastPath.current = pathname
+    main.current?.focus()
+  }, [pathname])
+
   const active = pathname === '/perfil' || pathname.startsWith('/perfil/') ? 'perfil' : 'inicio'
   const nav = (
     <Nav items={ITEMS} active={active} layout={wide ? 'side' : 'bottom'} onSelect={(id) => void navigate(PATH_OF[id] ?? '/')} />
@@ -25,7 +35,7 @@ export function AppShell() {
   return (
     <div className={`app-shell app-shell--${wide ? 'side' : 'bottom'}`}>
       {wide ? nav : null}
-      <main className="app-shell__main">
+      <main ref={main} tabIndex={-1} className="app-shell__main">
         <Outlet />
       </main>
       {wide ? null : nav}

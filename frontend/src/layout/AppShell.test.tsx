@@ -110,6 +110,16 @@ describe('os itens', () => {
     }
   })
 
+  it('ao trocar de tela o foco vai para o conteúdo, não fica perdido no menu; ao abrir, nada rouba o foco', async () => {
+    setViewportWidth(500)
+    const { user } = mount('/')
+    expect(screen.getByRole('main')).not.toHaveFocus()
+
+    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+
+    expect(screen.getByRole('main')).toHaveFocus()
+  })
+
   it('funciona pelo teclado', async () => {
     setViewportWidth(500)
     const { user } = mount('/')

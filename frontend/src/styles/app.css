@@ -70,6 +70,7 @@ h1, h2, h3, p { margin: 0; }
   align-content: start;
   gap: var(--space-5);
 }
+.app-shell__main:focus { outline: none; } /* o foco programático ao trocar de tela não desenha contorno */
 .app-shell--side .app-shell__main { padding: var(--space-6) var(--space-6); }
 
 /* Perfil */
