@@ -1,9 +1,10 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { ApiError } from '../api/errors'
 import { safeRedirect } from '../auth/safeRedirect'
 import { useAuth } from '../auth/useAuth'
 import { Alert, Button, Field, Logo } from '../design-system/src'
+import { useSubmit } from '../forms/useSubmit'
 import { firstInvalid, validateRegister, type FieldMessages } from '../validation/account'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { PasswordField } from '../ui/PasswordField'
@@ -29,8 +30,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<FieldMessages<RegisterField>>({})
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const inFlight = useRef(false) // o envio em andamento, para o duplo clique (o estado só muda na próxima pintura)
+  const { submitting, run } = useSubmit()
 
   // Com sessão (inclusive a recém-criada pelo cadastro), vai para onde a pessoa queria ir ou para o início.
   if (state.status === 'authenticated') {
@@ -62,7 +62,6 @@ export function RegisterPage() {
   }
 
   async function submit() {
-    if (inFlight.current) return
     const found = validateRegister({ name, email, password })
     setErrors(found)
     setNotice(null)
@@ -71,16 +70,13 @@ export function RegisterPage() {
       focusField(first)
       return
     }
-    inFlight.current = true
-    setSubmitting(true)
-    try {
-      await register({ name: name.trim(), email: email.trim(), password })
-    } catch (error) {
-      fail(error)
-    } finally {
-      inFlight.current = false
-      setSubmitting(false)
-    }
+    await run(async () => {
+      try {
+        await register({ name: name.trim(), email: email.trim(), password })
+      } catch (error) {
+        fail(error)
+      }
+    })
   }
 
   function onSubmit(event: FormEvent) {

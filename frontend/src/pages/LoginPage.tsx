@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { ApiError } from '../api/errors'
 import { safeRedirect } from '../auth/safeRedirect'
 import { useAuth } from '../auth/useAuth'
 import { Alert, Button, Field, Logo } from '../design-system/src'
+import { useSubmit } from '../forms/useSubmit'
 import { firstInvalid, validateLogin, type FieldMessages } from '../validation/account'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { PasswordField } from '../ui/PasswordField'
@@ -28,10 +29,9 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<FieldMessages<LoginField>>({})
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const { submitting, run } = useSubmit()
   const [blockedSeconds, setBlockedSeconds] = useState(0)
   const [blockedText, setBlockedText] = useState('')
-  const inFlight = useRef(false) // o envio em andamento, para o duplo clique (o estado só muda na próxima pintura)
 
   // A espera depois do bloqueio (429): conta de segundo em segundo e libera o botão no fim.
   useEffect(() => {
@@ -79,7 +79,7 @@ export function LoginPage() {
   }
 
   async function submit() {
-    if (inFlight.current || blocked) return
+    if (blocked) return
     const found = validateLogin({ email, password })
     setErrors(found)
     setNotice(null)
@@ -88,16 +88,13 @@ export function LoginPage() {
       focusField(first)
       return
     }
-    inFlight.current = true
-    setSubmitting(true)
-    try {
-      await login({ email: email.trim(), password })
-    } catch (error) {
-      fail(error)
-    } finally {
-      inFlight.current = false
-      setSubmitting(false)
-    }
+    await run(async () => {
+      try {
+        await login({ email: email.trim(), password })
+      } catch (error) {
+        fail(error)
+      }
+    })
   }
 
   function onSubmit(event: FormEvent) {
