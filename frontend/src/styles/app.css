@@ -81,6 +81,13 @@ h1, h2, h3, p { margin: 0; }
 .account-list__item { display: grid; gap: var(--space-2); }
 .item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 
+/* Categorias */
+.category-tree { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.category-tree__subs { list-style: none; margin: 0; padding: 0 0 0 var(--space-5); display: grid; gap: var(--space-2); border-left: 2px solid var(--line); }
+.category-name { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.category-name__text { font-weight: 500; }
+.color-dot { display: inline-block; width: 12px; height: 12px; flex: none; border-radius: var(--radius-full); box-shadow: 0 0 0 1px var(--line); }
+
 /* Formulários */
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); }
 .form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); }

@@ -6,9 +6,10 @@ import { useMediaQuery } from './useMediaQuery'
 const ITEMS: NavItem[] = [
   { id: 'inicio', label: 'Início', icon: 'home', href: '/' },
   { id: 'contas', label: 'Contas', icon: 'bank', href: '/contas' },
+  { id: 'categorias', label: 'Categorias', icon: 'tag', href: '/categorias' },
   { id: 'perfil', label: 'Perfil', icon: 'wallet', href: '/perfil' },
 ]
-const PATH_OF: Record<string, string> = { inicio: '/', contas: '/contas', perfil: '/perfil' }
+const PATH_OF: Record<string, string> = { inicio: '/', contas: '/contas', categorias: '/categorias', perfil: '/perfil' }
 
 /**
  * A estrutura de quem está dentro: a navegação e, ao lado dela, a tela. No celular (abaixo de 960 px) a navegação é a barra de baixo;
@@ -29,7 +30,7 @@ export function AppShell() {
   }, [pathname])
 
   const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
-  const active = inSection('/perfil') ? 'perfil' : inSection('/contas') ? 'contas' : 'inicio'
+  const active = inSection('/perfil') ? 'perfil' : inSection('/contas') ? 'contas' : inSection('/categorias') ? 'categorias' : 'inicio'
   const nav = (
     <Nav items={ITEMS} active={active} layout={wide ? 'side' : 'bottom'} onSelect={(id) => void navigate(PATH_OF[id] ?? '/')} />
   )
