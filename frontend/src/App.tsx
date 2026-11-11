@@ -5,7 +5,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { CategoriesPage } from './categories/CategoriesPage'
 import { EditCategoryPage, NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
 import { useAuth } from './auth/useAuth'
-import { NewTransactionPage } from './transactions/TransactionFormPage'
+import { NewTransactionPage, TransactionPage } from './transactions/TransactionFormPage'
 import { TransactionsPage } from './transactions/TransactionsPage'
 import { Logo } from './design-system/src'
 import { HomePage } from './pages/HomePage'
@@ -40,6 +40,7 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="lancamentos" element={<TransactionsPage />} />
         <Route path="lancamentos/novo" element={<NewTransactionPage />} />
+        <Route path="lancamentos/:id" element={<TransactionPage />} />
         <Route path="contas" element={<AccountsPage />} />
         <Route path="contas/nova" element={<NewAccountPage />} />
         <Route path="contas/:id" element={<EditAccountPage />} />
