@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { listTransactions } from '../api/transactions'
-import { Alert, Button, Card, TransactionRow } from '../design-system/src'
+import { Alert, Badge, Button, Card, TransactionRow } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { formatDay } from '../dates/dates'
 import { usePermissions } from '../permissions/usePermissions'
@@ -9,7 +9,9 @@ import { ButtonLink } from '../ui/ButtonLink'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { useWorkspace } from '../workspace/useWorkspace'
+import { summarize } from './filterSummary'
 import { Pager } from './Pager'
+import { TransactionFilters } from './TransactionFilters'
 import { useReferenceData } from './reference'
 import { groupByDay, toDisplayRow } from './rows'
 import { useTransactionFilters } from './useFilters'
@@ -32,6 +34,7 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { filters, page, activeCount, clear, setPage } = useTransactionFilters()
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   // O aviso do que acabou de acontecer (o lançamento foi registrado) vem no estado do roteador, é lido uma vez e tirado do histórico.
   const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice ?? null)
@@ -67,9 +70,39 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
       {notice ? <Alert tone="info">{notice}</Alert> : null}
 
       <div className="list-toolbar">
-        <span />
+        <Button
+          id="transaction-filters-button"
+          variant="secondary"
+          aria-expanded={filtersOpen}
+          aria-controls="transaction-filters"
+          disabled={reference.status !== 'ready'}
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
+        </Button>
         {canWrite ? <ButtonLink variant="primary" to="/lancamentos/novo">Novo lançamento</ButtonLink> : null}
       </div>
+
+      {reference.status === 'ready' && filtersOpen ? (
+        <TransactionFilters
+          id="transaction-filters"
+          reference={reference}
+          onDone={() => {
+            setFiltersOpen(false)
+            document.getElementById('transaction-filters-button')?.focus()
+          }}
+        />
+      ) : null}
+
+      {reference.status === 'ready' && activeCount > 0 ? (
+        <ul className="chips" aria-label="Filtros ativos">
+          {summarize(filters, reference.names).map((chip) => (
+            <li key={chip.key}>
+              <Badge tone="brand">{chip.label}</Badge>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <h2 ref={heading} tabIndex={-1} className="sr-only list-heading">
         Lista de lançamentos

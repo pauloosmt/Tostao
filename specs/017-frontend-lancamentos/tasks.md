@@ -48,7 +48,7 @@ description: "Tarefas da feature 017-frontend-lancamentos"
 ## Phase 3: Lista e filtros
 
 - [X] T011 [US1] `SRC/transactions/TransactionsPage.tsx`, "Lançamentos" na navegação (`SRC/layout/AppShell.tsx`), a rota `/lancamentos` em `SRC/App.tsx` e o provider em `SRC/auth/RequireAuth.tsx`, com `TransactionsPage.test.tsx`: ordem da API, grupos por dia, linhas com valor, conta, categoria, selos e pendente, as duas pontas da transferência, nomes de arquivadas, estado vazio (com "Novo lançamento" só para quem altera), carregando, erro com "Tentar de novo" (lista e referência), paginação (próxima, anterior, extremos, resposta atrasada descartada, página além do fim cai na última), a linha leva a `/lancamentos/:id`, lista de 100 itens, axe
-- [ ] T012 [US4] `SRC/transactions/TransactionFilters.tsx` e a integração na lista, com `TransactionFilters.test.tsx`: abrir e fechar o painel, cada filtro chega à API pelo parâmetro certo e a combinação, aplicar volta à página 1, contagem em "Filtros (N)", limpar, data final antes da inicial e busca de 101 caracteres recusadas no campo, `%` e `_` literais, "nenhum encontrado" com "Limpar filtros", os filtros sobrevivem a abrir um lançamento e voltar, trocar de workspace os zera, axe
+- [X] T012 [US4] `SRC/transactions/TransactionFilters.tsx` e a integração na lista, com `TransactionFilters.test.tsx`: abrir e fechar o painel, cada filtro chega à API pelo parâmetro certo e a combinação, aplicar volta à página 1, contagem em "Filtros (N)", limpar, data final antes da inicial e busca de 101 caracteres recusadas no campo, `%` e `_` literais, "nenhum encontrado" com "Limpar filtros", os filtros sobrevivem a abrir um lançamento e voltar, trocar de workspace os zera, axe
 
 ## Phase 4: Formulários
 

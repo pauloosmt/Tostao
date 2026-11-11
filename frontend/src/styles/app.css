@@ -167,6 +167,9 @@ h1, h2, h3, p { margin: 0; }
 .transaction-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .list-heading:focus { outline: none; }
 
+/* Filtros ativos */
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
 /* Paginação da lista */
 .pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .pager__status { margin: 0; color: var(--muted); }
