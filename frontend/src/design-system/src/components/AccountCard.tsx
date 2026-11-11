@@ -12,6 +12,8 @@ const TYPES: Record<AccountType, { label: string; icon: IconName }> = {
   investimento: { label: 'Investimento', icon: 'trend' },
 };
 
+const UNKNOWN: { label: string; icon: IconName } = { label: 'Conta', icon: 'bank' };
+
 export interface AccountCardProps {
   name: string;
   type: AccountType;
@@ -23,7 +25,8 @@ export interface AccountCardProps {
 }
 
 export function AccountCard({ name, type, balanceCents, note, archived, className }: AccountCardProps) {
-  const t = TYPES[type] ?? TYPES.corrente;
+  // Um tipo que o app ainda não conhece (outra versão da API) aparece como "Conta", nunca como um tipo que ele não é.
+  const t = TYPES[type] ?? UNKNOWN;
   return (
     <div className={cx('tx-account', archived && 'is-archived', className)}>
       <span className="tx-account__icon"><Icon name={t.icon} size={22} /></span>
