@@ -1,6 +1,7 @@
 package com.tostao.tostao_api.recurrence;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import com.tostao.tostao_api.common.error.FieldValidationException;
 import com.tostao.tostao_api.transaction.TransactionType;
@@ -20,10 +21,35 @@ public final class RecurrenceRules {
 	private RecurrenceRules() {
 	}
 
-	/** Só receita e despesa se repetem; transferência recorrente fica para uma funcionalidade futura. */
+	/** Receita, despesa e transferência se repetem. */
 	public static void requireType(TransactionType type) {
-		if (type != TransactionType.INCOME && type != TransactionType.EXPENSE) {
-			throw new FieldValidationException("type", "deve ser INCOME ou EXPENSE");
+		if (type == null) {
+			throw new FieldValidationException("type", "deve ser INCOME, EXPENSE ou TRANSFER");
+		}
+	}
+
+	/**
+	 * A forma da recorrência por tipo, apontando o campo. Transferência: destino obrigatório e diferente da origem, e sem
+	 * categoria. Receita e despesa: categoria obrigatória e sem destino.
+	 */
+	public static void requireShape(TransactionType type, UUID accountId, UUID destinationAccountId, UUID categoryId) {
+		if (type == TransactionType.TRANSFER) {
+			if (destinationAccountId == null) {
+				throw new FieldValidationException("destinationAccountId", "obrigatório para transferência");
+			}
+			if (destinationAccountId.equals(accountId)) {
+				throw new FieldValidationException("destinationAccountId", "deve ser diferente da conta de origem");
+			}
+			if (categoryId != null) {
+				throw new FieldValidationException("categoryId", "transferência não tem categoria");
+			}
+			return;
+		}
+		if (destinationAccountId != null) {
+			throw new FieldValidationException("destinationAccountId", "só vale para transferência");
+		}
+		if (categoryId == null) {
+			throw new FieldValidationException("categoryId", "obrigatório para receita e despesa");
 		}
 	}
 

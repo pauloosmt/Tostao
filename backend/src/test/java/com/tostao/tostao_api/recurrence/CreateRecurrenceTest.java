@@ -328,7 +328,8 @@ class CreateRecurrenceTest {
 		RecurrenceScenario s = scenario();
 
 		// (um número como 1 é aceito como a posição do enum, comportamento global do Jackson em todos os enums da API)
-		for (String type : new String[] { "\"TRANSFER\"", "\"OUTRO\"", "\"\"", "null", null }) {
+		// (desde a spec 014 "TRANSFER" é um tipo válido: sai desta lista)
+		for (String type : new String[] { "\"OUTRO\"", "\"\"", "null", null }) {
 			refuse(s, 400, "type", with(valid(s), "type", type));
 		}
 	}

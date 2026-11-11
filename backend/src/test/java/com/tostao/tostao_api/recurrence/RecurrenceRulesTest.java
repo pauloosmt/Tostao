@@ -21,11 +21,11 @@ class RecurrenceRulesTest {
 	}
 
 	@Test
-	void onlyIncomeAndExpenseRecur() {
+	void incomeExpenseAndTransferRecur() {
 		assertThatCode(() -> RecurrenceRules.requireType(TransactionType.INCOME)).doesNotThrowAnyException();
 		assertThatCode(() -> RecurrenceRules.requireType(TransactionType.EXPENSE)).doesNotThrowAnyException();
-		assertThatThrownBy(() -> RecurrenceRules.requireType(TransactionType.TRANSFER))
-				.isInstanceOf(FieldValidationException.class).satisfies(e -> assertThat(fieldOf(e)).isEqualTo("type"));
+		// desde a spec 014 a transferência também se repete
+		assertThatCode(() -> RecurrenceRules.requireType(TransactionType.TRANSFER)).doesNotThrowAnyException();
 		assertThatThrownBy(() -> RecurrenceRules.requireType(null)).isInstanceOf(FieldValidationException.class)
 				.satisfies(e -> assertThat(fieldOf(e)).isEqualTo("type"));
 	}
