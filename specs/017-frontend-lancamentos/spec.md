@@ -22,7 +22,7 @@ A dona abre "Lançamentos" e vê o que entrou e saiu, do mais recente para o mai
 
 1. **Given** uma pessoa logada, **When** ela abre "Lançamentos" pela navegação, **Then** vê os lançamentos mais recentes primeiro, cada linha com a descrição, a conta, a categoria, a data e o valor (receita positiva, despesa negativa), e a informação de qual página está vendo e quantas existem.
 2. **Given** mais lançamentos do que cabem em uma página, **When** ela escolhe "Próxima" ou "Anterior", **Then** vê a página pedida, sem perder os filtros; os botões ficam indisponíveis nos extremos.
-3. **Given** uma transferência, **When** a lista aparece, **Then** as duas pontas aparecem como "Transferência", cada uma na sua conta, com a conta da outra ponta indicada, a saída negativa e a entrada positiva.
+3. **Given** uma transferência, **When** a lista aparece, **Then** as duas pontas aparecem como "Transferência", cada uma na sua conta, com a direção indicada ("Para Reserva" na saída, "De Carteira" na entrada); o valor da transferência aparece sem sinal, no estilo próprio do design system.
 4. **Given** um lançamento pendente, **When** a lista aparece, **Then** a linha o marca como "Pendente"; os que vieram de uma compra parcelada, de uma recorrência ou de uma importação aparecem com o selo correspondente ("Parcela 2 de 10", "Recorrente", "Importado").
 5. **Given** uma conta ou categoria arquivada que ainda é usada por lançamentos antigos, **When** a lista aparece, **Then** o nome dela continua aparecendo (nunca um identificador).
 6. **Given** um workspace sem lançamentos, **When** a pessoa abre a tela, **Then** vê um estado vazio que explica o que fazer e, para quem pode registrar, oferece "Novo lançamento"; com filtros que não encontram nada, vê "Nenhum lançamento encontrado" e o caminho para limpar os filtros.
@@ -57,7 +57,7 @@ A dona move dinheiro de uma conta para outra e o aplicativo registra as duas pon
 
 **Why this priority**: sem transferência, mover dinheiro entre contas distorceria receitas e despesas.
 
-**Independent Test**: escolher origem, destino, valor e data cria uma transferência que aparece nas duas contas, com a saída negativa e a entrada positiva, sem categoria.
+**Independent Test**: escolher origem, destino, valor e data cria uma transferência que aparece nas duas contas (a saída na origem, a entrada no destino), sem categoria.
 
 **Acceptance Scenarios**:
 
