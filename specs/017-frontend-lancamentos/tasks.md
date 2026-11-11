@@ -64,7 +64,7 @@ description: "Tarefas da feature 017-frontend-lancamentos"
 
 ## Phase 5: Papéis, workspace e prova
 
-- [ ] T018 [US7] `SRC/transactions/access.test.tsx`: o leitor vê lista e consulta sem nenhuma ação e o endereço de criar mostra o aviso; a recusa `403` da API (criar, salvar, efetivar, excluir) vira a mensagem de permissão; trocar de workspace no perfil recarrega lista, contas e categorias do novo, zera os filtros e descarta a resposta atrasada; o endereço de lançamento de outro workspace é "não encontrado"; um `401` na lista leva à entrada com o aviso
+- [X] T018 [US7] `SRC/transactions/access.test.tsx`: o leitor vê lista e consulta sem nenhuma ação e o endereço de criar mostra o aviso; a recusa `403` da API (criar, salvar, efetivar, excluir) vira a mensagem de permissão; trocar de workspace no perfil recarrega lista, contas e categorias do novo, zera os filtros e descarta a resposta atrasada; o endereço de lançamento de outro workspace é "não encontrado"; um `401` na lista leva à entrada com o aviso
 - [ ] T019 Rodar `npm run verify` completo e o `./mvnw -B verify` do back-end; conferir o orçamento (dividir por rota se passar de 130 KB); corrigir qualquer falha nova sem enfraquecer testes; registrar as contagens
 - [ ] T020 Executar o [quickstart.md](quickstart.md): o roteiro HTTP contra a API do Compose (receita, despesa, transferência, pendente, filtros, efetivar, excluir, regras, papéis, saldos, limpeza de `qs17*`) e o que dá para conferir no navegador; registrar no quickstart o que foi e o que ficou para quem usa o projeto; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push
 
