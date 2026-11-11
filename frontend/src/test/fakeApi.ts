@@ -31,6 +31,8 @@ export type Handler = Reply |((call: Call) => Reply | Promise<Reply>)
 export interface FakeApi {
   calls: Call[]
   on: (route: string, handler: Handler) => FakeApi
+  /** Uma rota com identificador (`/transactions/:id`): vale quando nenhuma rota exata casa. O padrão é testado só no caminho, sem a consulta. */
+  onMatch: (method: string, pattern: RegExp, handler: (call: Call, match: RegExpExecArray) => Reply | Promise<Reply>) => FakeApi
   /** Quantas vezes a rota foi chamada. */
   count: (route: string) => number
   callsTo: (route: string) => Call[]
@@ -67,11 +69,16 @@ function headersToObject(init: HeadersInit | undefined): Record<string, string> 
 export function fakeApi(routes: Record<string, Handler> = {}): FakeApi {
   const table = new Map<string, Handler>(Object.entries(routes))
   const calls: Call[] = []
+  const matchers: { method: string; pattern: RegExp; handler: (call: Call, match: RegExpExecArray) => Reply | Promise<Reply> }[] = []
 
   const api: FakeApi = {
     calls,
     on(route, handler) {
       table.set(route, handler)
+      return api
+    },
+    onMatch(method, pattern, handler) {
+      matchers.push({ method: method.toUpperCase(), pattern, handler })
       return api
     },
     count: (route) => api.callsTo(route).length,
@@ -92,7 +99,17 @@ export function fakeApi(routes: Record<string, Handler> = {}): FakeApi {
     }
     calls.push(call)
 
-    const handler = table.get(`${method} ${path.split('?')[0]}`)
+    const bare = path.split('?')[0]
+    let handler: Handler | undefined = table.get(`${method} ${bare}`)
+    if (!handler) {
+      for (const matcher of matchers) {
+        const match = matcher.method === method ? matcher.pattern.exec(bare) : null
+        if (match) {
+          handler = (incoming: Call) => matcher.handler(incoming, match)
+          break
+        }
+      }
+    }
     if (!handler) {
       unhandled.push(`${method} ${path}`)
       throw new Error(`fakeApi: nenhuma rota para ${method} ${path}`)

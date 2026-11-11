@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, Category, CategoryTree, Me, Role } from '../api/types'
+import type { Account, BalanceReport, Category, CategoryTree, Me, Role, Transaction } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -62,4 +62,34 @@ export function makeCategory(extra: Partial<Category> = {}): Category {
 export function makeCategoryTree(extra: Partial<Category> = {}, subcategories: Category[] = []): CategoryTree {
   const parent = makeCategory(extra)
   return { ...parent, subcategories: subcategories.map((sub) => ({ ...sub, parentId: parent.id, kind: parent.kind })) }
+}
+
+let transactionSequence = 0
+
+export function makeTransaction(extra: Partial<Transaction> = {}): Transaction {
+  transactionSequence += 1
+  return {
+    id: `tx-${transactionSequence}`,
+    accountId: 'acc-1',
+    type: 'EXPENSE',
+    amountCents: -1000,
+    occurredOn: '2026-11-11',
+    description: `Lançamento ${transactionSequence}`,
+    notes: null,
+    categoryId: null,
+    transferGroupId: null,
+    counterpartAccountId: null,
+    createdBy: 'u-ana',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    status: 'CLEARED',
+    installmentGroupId: null,
+    installmentNumber: null,
+    installmentCount: null,
+    autoClear: false,
+    recurrenceId: null,
+    occurrenceNumber: null,
+    imported: false,
+    ...extra,
+  }
 }
