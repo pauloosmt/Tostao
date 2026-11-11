@@ -273,8 +273,8 @@ workspace no perfil mostra as contas e categorias do novo, sem nada do anterior.
 - **FR-015**: Trocar o workspace atual MUST recarregar as listas do novo workspace sem deixar dado do anterior na tela, e um endereço de
   conta ou categoria que não é do workspace atual MUST aparecer como não encontrado.
 - **FR-016**: Valores monetários MUST usar o formato do design system (centavos inteiros formatados em reais); os componentes de conta e
-  de categoria MUST vir do design system (cartão de conta, selo com a cor da categoria, campos, botões); todos os textos MUST estar em
-  português do Brasil.
+  de categoria MUST vir do design system (cartão de conta, campos, botões, e o ponto de cor das categorias no estilo do selo); todos os
+  textos MUST estar em português do Brasil.
 - **FR-017**: As telas MUST seguir a base: funcionar de 320 px a telas largas, com zoom de até 200% sem rolagem horizontal, alvos de
   toque de ao menos 44 px, foco visível, uso só com o teclado, e o foco no lugar certo ao abrir um formulário, ao voltar à lista e
   depois de um erro.
