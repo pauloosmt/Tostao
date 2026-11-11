@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fakeApi, networkError, noContent, ok, problem } from './fakeApi'
+import { fakeApi, networkError, noContent, ok, problem, takeUnhandledCalls } from './fakeApi'
 
 describe('fakeApi', () => {
   it('responde pela tabela de rotas e registra o que foi pedido', async () => {
@@ -45,5 +45,8 @@ describe('fakeApi', () => {
     fakeApi()
 
     await expect(fetch('/api/v1/outra')).rejects.toThrow('nenhuma rota para GET /api/v1/outra')
+
+    // o setup falharia o teste por isso; aqui é o esperado
+    expect(takeUnhandledCalls()).toEqual(['GET /api/v1/outra'])
   })
 })

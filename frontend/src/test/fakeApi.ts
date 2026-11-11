@@ -36,6 +36,14 @@ export interface FakeApi {
   callsTo: (route: string) => Call[]
 }
 
+// As chamadas sem rota. O afterEach do setup falha o teste que deixar alguma, para um erro engolido pelo aplicativo
+// (um catch que vira NetworkError, por exemplo) nunca esconder uma rota que o teste esqueceu de declarar.
+const unhandled: string[] = []
+
+export function takeUnhandledCalls(): string[] {
+  return unhandled.splice(0, unhandled.length)
+}
+
 export const ok = (body?: unknown, status = 200): Reply => ({ status, body })
 export const noContent = (): Reply => ({ status: 204 })
 export const problem = (status: number, title: string, extra: Record<string, unknown> = {}, headers?: Record<string, string>): Reply => ({
@@ -85,7 +93,10 @@ export function fakeApi(routes: Record<string, Handler> = {}): FakeApi {
     calls.push(call)
 
     const handler = table.get(`${method} ${path.split('?')[0]}`)
-    if (!handler) throw new Error(`fakeApi: nenhuma rota para ${method} ${path}`)
+    if (!handler) {
+      unhandled.push(`${method} ${path}`)
+      throw new Error(`fakeApi: nenhuma rota para ${method} ${path}`)
+    }
     const reply = typeof handler === 'function' ? await handler(call) : handler
 
     if (reply.networkError) throw new TypeError('Failed to fetch')

@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
+import { takeUnhandledCalls } from './fakeApi'
 import { installMatchMedia, resetViewport } from './media'
 
 // O jsdom não implementa o <dialog> modal: o mínimo para os testes (abrir, fechar e o evento close).
@@ -24,6 +25,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  const unhandled = takeUnhandledCalls()
+  if (unhandled.length > 0) {
+    throw new Error(`chamada(s) à API sem rota no fakeApi: ${unhandled.join(', ')}`)
+  }
   cleanup()
   vi.unstubAllGlobals()
   vi.useRealTimers()
