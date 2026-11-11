@@ -56,6 +56,22 @@ h1, h2, h3, p { margin: 0; }
 .link:hover { color: var(--brand-hover); }
 .link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 
+/* A estrutura de quem está dentro: navegação + tela */
+.app-shell { min-height: 100svh; display: flex; }
+.app-shell--bottom { flex-direction: column; }
+.app-shell--side > .tx-nav { position: sticky; top: 0; align-self: flex-start; min-height: 100svh; flex-shrink: 0; }
+.app-shell__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+}
+.app-shell--side .app-shell__main { padding: var(--space-6) var(--space-6); }
+
 .password-field { display: grid; gap: var(--space-1); justify-items: start; }
 .password-field > .tx-field { width: 100%; }
 
