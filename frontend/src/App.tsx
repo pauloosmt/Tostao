@@ -1,26 +1,40 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { Route, Routes } from 'react-router'
+import { RequireAuth } from './auth/RequireAuth'
+import { useAuth } from './auth/useAuth'
+import { Logo } from './design-system/src'
+import { HomePage } from './pages/HomePage'
+import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { ProfilePage } from './pages/ProfilePage'
+import { RegisterPage } from './pages/RegisterPage'
+import { ErrorNotice } from './ui/ErrorNotice'
+import { LoadingScreen } from './ui/LoadingScreen'
 
-type Status = 'carregando' | 'UP' | 'indisponível'
+/** As rotas do Tostão, atrás da consulta inicial da sessão (carregando, ou o servidor fora do ar com "Tentar de novo"). */
+export function App() {
+  const { state, retry } = useAuth()
 
-function App() {
-  const [status, setStatus] = useState<Status>('carregando')
+  if (state.status === 'loading') return <LoadingScreen />
 
-  useEffect(() => {
-    fetch('/api/v1/health', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((body: { status: string }) => setStatus(body.status === 'UP' ? 'UP' : 'indisponível'))
-      .catch(() => setStatus('indisponível'))
-  }, [])
+  if (state.status === 'unavailable') {
+    return (
+      <main className="screen-center">
+        <Logo variant="lockup" size={48} />
+        <h1 className="heading-1">Não foi possível abrir o Tostão</h1>
+        <ErrorNotice onRetry={retry}>Não foi possível falar com o servidor. Tente de novo.</ErrorNotice>
+      </main>
+    )
+  }
 
   return (
-    <main>
-      <h1>Tostão</h1>
-      <p>
-        API: <strong data-testid="api-status">{status}</strong>
-      </p>
-    </main>
+    <Routes>
+      <Route path="/entrar" element={<LoginPage />} />
+      <Route path="/cadastro" element={<RegisterPage />} />
+      <Route element={<RequireAuth />}>
+        <Route index element={<HomePage />} />
+        <Route path="perfil" element={<ProfilePage />} />
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   )
 }
-
-export default App
