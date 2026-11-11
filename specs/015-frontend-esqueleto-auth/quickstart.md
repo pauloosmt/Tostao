@@ -52,3 +52,26 @@ Com `npm run dev` (ou `npm run build && npm run preview`), abra `http://localhos
 ## 5. Limpeza
 
 Apagar a conta criada no teste (`qs15*@example.com`) e confirmar `users = workspaces = workspace_members = 0`.
+
+## 6. Resultado da validação (2026-11-11)
+
+**Automatizado**
+
+- `npm run verify` (front): guard-rails 10, Vitest 205 em 20 arquivos, `tsc` e build ok, orçamento de **86,6 KB** de 150 KB (gzip) e 16 testes do build.
+- `./mvnw -B verify` (back-end): BUILD SUCCESS, **1414 testes, 0 falhas**.
+
+**Roteiro por HTTP** (build de produção no `vite preview` + API do Compose; script fora do repositório): **59 de 59** conferências.
+Cobre o fallback das rotas (`/`, `/entrar`, `/cadastro`, `/perfil` e uma rota qualquer devolvem o app; `/api/` nunca), manifest, ícones e service
+worker sem `/api` no pré-cache, nenhuma origem externa na página, cadastro (201, `409`, e `400` com erro no campo para senha sem número, de 6
+caracteres e de 73 bytes), cookie `HttpOnly` e `SameSite=Lax` sem token no corpo, entrar e sair, a mesma resposta para senha errada e e-mail
+inexistente, bloqueio `429` com `Retry-After` (900 s na 6ª tentativa), sair de todos os aparelhos derrubando duas sessões e a API recusando origem
+desconhecida (`403`). Limpeza: só os dados `qs15*` foram apagados; a conta real que já existia no banco de desenvolvimento ficou intacta (por isso as
+contagens finais são 1|1|1, não zero).
+
+**Visto no navegador por quem usa o projeto:** a tela de cadastro (que mostrou o erro de servidor causado pelo CORS de `127.0.0.1`, depois
+corrigido no proxy), o início, a barra de navegação e o seletor de tema no escuro.
+
+**Ainda sem conferência no navegador** (itens das seções 2 a 4 que só ele mostra): recarregar mantendo a sessão e o lugar, o botão "voltar" depois de
+sair, duas abas ("Sua sessão terminou"), o botão "instalar" e o modo sem rede do PWA, a lista de requisições da aba de rede, o tema do sistema e a
+navegação só por teclado. Os comportamentos correspondentes têm teste automatizado (sessão, redirecionamento, foco, tema, confirmação), mas a
+conferência visual fica com quem usa.

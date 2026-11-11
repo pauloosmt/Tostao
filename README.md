@@ -7,8 +7,10 @@ App Open Source de finanças pessoais para desktop e celular (PWA). Back-end em 
 docker compose up -d --build          # Postgres (127.0.0.1:5442) + API (127.0.0.1:8080)
 curl http://127.0.0.1:8080/api/v1/health
 
-cd frontend && npm install && npm run dev   # http://localhost:5173, /api vai para a API
+cd frontend && npm ci && npm run dev        # http://localhost:5173, /api vai para a API
 ```
+
+O front tem telas de cadastro, entrada, início e perfil; veja o [README do front-end](frontend/README.md) para scripts, estrutura e regras.
 
 Testes do backend (usam Testcontainers, precisam do Docker ligado): `cd backend && ./mvnw verify`.
 
@@ -280,5 +282,5 @@ Com `SPRING_PROFILES_ACTIVE=local` (o padrão do Compose), a documentação da A
 ## Estrutura
 
 - `backend/`: API Spring Boot (Java 21, Maven, Flyway)
-- `frontend/`: React + TypeScript + Vite, como PWA
+- `frontend/`: React + TypeScript + Vite, como PWA ([README](frontend/README.md))
 - `.specify/`: constituição e templates do Spec Kit; specs em `specs/`
