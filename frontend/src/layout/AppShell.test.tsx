@@ -127,6 +127,8 @@ describe('os itens', () => {
     await user.tab()
     expect(screen.getByRole('link', { name: 'Início' })).toHaveFocus()
     await user.tab()
+    expect(screen.getByRole('link', { name: 'Lançamentos' })).toHaveFocus()
+    await user.tab()
     expect(screen.getByRole('link', { name: 'Contas' })).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('link', { name: 'Categorias' })).toHaveFocus()

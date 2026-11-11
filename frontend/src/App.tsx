@@ -5,6 +5,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { CategoriesPage } from './categories/CategoriesPage'
 import { EditCategoryPage, NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
 import { useAuth } from './auth/useAuth'
+import { TransactionsPage } from './transactions/TransactionsPage'
 import { Logo } from './design-system/src'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -36,6 +37,7 @@ export function App() {
       <Route path="/cadastro" element={<RegisterPage />} />
       <Route element={<RequireAuth />}>
         <Route index element={<HomePage />} />
+        <Route path="lancamentos" element={<TransactionsPage />} />
         <Route path="contas" element={<AccountsPage />} />
         <Route path="contas/nova" element={<NewAccountPage />} />
         <Route path="contas/:id" element={<EditAccountPage />} />

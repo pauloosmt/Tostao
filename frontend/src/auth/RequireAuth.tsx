@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router'
 import { AppShell } from '../layout/AppShell'
+import { TransactionFiltersProvider } from '../transactions/filters'
 import { WorkspaceProvider } from '../workspace/WorkspaceContext'
 import { useAuth } from './useAuth'
 
@@ -16,7 +17,9 @@ export function RequireAuth() {
 
   return (
     <WorkspaceProvider key={state.me.id} me={state.me}>
-      <AppShell />
+      <TransactionFiltersProvider>
+        <AppShell />
+      </TransactionFiltersProvider>
     </WorkspaceProvider>
   )
 }
