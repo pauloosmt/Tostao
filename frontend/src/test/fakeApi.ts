@@ -118,3 +118,6 @@ export function fakeApi(routes: Record<string, Handler> = {}): FakeApi {
 
   return api
 }
+
+/** A chave de rota do `fakeApi` para uma chamada dentro de um workspace: `wsRoute('GET', 'w1', '/accounts')`. */
+export const wsRoute = (method: string, workspaceId: string, path: string): string => `${method} /api/v1/workspaces/${workspaceId}${path}`
