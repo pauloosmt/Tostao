@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DATE_MESSAGES, formatDay, parseISODate, previousDay, todayISO, toISO, validateDateText } from './dates'
+import { DATE_MESSAGES, formatDate, formatDay, parseISODate, previousDay, todayISO, toISO, validateDateText } from './dates'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -132,5 +132,18 @@ describe('formatDay: o título do grupo', () => {
 
     expect(formatDay('2026-05-20')).toBe('Hoje')
     expect(formatDay('2026-05-19')).toBe('Ontem')
+  })
+})
+
+describe('formatDate: dia/mês/ano', () => {
+  it('com zeros à esquerda', () => {
+    expect(formatDate('2026-11-03')).toBe('03/11/2026')
+    expect(formatDate('2000-01-01')).toBe('01/01/2000')
+    expect(formatDate('2100-12-31')).toBe('31/12/2100')
+  })
+
+  it('um texto que não é data volta como veio', () => {
+    expect(formatDate('abc')).toBe('abc')
+    expect(formatDate('')).toBe('')
   })
 })

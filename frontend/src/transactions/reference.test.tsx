@@ -66,6 +66,27 @@ describe('as opções de categoria', () => {
   })
 })
 
+describe('as opções de filtro (incluem as arquivadas)', () => {
+  it('todas as contas, as arquivadas marcadas', () => {
+    expect(ref.accountFilterOptions()).toEqual([{ value: 'a1', label: 'Carteira' }, { value: 'a2', label: 'Antiga (arquivada)' }])
+  })
+
+  it('todas as categorias e subcategorias, com o tipo no rótulo (o mesmo nome de despesa e de receita não se confunde)', () => {
+    const labels = buildReference([], [principal, salario, velha, makeCategoryTree({ id: 'p9', name: 'Outros', kind: 'INCOME' }), makeCategoryTree({ id: 'p8', name: 'Outros', kind: 'EXPENSE' })]).categoryFilterOptions().map((o) => o.label)
+
+    expect(labels).toEqual([
+      'Despesa · Alimentação',
+      'Despesa · Alimentação › Mercado',
+      'Despesa · Alimentação › Restaurante (arquivada)',
+      'Receita · Salário',
+      'Despesa · Velha (arquivada)',
+      'Despesa · Velha › Sub velha (arquivada)',
+      'Receita · Outros',
+      'Despesa · Outros',
+    ])
+  })
+})
+
 describe('categoryFits: serve ao tipo e está ativa', () => {
   it('confere o tipo e o estado', () => {
     expect(ref.categoryFits(principal.id, 'EXPENSE')).toBe(true)

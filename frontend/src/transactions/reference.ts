@@ -18,6 +18,10 @@ export interface ReferenceData {
   accountOptions: (currentId?: string) => Option[]
   /** As categorias ativas do tipo (a principal e, sob ela, "Principal › Sub"), para escolher. */
   categoryOptions: (kind: CategoryKind, currentId?: string) => Option[]
+  /** Todas as contas, inclusive as arquivadas (para filtrar lançamentos antigos). */
+  accountFilterOptions: () => Option[]
+  /** Todas as categorias, inclusive as arquivadas, com o tipo no rótulo ("Despesa · Alimentação › Mercado"). */
+  categoryFilterOptions: () => Option[]
   /** Se a categoria é ativa e do tipo (para descartar a escolhida ao trocar de tipo). */
   categoryFits: (categoryId: string, kind: CategoryKind) => boolean
 }
@@ -65,6 +69,14 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
       }
       return options
     },
+    accountFilterOptions: () => accounts.map((account) => ({ value: account.id, label: accountLabel(account) })),
+    categoryFilterOptions: () =>
+      categories.flatMap((principal) =>
+        [principal.id, ...principal.subcategories.map((sub) => sub.id)].map((id) => ({
+          value: id,
+          label: `${principal.kind === 'EXPENSE' ? 'Despesa' : 'Receita'} · ${categoryLabel.get(id) as string}`,
+        })),
+      ),
     categoryFits: (categoryId, kind) => {
       const info = categoryInfo.get(categoryId)
       return info !== undefined && info.kind === kind && !info.archived

@@ -57,6 +57,12 @@ export function previousDay(iso: string): string {
   return toISO(before.getFullYear(), before.getMonth() + 1, before.getDate())
 }
 
+/** `2026-11-03` -> `03/11/2026` (para resumos e filtros). Um texto que não é data volta como veio. */
+export function formatDate(iso: string): string {
+  const date = parseISODate(iso)
+  return date === null ? iso : `${pad(date.day)}/${pad(date.month)}/${pad(date.year, 4)}`
+}
+
 const MONTHS = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.']
 
 /** O título do grupo de um dia: "Hoje", "Ontem" ou "3 de nov. de 2026". Um texto que não é data volta como veio. */
