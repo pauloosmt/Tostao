@@ -39,9 +39,8 @@ export default defineConfig({
     // O axe no jsdom é lento na primeira execução e, com os arquivos de teste em paralelo, passava dos 5 s padrão (falha intermitente).
     testTimeout: 30_000,
   },
-  server: {
-    // Em dev o navegador fala só com o Vite; /api vai para a API local,
-    // espelhando o rewrite /api/* da Vercel em produção.
-    proxy: { '/api': 'http://localhost:8080' },
-  },
+  // Em dev (`vite`) e no `vite preview` o navegador fala só com o Vite; /api vai para a API local,
+  // espelhando o rewrite de /api/* que a Vercel faz em produção.
+  server: { proxy: { '/api': 'http://localhost:8080' } },
+  preview: { proxy: { '/api': 'http://localhost:8080' } },
 })

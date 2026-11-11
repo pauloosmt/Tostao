@@ -62,7 +62,7 @@ description: "Tarefas da feature 015-frontend-esqueleto-auth"
 
 ## Phase 4: PWA, hospedagem e prova
 
-- [ ] T017 [US5] Criar `FE/vercel.json` (fallback das rotas para `/index.html`, sem tocar em `/api/`) e `FE/scripts/check-budget.mjs` (JavaScript inicial em gzip até 150 KB) ligado ao `verify`; acrescentar o `preview.proxy` de `/api` ao `vite.config.ts`; teste do manifest e do service worker no build (`FE/scripts/check-build.test.mjs`: ícones existem, nenhuma URL externa no `dist/`, nenhuma rota de `/api/` no pré-cache)
+- [X] T017 [US5] Criar `FE/vercel.json` (fallback das rotas para `/index.html`, sem tocar em `/api/`) e `FE/scripts/check-budget.mjs` (JavaScript inicial em gzip até 150 KB) ligado ao `verify`; acrescentar o `preview.proxy` de `/api` ao `vite.config.ts`; teste do manifest e do service worker no build (`FE/scripts/check-build.test.mjs`: ícones existem, nenhuma URL externa no `dist/`, nenhuma rota de `/api/` no pré-cache)
 - [ ] T018 Rodar `npm run verify` completo e o `./mvnw -B verify` do back-end; corrigir qualquer falha nova sem enfraquecer testes; registrar as contagens
 - [ ] T019 [P] Atualizar `FE/README.md` (como rodar, scripts, estrutura, regras: só `/api/*`, só cookie, sem origem externa) e o `README.md` da raiz (seção do front)
 - [ ] T020 Executar o [quickstart.md](quickstart.md) num navegador contra a API do Docker Compose (cadastro, sessão, saída, bloqueio, workspace, offline, PWA, tema, teclado), com limpeza ao fim; marcar as tarefas restantes como `[X]` junto do último commit que as fecha; não fazer push

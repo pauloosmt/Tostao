@@ -12,7 +12,9 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run lint && npm run test:guardrails && npm test && npm run build"
+    "verify": "npm run lint && npm run test:guardrails && npm test && npm run build && npm run check:budget && npm run test:build",
+    "check:budget": "node scripts/check-budget.mjs",
+    "test:build": "node --test scripts/check-build.test.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "5.3.0",
