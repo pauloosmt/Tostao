@@ -109,3 +109,71 @@ export interface UpdateCategory {
   color?: string
   icon?: string
 }
+
+// ---- Lançamentos (specs 004 e 009) ----
+
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER'
+export type TransactionStatus = 'CLEARED' | 'PENDING'
+
+export interface Transaction {
+  id: string
+  accountId: string
+  type: TransactionType
+  /** Em centavos inteiros e COM sinal: receita e entrada positivas, despesa e saída negativas. */
+  amountCents: number
+  /** `AAAA-MM-DD`, sem fuso. */
+  occurredOn: string
+  description: string
+  notes: string | null
+  categoryId: string | null
+  /** Só nas transferências: liga as duas pontas e diz a conta da outra. */
+  transferGroupId: string | null
+  counterpartAccountId: string | null
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  status: TransactionStatus
+  installmentGroupId: string | null
+  installmentNumber: number | null
+  installmentCount: number | null
+  autoClear: boolean
+  recurrenceId: string | null
+  occurrenceNumber: number | null
+  imported: boolean
+}
+
+export interface TransactionPage {
+  items: Transaction[]
+  page: number
+  size: number
+  totalItems: number
+  totalPages: number
+}
+
+/** O valor vai sempre POSITIVO (o sinal vem do tipo). */
+export interface CreateTransaction {
+  type: TransactionType
+  accountId: string
+  /** Só em `TRANSFER`. */
+  destinationAccountId?: string
+  amountCents: number
+  occurredOn: string
+  description: string
+  notes?: string
+  /** Obrigatório em receita e despesa; proibido na transferência. */
+  categoryId?: string
+  /** Ausente = efetivado. */
+  status?: 'PENDING'
+}
+
+/** O tipo não é enviado: não muda. A edição é completa (um campo opcional ausente limpa o valor). */
+export interface UpdateTransaction {
+  accountId: string
+  destinationAccountId?: string
+  amountCents: number
+  occurredOn: string
+  description: string
+  notes?: string
+  categoryId?: string
+  status: 'PENDING' | 'CLEARED'
+}
