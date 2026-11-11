@@ -15,6 +15,7 @@ import com.tostao.tostao_api.transaction.TransactionType;
 public record RecurrenceResponse(
 		UUID id,
 		UUID accountId,
+		UUID destinationAccountId,
 		UUID categoryId,
 		TransactionType type,
 		long amountCents,

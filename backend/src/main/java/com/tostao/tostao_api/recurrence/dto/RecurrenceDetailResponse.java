@@ -17,6 +17,7 @@ import com.tostao.tostao_api.transaction.dto.TransactionResponse;
 public record RecurrenceDetailResponse(
 		UUID id,
 		UUID accountId,
+		UUID destinationAccountId,
 		UUID categoryId,
 		TransactionType type,
 		long amountCents,
@@ -39,7 +40,7 @@ public record RecurrenceDetailResponse(
 	/** O detalhe a partir do resumo e da lista de ocorrências, com os totais somados dela. */
 	public static RecurrenceDetailResponse of(RecurrenceResponse r, long totalCents, long clearedCents, long pendingCents,
 			List<TransactionResponse> occurrences) {
-		return new RecurrenceDetailResponse(r.id(), r.accountId(), r.categoryId(), r.type(), r.amountCents(),
+		return new RecurrenceDetailResponse(r.id(), r.accountId(), r.destinationAccountId(), r.categoryId(), r.type(), r.amountCents(),
 				r.description(), r.notes(), r.frequency(), r.startOn(), r.endOn(), r.autoClear(), r.ended(), r.endedAt(),
 				r.nextOccurrenceOn(), r.createdBy(), r.createdAt(), totalCents, clearedCents, pendingCents, occurrences);
 	}

@@ -38,7 +38,7 @@ public class RecurrenceService {
 
 	/** Resumo com a próxima ocorrência pendente (de hoje em diante) calculada na própria consulta. */
 	private static final String SUMMARY = """
-			select r.id, r.account_id, r.category_id, r.type, r.amount_cents, r.description, r.notes, r.frequency,
+			select r.id, r.account_id, r.destination_account_id, r.category_id, r.type, r.amount_cents, r.description, r.notes, r.frequency,
 			       r.start_on, r.end_on, r.auto_clear, r.ended_at, r.created_by, r.created_at,
 			       (select min(t.occurred_on) from transactions t
 			        where t.workspace_id = r.workspace_id and t.recurrence_id = r.id and t.status = 'PENDING'
@@ -52,6 +52,7 @@ public class RecurrenceService {
 		return new RecurrenceResponse(
 				rs.getObject("id", UUID.class),
 				rs.getObject("account_id", UUID.class),
+				rs.getObject("destination_account_id", UUID.class),
 				rs.getObject("category_id", UUID.class),
 				TransactionType.valueOf(rs.getString("type")),
 				rs.getLong("amount_cents"),
@@ -83,29 +84,37 @@ public class RecurrenceService {
 
 	/**
 	 * Cria a recorrência e gera as suas ocorrências até 12 meses depois de hoje, tudo ou nada. Tudo o que pode falhar
-	 * de forma previsível é conferido antes do primeiro {@code insert}: tipo, início, fim e, com travas em modo
-	 * compartilhado, a conta e a categoria. A geração é a mesma função que a execução automática chama.
+	 * de forma previsível é conferido antes do primeiro {@code insert}: tipo, a forma por tipo, início, fim e, com
+	 * travas em modo compartilhado, as contas (origem e destino numa transferência) ou a conta e a categoria. A geração é a mesma função que a execução automática chama.
 	 */
 	@WorkspaceScoped(write = true)
 	@Transactional
 	public RecurrenceDetailResponse create(UUID workspaceId, CreateRecurrenceRequest request) {
 		LocalDate today = today();
 		RecurrenceRules.requireType(request.type());
+		RecurrenceRules.requireShape(request.type(), request.accountId(), request.destinationAccountId(), request.categoryId());
 		RecurrenceRules.requireStart(request.startOn(), today);
 		RecurrenceRules.requireEnd(request.startOn(), request.endOn());
 
-		refs.requireUsableAccount(workspaceId, request.accountId());
-		refs.requireUsableCategory(workspaceId, request.categoryId(), request.type());
+		if (request.type() == TransactionType.TRANSFER) {
+			// as duas contas, travadas juntas e em ordem de id, como na criação de uma transferência
+			refs.requireUsableAccounts(workspaceId, request.accountId(), request.destinationAccountId());
+		}
+		else {
+			refs.requireUsableAccount(workspaceId, request.accountId());
+			refs.requireUsableCategory(workspaceId, request.categoryId(), request.type());
+		}
 
 		UUID id = jdbc.sql("""
-				insert into recurrences (workspace_id, account_id, category_id, type, amount_cents, description, notes,
-				                         frequency, start_on, end_on, auto_clear, created_by)
-				values (:workspaceId, :accountId, :categoryId, :type, :amount, :description, :notes, :frequency,
-				        :startOn, :endOn, :autoClear, :createdBy)
+				insert into recurrences (workspace_id, account_id, destination_account_id, category_id, type, amount_cents,
+				                         description, notes, frequency, start_on, end_on, auto_clear, created_by)
+				values (:workspaceId, :accountId, :destinationAccountId, :categoryId, :type, :amount, :description, :notes,
+				        :frequency, :startOn, :endOn, :autoClear, :createdBy)
 				returning id
 				""")
 				.param("workspaceId", workspaceId)
 				.param("accountId", request.accountId())
+				.param("destinationAccountId", request.destinationAccountId())
 				.param("categoryId", request.categoryId())
 				.param("type", request.type().name())
 				.param("amount", request.amountCents())
@@ -230,6 +239,10 @@ public class RecurrenceService {
 		long cleared = 0;
 		long pending = 0;
 		for (TransactionResponse occurrence : occurrences) {
+			if (summary.type() == TransactionType.TRANSFER && occurrence.amountCents() > 0) {
+				// a ocorrência de transferência tem duas pontas: conta uma vez, pela saída, para o valor não dobrar
+				continue;
+			}
 			long cents = Math.absExact(occurrence.amountCents());
 			total = Math.addExact(total, cents);
 			if (occurrence.status() == TransactionStatus.CLEARED) {

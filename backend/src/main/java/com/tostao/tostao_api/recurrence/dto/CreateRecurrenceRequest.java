@@ -14,9 +14,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Criação de uma recorrência. O valor chega positivo, em centavos inteiros; o sinal vem do tipo ({@code INCOME} ou
- * {@code EXPENSE}; transferência é recusada pelo serviço, no campo {@code type}). As ocorrências são contadas sempre a
- * partir de {@code startOn}. Campos fora desta lista, como o workspace, quem criou, o estado ou a recorrência de
+ * Criação de uma recorrência. O valor chega positivo, em centavos inteiros; o sinal vem do tipo ({@code INCOME},
+ * {@code EXPENSE} ou {@code TRANSFER}). Numa transferência, {@code accountId} é a conta de origem, {@code
+ * destinationAccountId} é obrigatório e diferente dela e {@code categoryId} é recusado; em receita e despesa,
+ * {@code categoryId} é obrigatório e {@code destinationAccountId} é recusado (a forma é conferida pelo serviço, que aponta
+ * o campo). As ocorrências são contadas sempre a partir de {@code startOn}. Campos fora desta lista, como o workspace, quem criou, o estado ou a recorrência de
  * origem, são recusados. As regras que cruzam campos (início e fim) e as de conta e categoria são conferidas no
  * serviço, antes de qualquer gravação.
  */
@@ -24,7 +26,10 @@ public record CreateRecurrenceRequest(
 		@NotNull(message = "é obrigatório")
 		UUID accountId,
 
-		@NotNull(message = "é obrigatório")
+		/** Só na transferência: a conta de destino. */
+		UUID destinationAccountId,
+
+		/** Só em receita e despesa. */
 		UUID categoryId,
 
 		@NotNull(message = "é obrigatório")
@@ -52,6 +57,12 @@ public record CreateRecurrenceRequest(
 
 		/** As ocorrências nascem pendentes com o marcador de efetivação automática: ausente = desligado. */
 		Boolean autoClear) {
+
+	/** Receita ou despesa, sem destino (a forma anterior à transferência recorrente). */
+	public CreateRecurrenceRequest(UUID accountId, UUID categoryId, TransactionType type, Long amountCents, String description,
+			String notes, RecurrenceFrequency frequency, LocalDate startOn, LocalDate endOn, Boolean autoClear) {
+		this(accountId, null, categoryId, type, amountCents, description, notes, frequency, startOn, endOn, autoClear);
+	}
 
 	public CreateRecurrenceRequest {
 		description = description == null ? null : description.strip();
