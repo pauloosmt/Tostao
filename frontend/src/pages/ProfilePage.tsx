@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { Alert, Avatar, Badge, Button, Card, Segmented, PageHeader } from '../design-system/src'
 import { useTheme, type ThemeChoice } from '../theme/theme'
 import { ButtonLink } from '../ui/ButtonLink'
+import { AcceptInviteSheet } from '../members/AcceptInviteSheet'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { roleLabel } from '../workspace/roles'
 import { useWorkspace } from '../workspace/useWorkspace'
@@ -21,6 +22,7 @@ export function ProfilePage() {
   const { choice, setChoice } = useTheme()
   const [busy, setBusy] = useState<Busy>(null)
   const [confirming, setConfirming] = useState(false)
+  const [joining, setJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (state.status !== 'authenticated') return null
@@ -94,7 +96,14 @@ export function ProfilePage() {
             )
           })}
         </ul>
+        <div className="profile-actions">
+          <Button variant="secondary" size="sm" onClick={() => setJoining(true)}>
+            Entrar com um código de convite
+          </Button>
+        </div>
       </Card>
+
+      {joining ? <AcceptInviteSheet onClose={() => setJoining(false)} /> : null}
 
       <Card title="Aparência">
         <Segmented label="Tema" value={choice} options={THEME_OPTIONS} onChange={setChoice} />
