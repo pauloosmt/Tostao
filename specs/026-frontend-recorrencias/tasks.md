@@ -19,4 +19,4 @@ description: "Tarefas da feature 026-frontend-recorrencias"
 - [X] T002 A tela `/recorrencias` (lista, estados), o item no menu, a rota e o atalho em Contas (`SRC/recurrences/*`, `App.tsx`, `AppShell.tsx`, `AccountsPage.tsx`) com testes
 - [X] T003 A folha "Nova recorrência" (`SRC/recurrences/RecurrenceForm.tsx`, rotas filhas) com testes
 - [X] T004 A folha de detalhes com as ocorrências e "Encerrar recorrência"; "Ver recorrência" na folha do lançamento (`SRC/recurrences/*`, `transactions/TransactionFormPage.tsx`) com testes
-- [ ] T005 Verificação completa, roteiro real contra a API e registro no `quickstart.md`
+- [X] T005 Verificação completa, roteiro real contra a API e registro no `quickstart.md`
