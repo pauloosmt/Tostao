@@ -21,7 +21,7 @@ const RESTORE_CONFLICT = 'Já existe uma conta ativa com este nome. Renomeie a a
 export function AccountsPage() {
   const { current } = useWorkspace()
   const { canWrite } = usePermissions()
-  // Na barra de baixo (celular) não cabe o item Categorias: o atalho fica aqui. No menu lateral ele já existe.
+  // Na barra de baixo (celular) não cabem os itens Orçamentos e Categorias: os atalhos ficam aqui. No menu lateral ele já existe.
   const wide = useMediaQuery('(min-width: 960px)')
 
   return (
@@ -30,6 +30,7 @@ export function AccountsPage() {
         title="Contas"
         action={
           <>
+            {wide ? null : <ButtonLink variant="secondary" to="/orcamentos">Orçamentos</ButtonLink>}
             {wide ? null : <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>}
             {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
           </>
