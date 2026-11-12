@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { archiveCategory, listCategories, restoreCategory } from '../api/categories'
 import type { Category, CategoryKind, CategoryTree } from '../api/types'
 import { Alert, Badge, Button, CategoryCoin, Card, PageHeader, Segmented } from '../design-system/src'
@@ -15,6 +15,7 @@ import { LoadingNote } from '../ui/LoadingNote'
 import { KIND_OPTIONS } from '../validation/categoryForm'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { categoryConflict } from './conflicts'
+import type { CategorySheetContext } from './CategoryFormPage'
 import { paletteColor } from './palette'
 
 const SEGMENTS = KIND_OPTIONS.map((option) => ({ value: option.value, label: option.plural }))
@@ -84,10 +85,17 @@ function CategoriesOf({ workspaceId }: { workspaceId: string }) {
   const [archiving, setArchiving] = useState<ArchiveTarget | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
 
-  // O que a tela anterior pediu: o aviso do que acabou de acontecer e o tipo em que a categoria foi criada ou salva.
-  const [arrival] = useState(() => (location.state as { notice?: string; kind?: CategoryKind } | null) ?? null)
+  // O que a tela anterior (ou a folha que acabou de fechar) pediu: o aviso do que aconteceu e o tipo em que a categoria foi criada ou salva.
+  // A lista continua montada atrás da folha, então isto pode chegar com ela já aberta.
+  const arrival = (location.state as { notice?: string; kind?: CategoryKind } | null) ?? null
+  const [seen, setSeen] = useState(arrival)
   const [notice, setNotice] = useState<string | null>(arrival?.notice ?? null)
   const [kind, setKind] = useState<CategoryKind>(arrival?.kind === 'INCOME' ? 'INCOME' : 'EXPENSE')
+  if (arrival !== seen) {
+    setSeen(arrival)
+    if (arrival?.notice) setNotice(arrival.notice)
+    if (arrival?.kind) setKind(arrival.kind === 'INCOME' ? 'INCOME' : 'EXPENSE')
+  }
   useEffect(() => {
     if (arrival !== null) void navigate(location.pathname, { replace: true, state: null })
   }, [arrival, navigate, location.pathname])
@@ -243,6 +251,9 @@ function CategoriesOf({ workspaceId }: { workspaceId: string }) {
       >
         {archiving ? archiveText(archiving.category, archiving.activeSubs) : ''}
       </ConfirmDialog>
+
+      {/* As folhas de criar e editar são rotas filhas: a lista fica atrás, e \`changed\` a atualiza. */}
+      {resource.status === 'ready' ? <Outlet context={{ workspaceId, categories: resource.data, changed: reload } satisfies CategorySheetContext} /> : null}
     </>
   )
 }

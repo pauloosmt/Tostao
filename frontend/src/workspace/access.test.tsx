@@ -1,6 +1,7 @@
 import { act, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Me } from '../api/types'
+import { FAILURE_MESSAGES } from '../forms/apiErrors'
 import { fakeApi, ok, problem, wsRoute } from '../test/fakeApi'
 import { makeAccount, makeBalanceReport, makeCategoryTree } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
@@ -55,13 +56,15 @@ describe('o papel vale por workspace', () => {
     expect(screen.queryByRole('button', { name: /^Arquivar / })).toBeNull()
   })
 
-  it('os cinco endereços de formulário mostram o aviso de papel ao leitor, sem consultar nada do item', async () => {
+  it('os cinco endereços de formulário avisam o papel ao leitor, sem consultar nada do item', async () => {
     const paths = ['/contas/nova', '/contas/acc-x', '/categorias/nova', '/categorias/cat-x', '/categorias/cat-x/subcategorias/nova']
     for (const path of paths) {
       localStorage.setItem('tostao.workspace.u-ana', VIAGEM) // a pessoa já escolheu o workspace em que é leitora
       const { api, unmount } = openApp([path])
 
-      expect(await screen.findByRole('heading', { name: 'Somente consulta' }), path).toBeInTheDocument()
+      // As contas têm a página "Somente consulta"; as categorias voltam à lista com o aviso (o formulário delas é uma folha).
+      if (path.startsWith('/contas')) expect(await screen.findByRole('heading', { name: 'Somente consulta' }), path).toBeInTheDocument()
+      else expect(await screen.findByText(/só para consulta/), path).toBeInTheDocument()
       expect(screen.queryByLabelText('Nome'), path).toBeNull()
       expect(api.calls.filter((call) => call.method !== 'GET' || /\/(accounts|categories)\/[a-z-]+x(\/|$)/.test(call.path)), path).toEqual([])
       unmount()
@@ -136,7 +139,7 @@ describe('trocar de workspace', () => {
     account.unmount()
 
     openApp(['/categorias/cat-de-outro-workspace'], { [wsRoute('GET', CASA, '/categories/cat-de-outro-workspace')]: gone })
-    expect(await screen.findByRole('heading', { name: 'Categoria não encontrada' })).toBeInTheDocument()
+    expect(await screen.findByText(FAILURE_MESSAGES.notFound)).toBeInTheDocument() // volta à lista com o aviso
   })
 })
 

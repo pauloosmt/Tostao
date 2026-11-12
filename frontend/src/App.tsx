@@ -5,7 +5,7 @@ import { BudgetsPage } from './budgets/BudgetsPage'
 import { CardPage } from './cards/CardPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { CategoriesPage } from './categories/CategoriesPage'
-import { EditCategoryPage, NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
+import { EditCategorySheet, NewCategorySheet, NewSubcategorySheet } from './categories/CategoryFormPage'
 import { useAuth } from './auth/useAuth'
 import { NewTransactionSheet, TransactionSheet } from './transactions/TransactionFormPage'
 import { TransactionsPage } from './transactions/TransactionsPage'
@@ -49,10 +49,11 @@ export function App() {
         <Route path="contas/:id/fatura" element={<CardPage />} />
         <Route path="contas/:id" element={<EditAccountPage />} />
         <Route path="orcamentos" element={<BudgetsPage />} />
-        <Route path="categorias" element={<CategoriesPage />} />
-        <Route path="categorias/nova" element={<NewCategoryPage />} />
-        <Route path="categorias/:id" element={<EditCategoryPage />} />
-        <Route path="categorias/:id/subcategorias/nova" element={<NewSubcategoryPage />} />
+        <Route path="categorias" element={<CategoriesPage />}>
+          <Route path="nova" element={<NewCategorySheet />} />
+          <Route path=":id" element={<EditCategorySheet />} />
+          <Route path=":id/subcategorias/nova" element={<NewSubcategorySheet />} />
+        </Route>
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

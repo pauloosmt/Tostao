@@ -18,5 +18,5 @@ description: "Tarefas da feature 024-icones-de-categoria"
 - [X] T001 Design system: `categoryIcons`, `IconPicker`, `SwatchPicker`, `CategoryCoin` novo, `categoryIcon` na linha e `icon` no seletor de moedas, CSS e testes (`SRC/design-system/src/**`)
 - [X] T002 Back-end: `icon` só nulo ou uma das 39 chaves (criar e editar categoria) com os testes (`backend/.../category`)
 - [X] T003 Moedas com ícone nas telas: referência de ícone e cor da mãe, linha de lançamento, escolha de categoria do lançamento e lista de categorias (moeda cheia e chips de subcategoria) (`SRC/transactions/*`, `SRC/categories/CategoriesPage.tsx`)
-- [ ] T004 O formulário de categoria com pré-visualização, tipo, "Fica dentro de", cores e ícones, criando e editando (`SRC/categories/*`)
+- [X] T004 O formulário de categoria com pré-visualização, tipo, "Fica dentro de", cores e ícones, criando e editando (`SRC/categories/*`)
 - [ ] T005 Verificação completa (front e back-end), roteiro real contra a API e registro no `quickstart.md`
