@@ -25,6 +25,8 @@ const ICONS = {
   x: 'M6 6l12 12M18 6L6 18',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   filter: 'M4 6h16M7 12h10M10 18h4',
+  lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
+  unlock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 7.6-1.7',
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import type { Dashboard as DashboardData } from '../api/types'
 import { toCardType } from '../accounts/accountTypes'
 import { AccountCard, AttentionDot, Button, Card, Money, ProgressBar, StatTile, WalletHero, formatBRL } from '../design-system/src'
+import { useWalletClosed } from '../hooks/useWalletClosed'
 import { useMediaQuery } from '../layout/useMediaQuery'
 import { ButtonLink } from '../ui/ButtonLink'
 import { useTransactionFilters } from '../transactions/useFilters'
@@ -17,6 +18,8 @@ export interface DashboardProps {
 /** O painel do mês: a Carteira com o fecho, os totais com a variação, o pendente, os gastos por categoria e as contas. */
 export function Dashboard({ data, month, workspaceLine, canWrite }: DashboardProps) {
   const stacked = useMediaQuery('(max-width: 719px)')
+  // A pessoa pode fechar a carteira (esconde o saldo e a frase do fecho); a escolha fica neste navegador.
+  const [closed, toggle] = useWalletClosed()
   const navigate = useNavigate()
   const { apply } = useTransactionFilters()
   const { totals, comparison, pending, balances } = data
@@ -32,6 +35,8 @@ export function Dashboard({ data, month, workspaceLine, canWrite }: DashboardPro
         empty="Crie sua primeira conta"
         sub={workspaceLine}
         clasp={noAccounts ? undefined : claspText(totals.resultCents, month)}
+        closed={!noAccounts && closed}
+        onToggle={noAccounts ? undefined : toggle}
         className={stacked ? 'tx-wallet--stack' : undefined}
       />
 

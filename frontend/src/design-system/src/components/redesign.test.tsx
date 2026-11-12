@@ -62,6 +62,28 @@ describe('componentes do redesign', () => {
     expect(screen.getByText('Crie sua primeira conta')).toBeInTheDocument()
   })
 
+  it('WalletHero fechada: troca o botão, esconde o saldo e a frase do fecho da leitura de tela; sem onToggle não há botão', async () => {
+    const onToggle = vi.fn()
+    const { container, rerender } = render(<WalletHero label="Saldo total" cents={123456} clasp="Sobram R$ 10,00" onToggle={onToggle} />)
+    expect(screen.getByRole('button', { name: 'Fechar carteira' })).toHaveAttribute('aria-pressed', 'false')
+    expect(container.querySelector('.tx-wallet__content')).not.toHaveAttribute('aria-hidden')
+    expect(container.querySelector('.tx-wallet__cover')).toHaveAttribute('aria-hidden', 'true')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Fechar carteira' }))
+    expect(onToggle).toHaveBeenCalledTimes(1)
+
+    rerender(<WalletHero label="Saldo total" cents={123456} clasp="Sobram R$ 10,00" closed onToggle={onToggle} />)
+    expect(container.querySelector('.tx-wallet')).toHaveClass('is-closed')
+    expect(screen.getByRole('button', { name: 'Abrir carteira' })).toHaveAttribute('aria-pressed', 'true')
+    expect(container.querySelector('.tx-wallet__content')).toHaveAttribute('aria-hidden', 'true') // o saldo sai da leitura de tela
+    expect(container.querySelector('.tx-wallet__cover')).not.toHaveAttribute('aria-hidden')
+    expect(container.querySelector('.tx-wallet__clasp')).toHaveTextContent('Carteira fechada')
+    expect(screen.queryByText('Sobram R$ 10,00')).toBeNull()
+
+    rerender(<WalletHero label="Saldo total" cents={123456} />)
+    expect(screen.queryByRole('button', { name: /carteira/ })).toBeNull()
+    await expectNoSeriousViolations(container)
+  })
+
   it('PageHeader tem um h1 e MonthSwitcher tem os dois botões com nome', () => {
     const { container } = render(<PageHeader title="Lançamentos" context="6 lançamentos" action={<MonthSwitcher label="Novembro de 2026" />} />)
 

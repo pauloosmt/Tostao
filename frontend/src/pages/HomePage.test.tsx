@@ -135,6 +135,32 @@ describe('o início', () => {
     expect(screen.getByText('Nenhuma despesa neste mês.')).toBeInTheDocument()
   })
 
+  it('"Fechar carteira" esconde o saldo, lembra a escolha neste navegador e "Abrir carteira" desfaz; sem contas não há botão', async () => {
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa])), ...homeRoutes() })
+    const first = renderRoutes(routes, ['/'])
+    const wallet = () => first.container.querySelector('.tx-wallet') as HTMLElement
+
+    await first.user.click(await screen.findByRole('button', { name: 'Fechar carteira' }))
+    expect(wallet()).toHaveClass('is-closed')
+    expect(localStorage.getItem('tostao:carteira-fechada')).toBe('1')
+    expect(first.container.querySelector('.tx-wallet__content')).toHaveAttribute('aria-hidden', 'true')
+    first.unmount()
+
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa])), ...homeRoutes() })
+    const second = renderRoutes(routes, ['/'])
+    const reopen = await screen.findByRole('button', { name: 'Abrir carteira' }) // abre do jeito que ficou
+    await second.user.click(reopen)
+
+    expect(second.container.querySelector('.tx-wallet')).not.toHaveClass('is-closed')
+    expect(localStorage.getItem('tostao:carteira-fechada')).toBeNull()
+    second.unmount()
+
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa])), ...homeRoutes([]) })
+    renderRoutes(routes, ['/'])
+    await screen.findByText('Crie sua primeira conta')
+    expect(screen.queryByRole('button', { name: /carteira$/ })).toBeNull()
+  })
+
   it('sem contas, a Carteira convida a criar a primeira; o leitor não vê o botão', async () => {
     fakeApi({ 'GET /api/v1/me': ok(ana([casa])), ...homeRoutes([]) })
     const owner = renderRoutes(routes, ['/'])
