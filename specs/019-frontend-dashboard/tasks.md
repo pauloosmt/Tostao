@@ -16,5 +16,5 @@ description: "Tarefas da feature 019-frontend-dashboard"
 ---
 
 - [X] T001 API e meses: `api/dashboard.ts`, tipos, `dates/months.ts` e o `homeRoutes` dos testes servindo o dashboard (`SRC/api`, `SRC/dates`, `SRC/test`)
-- [ ] T002 O Início com o dashboard: seletor de mês, Carteira com o fecho, totais e variação, pendentes, categorias e contas (`SRC/pages/HomePage.tsx`, `SRC/home/*`)
-- [ ] T003 Verificação completa, roteiro real contra a API (números batem) e registro no `quickstart.md`
+- [X] T002 O Início com o dashboard: seletor de mês, Carteira com o fecho, totais e variação, pendentes, categorias e contas (`SRC/pages/HomePage.tsx`, `SRC/home/*`)
+- [X] T003 Verificação completa, roteiro real contra a API (números batem) e registro no `quickstart.md`

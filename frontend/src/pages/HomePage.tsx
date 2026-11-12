@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { balanceReport, listAccounts } from '../api/accounts'
-import { cardNote, toCardType } from '../accounts/accountTypes'
+import { getDashboard } from '../api/dashboard'
 import { useAuth } from '../auth/useAuth'
 import { useResource } from '../data/useResource'
-import { AccountCard, Button, Card, PageHeader, WalletHero } from '../design-system/src'
-import { useMediaQuery } from '../layout/useMediaQuery'
+import { currentMonth, monthLabel, shiftMonth } from '../dates/months'
+import { Button, Card, MonthSwitcher, PageHeader } from '../design-system/src'
+import { Dashboard } from '../home/Dashboard'
 import { usePermissions } from '../permissions/usePermissions'
-import { ButtonLink } from '../ui/ButtonLink'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { roleLabel } from '../workspace/roles'
@@ -22,13 +21,12 @@ export function HomePage() {
 
   if (state.status !== 'authenticated') return null
   const firstName = state.me.name.trim().split(/\s+/)[0] || state.me.name
-  const header = <PageHeader eyebrow={today} title={`Olá, ${firstName}`} />
 
   // Não deve ocorrer (o cadastro cria o workspace pessoal), mas nunca vira tela em branco.
   if (current === null) {
     return (
       <>
-        {header}
+        <PageHeader eyebrow={today} title={`Olá, ${firstName}`} />
         <Card title="Nenhum workspace">
           <div className="stack">
             <p className="text-body">Sua conta não participa de nenhum workspace, então ainda não há o que mostrar.</p>
@@ -48,59 +46,33 @@ export function HomePage() {
     )
   }
 
-  return (
-    <>
-      {header}
-      <Wallet workspaceId={current.id} workspaceName={current.name} role={roleLabel(current.role)} />
-    </>
-  )
+  return <HomeOf workspaceId={current.id} workspaceLine={`${current.name} · ${roleLabel(current.role)}`} eyebrow={today} firstName={firstName} />
 }
 
-/** A Carteira (o saldo total das contas ativas) e, abaixo, as contas. O resumo do mês fica para a tela do dashboard. */
-function Wallet({ workspaceId, workspaceName, role }: { workspaceId: string; workspaceName: string; role: string }) {
+interface HomeOfProps {
+  workspaceId: string
+  workspaceLine: string
+  eyebrow: string
+  firstName: string
+}
+
+/** O Início de um workspace: o mês escolhido (o de hoje ao abrir) e o painel dele. Trocar o mês volta a "carregando". */
+function HomeOf({ workspaceId, workspaceLine, eyebrow, firstName }: HomeOfProps) {
   const { canWrite } = usePermissions()
-  const stacked = useMediaQuery('(max-width: 719px)')
-  const resource = useResource(`home:${workspaceId}`, () =>
-    Promise.all([listAccounts(workspaceId, false), balanceReport(workspaceId)]).then(([accounts, report]) => ({ accounts, total: report.totalBalanceCents })),
-  )
-
-  if (resource.status === 'loading') return <LoadingNote>Carregando suas contas…</LoadingNote>
-  if (resource.status === 'error') return <ErrorNotice onRetry={resource.reload}>Não foi possível carregar suas contas. Tente de novo.</ErrorNotice>
-
-  const { accounts, total } = resource.data
-  const empty = accounts.length === 0
+  const [month, setMonth] = useState(() => currentMonth())
+  const resource = useResource(`dashboard:${workspaceId}:${month}`, () => getDashboard(workspaceId, month))
+  const go = (delta: number) => setMonth((current) => shiftMonth(current, delta) ?? current)
 
   return (
     <>
-      <WalletHero
-        label="Saldo total"
-        cents={empty ? null : total}
-        empty="Crie sua primeira conta"
-        sub={`${workspaceName} · ${role}`}
-        className={stacked ? 'tx-wallet--stack' : undefined}
+      <PageHeader
+        eyebrow={eyebrow}
+        title={`Olá, ${firstName}`}
+        action={<MonthSwitcher label={monthLabel(month)} onPrev={() => go(-1)} onNext={() => go(1)} />}
       />
-
-      {empty ? (
-        <Card>
-          <div className="stack stack--tight">
-            <p className="text-body muted">
-              {canWrite ? 'Com a primeira conta, os lançamentos e o saldo começam a aparecer aqui.' : 'Quem pode editar este workspace cria as contas.'}
-            </p>
-            {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
-          </div>
-        </Card>
-      ) : (
-        <section className="stack" aria-labelledby="home-accounts">
-          <h2 id="home-accounts" className="heading-2">Contas</h2>
-          <ul className="account-list">
-            {accounts.map((account) => (
-              <li key={account.id}>
-                <AccountCard name={account.name} type={toCardType(account.type)} balanceCents={account.balanceCents} note={cardNote(account)} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {resource.status === 'loading' ? <LoadingNote>Carregando o resumo do mês…</LoadingNote> : null}
+      {resource.status === 'error' ? <ErrorNotice onRetry={resource.reload}>Não foi possível carregar o resumo do mês. Tente de novo.</ErrorNotice> : null}
+      {resource.status === 'ready' ? <Dashboard data={resource.data} month={month} workspaceLine={workspaceLine} canWrite={canWrite} /> : null}
     </>
   )
 }

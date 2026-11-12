@@ -200,3 +200,9 @@ h1, h2, h3, p { margin: 0; }
 /* Escolhas lado a lado dentro da folha (tipo, atalhos de data) */
 .tile-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .tile-row--chips { display: flex; flex-wrap: wrap; }
+
+/* Início: totais do mês, pendentes e gastos por categoria */
+.home-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); }
+.home-pending { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface-200); }
+.home-pending .text-body-sm { flex: 1; min-width: 0; }
+.home-categories { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); }
