@@ -173,6 +173,7 @@ describe('editar na folha', () => {
     const { api, user } = open('/categorias')
     await user.click(await screen.findByRole('link', { name: 'Editar Alimentação' }))
     await sheet('Editar categoria')
+    await screen.findByLabelText('Nome') // a folha carrega a categoria depois de abrir
 
     expect(name()).toHaveValue('Alimentação')
     expect(screen.getByRole('radio', { name: 'Cor 1' })).toBeChecked()

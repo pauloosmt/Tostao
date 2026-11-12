@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { Nav, type NavItem } from '../design-system/src'
 import { usePermissions } from '../permissions/usePermissions'
+import { LoadingNote } from '../ui/LoadingNote'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { useMediaQuery } from './useMediaQuery'
 
@@ -77,7 +78,9 @@ export function AppShell() {
     <div className={`app-shell app-shell--${wide ? 'side' : 'bottom'}`}>
       {wide ? nav : null}
       <main ref={main} tabIndex={-1} className="app-shell__main">
-        <Outlet />
+        <Suspense fallback={<LoadingNote>Carregando…</LoadingNote>}>
+          <Outlet />
+        </Suspense>
       </main>
       {wide ? null : nav}
     </div>

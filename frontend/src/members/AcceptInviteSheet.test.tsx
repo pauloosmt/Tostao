@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Me } from '../api/types'
 import { expectNoSeriousViolations } from '../test/axe'
@@ -82,6 +82,6 @@ describe('o link "Membros" do Perfil', () => {
     await user.click(await screen.findByRole('link', { name: 'Membros' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Membros' })).toBeInTheDocument()
-    expect(api.callsTo(wsRoute('GET', WID, '/members'))).toHaveLength(1)
+    await waitFor(() => expect(api.callsTo(wsRoute('GET', WID, '/members'))).toHaveLength(1))
   })
 })
