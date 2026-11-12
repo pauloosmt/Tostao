@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 import type { Me, WorkspaceMembership } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { expectNoSeriousViolations } from '../test/axe'
-import { fakeApi, noContent, ok, problem } from '../test/fakeApi'
+import { fakeApi, networkError, noContent, ok, problem, wsRoute } from '../test/fakeApi'
+import { makeAccount } from '../test/fixtures'
+import { homeRoutes } from '../test/homeRoutes'
 import { renderRoutes } from '../test/renderRoutes'
 import { WorkspaceProvider } from '../workspace/WorkspaceContext'
 import { workspaceKey } from '../storage/local'
@@ -30,38 +32,42 @@ function WithSession() {
 const routes = <Route path="/" element={<WithSession />} />
 
 describe('o início', () => {
-  it('cumprimenta pelo primeiro nome e mostra o workspace atual com o papel em português', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana([casa, viagem])) })
-    renderRoutes(routes, ['/'])
-
-    expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
-    expect(screen.getByText('Casa')).toBeInTheDocument()
-    expect(screen.getByText('Dono')).toBeInTheDocument()
-    expect(screen.getByText('Moeda base: BRL')).toBeInTheDocument()
-  })
-
-  it('mostra o workspace que a pessoa escolheu neste aparelho', async () => {
-    localStorage.setItem(workspaceKey('u-ana'), 'w-viagem')
-    fakeApi({ 'GET /api/v1/me': ok(ana([casa, viagem])) })
-    renderRoutes(routes, ['/'])
-
-    expect(await screen.findByText('Viagem')).toBeInTheDocument()
-    expect(screen.getByText('Leitor')).toBeInTheDocument()
-  })
-
-  it('tem um estado vazio que explica o que virá, nunca uma tela vazia', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana([casa])) })
+  it('cumprimenta pelo primeiro nome e mostra a Carteira com o saldo total e as contas', async () => {
+    const contas = [makeAccount({ name: 'Carteira', type: 'CASH', balanceCents: 15000 }), makeAccount({ name: 'Reserva', type: 'SAVINGS', balanceCents: 100000 })]
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa, viagem])), ...homeRoutes(contas) })
     const { container } = renderRoutes(routes, ['/'])
 
-    expect(await screen.findByText('Ainda não há nada por aqui')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeInTheDocument()
+    expect(await screen.findByText('Saldo total')).toBeInTheDocument()
+    expect(container.querySelector('.tx-wallet__amount')).toHaveTextContent(/1.150,00/)
+    expect(screen.getByText('Casa · Dono')).toBeInTheDocument()
+    expect(screen.getByText('Carteira')).toBeInTheDocument()
+    expect(screen.getByText('Reserva')).toBeInTheDocument()
     await expectNoSeriousViolations(container)
   })
 
-  it('um nome só ou com espaços sobrando também é cumprimentado', async () => {
-    fakeApi({ 'GET /api/v1/me': ok({ ...ana([casa]), name: '  Bia  ' }) })
+  it('sem contas, a Carteira convida a criar a primeira (quem pode escrever)', async () => {
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa])), ...homeRoutes([]) })
     renderRoutes(routes, ['/'])
 
-    expect(await screen.findByRole('heading', { name: 'Olá, Bia' })).toBeInTheDocument()
+    expect(await screen.findByText('Crie sua primeira conta')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/contas/nova')
+  })
+
+  it('o leitor sem contas não vê o botão de criar', async () => {
+    localStorage.setItem(workspaceKey('u-ana'), 'w-viagem')
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa, viagem])), ...homeRoutes([], 'w-viagem') })
+    renderRoutes(routes, ['/'])
+
+    expect(await screen.findByText('Crie sua primeira conta')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Criar conta' })).not.toBeInTheDocument()
+  })
+
+  it('se as contas não carregam, avisa com "Tentar de novo"', async () => {
+    fakeApi({ 'GET /api/v1/me': ok(ana([casa])), [wsRoute('GET', 'w-casa', '/accounts')]: networkError(), [wsRoute('GET', 'w-casa', '/reports/balance')]: networkError() })
+    renderRoutes(routes, ['/'])
+
+    expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 })
 

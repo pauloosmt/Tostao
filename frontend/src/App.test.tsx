@@ -4,6 +4,7 @@ import { request } from './api/client'
 import type { Me, WorkspaceMembership } from './api/types'
 import { expectNoSeriousViolations } from './test/axe'
 import { fakeApi, networkError, noContent, ok, problem, type Call, type Reply } from './test/fakeApi'
+import { homeRoutes } from './test/homeRoutes'
 import { renderApp } from './test/renderApp'
 
 // (a consulta com credencial é montada em pedaços para a verificação de query string não a tomar por código do app)
@@ -27,7 +28,7 @@ describe('ao abrir', () => {
     const wait = new Promise<void>((resolve) => {
       release = resolve
     })
-    fakeApi({ 'GET /api/v1/me': async () => (await wait, ok(ana)) })
+    fakeApi({ 'GET /api/v1/me': async () => (await wait, ok(ana)), ...homeRoutes() })
 
     renderApp(['/'])
     expect(screen.getByRole('status')).toHaveTextContent('Carregando…')
@@ -37,16 +38,16 @@ describe('ao abrir', () => {
   })
 
   it('com sessão, restaura o início com o nome e o workspace', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana) })
+    fakeApi({ 'GET /api/v1/me': ok(ana), ...homeRoutes() })
 
     renderApp(['/'])
 
     expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
-    expect(within(screen.getByRole('main')).getByText('Casa da Ana')).toBeInTheDocument()
+    expect(await within(screen.getByRole('main')).findByText(/Casa da Ana/)).toBeInTheDocument()
   })
 
   it('servidor fora do ar: avisa com "Tentar de novo", que consulta outra vez', async () => {
-    const api = fakeApi({ 'GET /api/v1/me': networkError() })
+    const api = fakeApi({ 'GET /api/v1/me': networkError(), ...homeRoutes() })
     const { user } = renderApp(['/'])
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível falar com o servidor. Tente de novo.')
@@ -114,7 +115,7 @@ describe('quem não tem sessão', () => {
 
 describe('quem tem sessão', () => {
   it('a entrada e o cadastro levam direto ao início', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana) })
+    fakeApi({ 'GET /api/v1/me': ok(ana), ...homeRoutes() })
     renderApp(['/entrar'])
 
     expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
@@ -122,7 +123,7 @@ describe('quem tem sessão', () => {
   })
 
   it('navega entre o início e o perfil pela navegação', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana) })
+    fakeApi({ 'GET /api/v1/me': ok(ana), ...homeRoutes() })
     const { user } = renderApp(['/'])
     await screen.findByRole('heading', { name: 'Olá, Ana' })
 
@@ -133,7 +134,7 @@ describe('quem tem sessão', () => {
   })
 
   it('o aplicativo todo passa no axe', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana) })
+    fakeApi({ 'GET /api/v1/me': ok(ana), ...homeRoutes() })
     const { container } = renderApp(['/perfil'])
     await screen.findByRole('heading', { name: 'Perfil' })
 
@@ -154,7 +155,7 @@ describe('endereço que não existe', () => {
   })
 
   it('com sessão, o caminho de volta chega ao início', async () => {
-    fakeApi({ 'GET /api/v1/me': ok(ana) })
+    fakeApi({ 'GET /api/v1/me': ok(ana), ...homeRoutes() })
     const { user } = renderApp(['/nao/existe'])
 
     await user.click(await screen.findByRole('link', { name: 'Voltar ao início' }))

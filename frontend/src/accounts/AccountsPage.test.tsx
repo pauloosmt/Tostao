@@ -8,7 +8,7 @@ import { WID, makeAccount, makeBalanceReport, makeMe } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 // Os centavos de valores grandes ficam num span à parte; o espaço do real é não separável.
-const text = (value: string) => value.replace(/s+/g, ' ')
+const text = (value: string) => value.replace(/\s+/g, ' ')
 
 // O Testing Library normaliza o espaço não separável do formatBRL em espaço comum.
 const brl = (cents: number) => formatBRL(cents).replace(/ /g, ' ')
