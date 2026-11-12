@@ -21,19 +21,17 @@ export interface SheetDialogProps {
  */
 export function SheetDialog({ title, onClose, footer, onSubmit, initialFocusId, children }: SheetDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const closing = useRef(false)
   const bottom = useMediaQuery('(max-width: 719px)')
 
   useEffect(() => {
     const element = dialog.current
     if (!element) return
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    closing.current = false
     if (!element.open) element.showModal()
     if (initialFocusId) document.getElementById(initialFocusId)?.focus()
     return () => {
-      // Desmontar não é um pedido de fechar: o pai já sabe.
-      closing.current = true
+      // Desmontar não é um pedido de fechar: o pai já sabe. (Só o evento \`cancel\`, da tecla Esc, pede para fechar; o \`close\` chega depois,
+      // de forma assíncrona, e no modo de desenvolvimento do React o componente monta, desmonta e monta de novo: ouvi-lo fecharia a folha na hora.)
       if (element.open) element.close()
       opener?.focus?.()
     }
@@ -50,10 +48,12 @@ export function SheetDialog({ title, onClose, footer, onSubmit, initialFocusId, 
       ref={dialog}
       className={`launch-dialog${bottom ? ' launch-dialog--bottom' : ''}`}
       aria-label={title}
-      // Esc (o navegador fecha o <dialog> sozinho): é um pedido de fechar. O `close` de um diálogo de dentro (a confirmação de excluir)
-      // sobe pelo React até aqui e não pode fechar a folha.
-      onClose={(event) => {
-        if (event.target === event.currentTarget && !closing.current) onClose()
+      // Esc: é um pedido de fechar (quem fecha é o pai, que desmonta a folha). O `cancel` de um diálogo de dentro (a confirmação de
+      // excluir) sobe pelo React até aqui e não pode fechar a folha.
+      onCancel={(event) => {
+        if (event.target !== event.currentTarget) return
+        event.preventDefault()
+        onClose()
       }}
       // O toque no fundo escurecido (o próprio <dialog>, fora da folha) também fecha.
       onClick={(event) => {
