@@ -6,6 +6,7 @@ const names: Names = {
   accountName: (id) => ({ a1: 'Carteira', a2: 'Reserva', a3: 'Conta antiga (arquivada)' })[id] ?? 'Conta removida',
   categoryName: (id) => ({ c1: 'Alimentação › Mercado', c2: 'Salário' })[id] ?? null,
   categoryColor: (id) => ({ c1: '#2a9d8f' })[id] ?? null,
+  categoryIcon: (id) => ({ c1: 'cart' })[id] ?? null,
 }
 
 const tx = (extra: Partial<Transaction> = {}): Transaction => ({
@@ -18,7 +19,7 @@ const tx = (extra: Partial<Transaction> = {}): Transaction => ({
 describe('toDisplayRow', () => {
   it('despesa: valor absoluto, tipo despesa, nomes no lugar dos identificadores', () => {
     expect(toDisplayRow(tx(), names)).toEqual({
-      id: 't1', description: 'Almoço', cents: 3590, kind: 'expense', account: 'Carteira', category: 'Alimentação › Mercado', categoryColor: '#2a9d8f', date: '2026-11-11', pending: false, tags: [],
+      id: 't1', description: 'Almoço', cents: 3590, kind: 'expense', account: 'Carteira', category: 'Alimentação › Mercado', categoryColor: '#2a9d8f', categoryIcon: 'cart', date: '2026-11-11', pending: false, tags: [],
     })
   })
 

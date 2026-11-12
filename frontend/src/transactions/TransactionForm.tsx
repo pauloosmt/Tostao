@@ -215,7 +215,7 @@ export function TransactionForm({ mode, initial, reference, title, submitLabel, 
             <CoinPicker
               label="Categoria"
               value={chosenCategory?.label}
-              options={categories.map((option) => ({ name: option.label, color: option.color ?? '#8c877a' }))}
+              options={categories.map((option) => ({ name: option.label, color: option.color ?? '#8c877a', icon: option.icon }))}
               onChange={(name) => set('categoryId', categories.find((option) => option.label === name)?.value ?? '')}
             />
           )}

@@ -10,8 +10,10 @@ import type { Names } from './rows'
 export interface Option {
   value: string
   label: string
-  /** A cor da categoria (`#RRGGBB`), quando há: a moeda dela. */
+  /** A cor da categoria (`#RRGGBB`), quando há: a moeda dela. A subcategoria usa a da mãe. */
   color?: string
+  /** A chave do ícone gravado na categoria, quando há (sem ela, a moeda sugere pelo nome). */
+  icon?: string
 }
 
 export interface ReferenceData {
@@ -36,18 +38,21 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
   const accountById = new Map(accounts.map((account) => [account.id, account]))
   const categoryLabel = new Map<string, string>()
   const categoryInfo = new Map<string, { kind: CategoryKind; archived: boolean }>()
-  // A subcategoria sem cor própria usa a da principal.
+  // A subcategoria usa a cor da principal (só sem ela vale a própria).
   const categoryColor = new Map<string, string>()
+  const categoryIcon = new Map<string, string>()
 
   for (const principal of categories) {
     categoryLabel.set(principal.id, principal.name + (principal.archived ? ARCHIVED : ''))
     categoryInfo.set(principal.id, { kind: principal.kind, archived: principal.archived })
     if (principal.color) categoryColor.set(principal.id, principal.color)
+    if (principal.icon) categoryIcon.set(principal.id, principal.icon)
     for (const sub of principal.subcategories) {
       categoryLabel.set(sub.id, `${principal.name} › ${sub.name}${sub.archived ? ARCHIVED : ''}`)
       categoryInfo.set(sub.id, { kind: principal.kind, archived: sub.archived })
-      const color = sub.color ?? principal.color
+      const color = principal.color ?? sub.color
       if (color) categoryColor.set(sub.id, color)
+      if (sub.icon) categoryIcon.set(sub.id, sub.icon)
     }
   }
 
@@ -61,6 +66,7 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
       },
       categoryName: (id) => categoryLabel.get(id) ?? null,
       categoryColor: (id) => categoryColor.get(id) ?? null,
+      categoryIcon: (id) => categoryIcon.get(id) ?? null,
     },
     accountOptions: (currentId) =>
       accounts
@@ -70,9 +76,9 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
       const options: Option[] = []
       for (const principal of categories) {
         if (principal.kind !== kind) continue
-        if (!principal.archived || principal.id === currentId) options.push({ value: principal.id, label: categoryLabel.get(principal.id) as string, color: categoryColor.get(principal.id) })
+        if (!principal.archived || principal.id === currentId) options.push({ value: principal.id, label: categoryLabel.get(principal.id) as string, color: categoryColor.get(principal.id), icon: categoryIcon.get(principal.id) })
         for (const sub of principal.subcategories) {
-          if (!sub.archived || sub.id === currentId) options.push({ value: sub.id, label: categoryLabel.get(sub.id) as string, color: categoryColor.get(sub.id) })
+          if (!sub.archived || sub.id === currentId) options.push({ value: sub.id, label: categoryLabel.get(sub.id) as string, color: categoryColor.get(sub.id), icon: categoryIcon.get(sub.id) })
         }
       }
       return options

@@ -8,6 +8,8 @@ export interface Names {
   categoryName: (id: string) => string | null
   /** A cor da categoria (`#RRGGBB`), ou `null` quando não tem. */
   categoryColor: (id: string) => string | null
+  /** A chave do ícone da categoria, ou `null` (a moeda sugere pelo nome ou mostra a inicial). */
+  categoryIcon: (id: string) => string | null
 }
 
 export interface DisplayRow {
@@ -21,6 +23,8 @@ export interface DisplayRow {
   category: string
   /** A cor da categoria, para a moeda da linha; `null` na transferência e na categoria sem cor. */
   categoryColor: string | null
+  /** O ícone da categoria, para a moeda da linha; `null` sem ícone gravado. */
+  categoryIcon: string | null
   /** `AAAA-MM-DD`. */
   date: string
   pending: boolean
@@ -62,6 +66,7 @@ export function toDisplayRow(tx: Transaction, names: Names): DisplayRow {
     account: names.accountName(tx.accountId),
     category,
     categoryColor: tx.type === 'TRANSFER' || tx.categoryId === null ? null : names.categoryColor(tx.categoryId),
+    categoryIcon: tx.type === 'TRANSFER' || tx.categoryId === null ? null : names.categoryIcon(tx.categoryId),
     date: tx.occurredOn,
     pending: tx.status === 'PENDING',
     tags: tagsOf(tx),

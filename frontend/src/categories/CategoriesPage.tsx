@@ -38,22 +38,33 @@ export function CategoriesPage() {
   )
 }
 
-/** A moeda da categoria, na cor dela (neutra quando não tem cor). O nome da cor vai para o leitor de tela quando é da paleta. */
-export function ColorDot({ color, label }: { color: string | null; label: string }) {
+/** A moeda da categoria (cheia) ou da subcategoria (vazada, na cor da mãe), com o ícone gravado, a sugestão do nome ou a inicial. O nome da cor vai para o leitor de tela quando é da paleta. */
+export function ColorDot({ color, label, icon, variant = 'solid', size = 44 }: { color: string | null; label: string; icon?: string | null; variant?: 'solid' | 'outline'; size?: number }) {
   const name = color === null ? undefined : paletteColor(color)?.name
   return (
     <>
-      <CategoryCoin name={label} color={color ?? undefined} size={28} />
+      <CategoryCoin name={label} color={color ?? undefined} icon={icon} variant={variant} size={size} />
       {name ? <span className="sr-only">Cor {name}. </span> : null}
     </>
   )
 }
 
-function CategoryName({ category }: { category: Category }) {
+/** A categoria principal: moeda cheia de 44 px. A subcategoria: o chip com a moeda vazada de 22 px, na cor da mãe. */
+function CategoryName({ category, parentColor }: { category: Category; parentColor?: string | null }) {
+  const sub = category.parentId !== null
   return (
     <span className="category-name">
-      <ColorDot color={category.color} label={category.name} />
-      <span className="category-name__text">{category.name}</span>
+      {sub ? (
+        <span className="tx-subchip">
+          <ColorDot color={parentColor ?? category.color} label={category.name} icon={category.icon} variant="outline" size={22} />
+          <span className="category-name__text">{category.name}</span>
+        </span>
+      ) : (
+        <>
+          <ColorDot color={category.color} label={category.name} icon={category.icon} />
+          <span className="category-name__text">{category.name}</span>
+        </>
+      )}
       {category.archived ? <Badge tone="neutral">Arquivada</Badge> : null}
     </span>
   )
@@ -191,7 +202,7 @@ function CategoriesOf({ workspaceId }: { workspaceId: string }) {
                         <ul className="category-tree__subs" aria-label={`Subcategorias de ${category.name}`}>
                           {category.subcategories.map((sub) => (
                             <li key={sub.id} className="category-row">
-                              <CategoryName category={sub} />
+                              <CategoryName category={sub} parentColor={category.color} />
                               {canWrite ? (
                                 <div className="item-actions">
                                   {sub.archived ? (

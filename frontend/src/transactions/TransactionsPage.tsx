@@ -169,6 +169,7 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
                         account={row.account}
                         category={row.category}
                         categoryColor={row.categoryColor}
+                        categoryIcon={row.categoryIcon}
                         pending={row.pending}
                         attention={row.pending ? 'Pendente' : undefined}
                         tags={row.tags}

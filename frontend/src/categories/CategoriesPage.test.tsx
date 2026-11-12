@@ -54,17 +54,21 @@ describe('a árvore de categorias', () => {
     expect(api.callsTo(wsRoute('GET', WID, '/categories'))).toHaveLength(1)
   })
 
-  it('cada categoria tem a moeda na sua cor (neutra sem cor) e o nome da cor da paleta vai para o leitor de tela', async () => {
+  it('a principal tem a moeda cheia e cada subcategoria o chip com a moeda vazada na cor da mãe; o nome da cor vai para o leitor de tela', async () => {
     const { container } = open([alimentacao()])
     await tree()
 
     const coins = container.querySelectorAll<HTMLElement>('.tx-coin')
-    expect(coins).toHaveLength(3) // Alimentação (verde), Mercado (azul) e Restaurante (sem cor, neutra)
+    expect(coins).toHaveLength(3) // Alimentação (cheia) e as duas subcategorias (vazadas)
     expect(coins[0].style.background).toBe(rgb('#1A9E5C'))
     expect(coins[0]).toHaveAttribute('aria-hidden', 'true')
-    expect(coins[0]).toHaveTextContent('A')
-    expect(screen.getByText(/Cor Verde/)).toBeInTheDocument()
-    expect(screen.getByText(/Cor Azul/)).toBeInTheDocument()
+    expect(coins[0].querySelector('svg')).not.toBeNull() // "Alimentação" sugere o ícone pelo nome
+    for (const coin of [coins[1], coins[2]]) {
+      expect(coin).toHaveClass('tx-coin--outline')
+      expect(coin.style.borderColor).toBe(rgb('#1A9E5C')) // a cor da mãe, mesmo a Mercado tendo outra
+    }
+    expect(container.querySelectorAll('.tx-subchip')).toHaveLength(2)
+    expect(screen.getAllByText(/Cor Verde/).length).toBeGreaterThan(0)
   })
 
   it('uma cor que não é da paleta aparece na moeda, sem inventar nome', async () => {
