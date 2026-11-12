@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, Category, CategoryTree, Me, Role, Transaction } from '../api/types'
+import type { Account, BalanceReport, Category, CategoryTree, Dashboard, Me, Role, Transaction } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -90,6 +90,25 @@ export function makeTransaction(extra: Partial<Transaction> = {}): Transaction {
     recurrenceId: null,
     occurrenceNumber: null,
     imported: false,
+    ...extra,
+  }
+}
+
+/** O painel do mês coerente com as contas dadas (só as ativas); `extra` troca o que o teste quiser. */
+export function makeDashboard(accounts: Account[] = [], extra: Partial<Dashboard> = {}): Dashboard {
+  const active = accounts.filter((account) => !account.archived)
+  const change = { previousCents: 0, changeCents: 0, changePercent: null }
+  return {
+    period: { type: 'MONTH', id: '2026-11', startDate: '2026-11-01', endDate: '2026-11-30' },
+    totals: { incomeCents: 0, expenseCents: 0, resultCents: 0 },
+    incomeByCategory: [],
+    expenseByCategory: [],
+    comparison: { previousPeriod: { id: '2026-10' }, income: change, expense: change, result: change },
+    balances: {
+      accounts: active.map(({ id, name, type, balanceCents }) => ({ id, name, type, balanceCents })),
+      totalBalanceCents: active.reduce((sum, account) => sum + account.balanceCents, 0),
+    },
+    pending: { incomeCents: 0, expenseCents: 0, count: 0 },
     ...extra,
   }
 }

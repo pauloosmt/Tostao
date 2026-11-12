@@ -177,3 +177,55 @@ export interface UpdateTransaction {
   categoryId?: string
   status: 'PENDING' | 'CLEARED'
 }
+
+// ---- Painel do mês (spec 005) ----
+
+export interface DashboardTotals {
+  incomeCents: number
+  expenseCents: number
+  /** Receitas menos despesas. */
+  resultCents: number
+}
+
+export interface DashboardCategoryItem {
+  categoryId: string
+  name: string
+  totalCents: number
+  /** Percentual sobre o total do tipo, com duas casas. */
+  percent: number
+}
+
+/** Categoria principal; `categoryId` nulo é "Sem categoria". */
+export interface DashboardCategoryGroup {
+  categoryId: string | null
+  name: string
+  directCents: number
+  totalCents: number
+  percent: number
+  children: DashboardCategoryItem[]
+}
+
+export interface DashboardChange {
+  previousCents: number
+  changeCents: number
+  /** Nulo quando o período anterior é zero. */
+  changePercent: number | null
+}
+
+export interface DashboardAccountBalance {
+  id: string
+  name: string
+  type: AccountType
+  balanceCents: number
+}
+
+export interface Dashboard {
+  period: { type: 'MONTH' | 'WEEK'; id: string; startDate: string; endDate: string }
+  totals: DashboardTotals
+  incomeByCategory: DashboardCategoryGroup[]
+  expenseByCategory: DashboardCategoryGroup[]
+  comparison: { previousPeriod: { id: string }; income: DashboardChange; expense: DashboardChange; result: DashboardChange }
+  balances: { accounts: DashboardAccountBalance[]; totalBalanceCents: number }
+  /** O pendente do período: informativo, nunca entra nos totais. */
+  pending: { incomeCents: number; expenseCents: number; count: number }
+}
