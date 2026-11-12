@@ -17,4 +17,4 @@ description: "Tarefas da feature 022-frontend-limites-semanais"
 
 - [X] T001 Semanas: `dates/weeks.ts` (semana ISO pura) com testes (`SRC/dates`)
 - [X] T002 `api/budgets.ts` servindo os dois períodos (mesmo formato `period`), a tela de Orçamentos com "Mensal | Semanal", as folhas servindo os dois e os testes do semanal (`SRC/api`, `SRC/budgets/*`, `SRC/test`)
-- [ ] T003 Verificação completa, roteiro real contra a API e registro no `quickstart.md`
+- [X] T003 Verificação completa, roteiro real contra a API e registro no `quickstart.md`
