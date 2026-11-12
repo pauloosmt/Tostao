@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { ApiError } from '../api/errors'
 import { safeRedirect } from '../auth/safeRedirect'
 import { useAuth } from '../auth/useAuth'
-import { Alert, Button, Field, Logo } from '../design-system/src'
+import { Alert, Field, Logo, WalletGate } from '../design-system/src'
 import { useSubmit } from '../forms/useSubmit'
+import { useMediaQuery } from '../layout/useMediaQuery'
 import { firstInvalid, validateLogin, type FieldMessages } from '../validation/account'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { PasswordField } from '../ui/PasswordField'
@@ -32,6 +33,7 @@ export function LoginPage() {
   const { submitting, run } = useSubmit()
   const [blockedSeconds, setBlockedSeconds] = useState(0)
   const [blockedText, setBlockedText] = useState('')
+  const narrow = useMediaQuery('(max-width: 719px)')
 
   // A espera depois do bloqueio (429): conta de segundo em segundo e libera o botão no fim.
   useEffect(() => {
@@ -97,31 +99,27 @@ export function LoginPage() {
     })
   }
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault()
-    void submit()
-  }
-
   return (
     <main className="auth-page">
       <div className="auth-page__panel">
         <div className="auth-page__brand">
           <Logo variant="lockup" size={48} />
         </div>
-        <div className="stack stack--tight">
-          <h1 className="heading-1">Entrar</h1>
-          <p className="text-body muted">Acesse sua conta no Tostão.</p>
-        </div>
-
-        {state.status === 'anonymous' && state.expired ? <Alert tone="warning">Sua sessão terminou. Entre de novo.</Alert> : null}
-        {blocked ? <Alert tone="danger">{blockedText}</Alert> : null}
-        {notice?.retry ? (
-          <ErrorNotice onRetry={() => void submit()}>{notice.text}</ErrorNotice>
-        ) : notice ? (
-          <Alert tone="danger">{notice.text}</Alert>
-        ) : null}
-
-        <form className="stack" onSubmit={onSubmit} noValidate>
+        <WalletGate
+          title="Entrar"
+          subtitle="Acesse sua conta no Tostão."
+          submitLabel={submitting ? 'Entrando…' : blocked ? `Aguarde ${blockedSeconds} s` : 'Entrar'}
+          disabled={submitting || blocked}
+          onSubmit={() => void submit()}
+          className={narrow ? 'tx-gate--compact' : undefined}
+        >
+          {state.status === 'anonymous' && state.expired ? <Alert tone="warning">Sua sessão terminou. Entre de novo.</Alert> : null}
+          {blocked ? <Alert tone="danger">{blockedText}</Alert> : null}
+          {notice?.retry ? (
+            <ErrorNotice onRetry={() => void submit()}>{notice.text}</ErrorNotice>
+          ) : notice ? (
+            <Alert tone="danger">{notice.text}</Alert>
+          ) : null}
           <Field
             id={FIELD_ID.email}
             label="E-mail"
@@ -142,10 +140,7 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             error={errors.password}
           />
-          <Button type="submit" full size="lg" disabled={submitting || blocked}>
-            {submitting ? 'Entrando…' : blocked ? `Aguarde ${blockedSeconds} s` : 'Entrar'}
-          </Button>
-        </form>
+        </WalletGate>
 
         <p className="text-body-sm muted auth-page__footer">
           Ainda não tem conta?{' '}

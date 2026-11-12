@@ -44,13 +44,14 @@ h1, h2, h3, p { margin: 0; }
 }
 .auth-page__panel {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   display: grid;
   gap: var(--space-5);
 }
 .auth-page__brand { display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
 
 .auth-page__footer { text-align: center; }
+.auth-page .tx-gate { justify-self: center; }
 
 .link { color: var(--brand); font-weight: 500; text-underline-offset: 3px; }
 .link:hover { color: var(--brand-hover); }

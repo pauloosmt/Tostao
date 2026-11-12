@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { ApiError } from '../api/errors'
 import { safeRedirect } from '../auth/safeRedirect'
 import { useAuth } from '../auth/useAuth'
-import { Alert, Button, Field, Logo } from '../design-system/src'
+import { Alert, Field, Logo, WalletGate } from '../design-system/src'
 import { useSubmit } from '../forms/useSubmit'
+import { useMediaQuery } from '../layout/useMediaQuery'
 import { firstInvalid, validateRegister, type FieldMessages } from '../validation/account'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { PasswordField } from '../ui/PasswordField'
@@ -31,6 +32,7 @@ export function RegisterPage() {
   const [errors, setErrors] = useState<FieldMessages<RegisterField>>({})
   const [notice, setNotice] = useState<Notice | null>(null)
   const { submitting, run } = useSubmit()
+  const narrow = useMediaQuery('(max-width: 719px)')
 
   // Com sessão (inclusive a recém-criada pelo cadastro), vai para onde a pessoa queria ir ou para o início.
   if (state.status === 'authenticated') {
@@ -79,29 +81,25 @@ export function RegisterPage() {
     })
   }
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault()
-    void submit()
-  }
-
   return (
     <main className="auth-page">
       <div className="auth-page__panel">
         <div className="auth-page__brand">
           <Logo variant="lockup" size={48} />
         </div>
-        <div className="stack stack--tight">
-          <h1 className="heading-1">Criar conta</h1>
-          <p className="text-body muted">Comece a controlar suas finanças.</p>
-        </div>
-
-        {notice?.retry ? (
-          <ErrorNotice onRetry={() => void submit()}>{notice.text}</ErrorNotice>
-        ) : notice ? (
-          <Alert tone="danger">{notice.text}</Alert>
-        ) : null}
-
-        <form className="stack" onSubmit={onSubmit} noValidate>
+        <WalletGate
+          title="Criar conta"
+          subtitle="Comece a controlar suas finanças."
+          submitLabel={submitting ? 'Criando conta…' : 'Criar conta'}
+          disabled={submitting}
+          onSubmit={() => void submit()}
+          className={narrow ? 'tx-gate--compact' : undefined}
+        >
+          {notice?.retry ? (
+            <ErrorNotice onRetry={() => void submit()}>{notice.text}</ErrorNotice>
+          ) : notice ? (
+            <Alert tone="danger">{notice.text}</Alert>
+          ) : null}
           <Field
             id={FIELD_ID.name}
             label="Nome"
@@ -131,10 +129,7 @@ export function RegisterPage() {
             onChange={(event) => setPassword(event.target.value)}
             error={errors.password}
           />
-          <Button type="submit" full size="lg" disabled={submitting}>
-            {submitting ? 'Criando conta…' : 'Criar conta'}
-          </Button>
-        </form>
+        </WalletGate>
 
         <p className="text-body-sm muted auth-page__footer">
           Já tem conta?{' '}
