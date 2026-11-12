@@ -333,3 +333,38 @@ export interface Invoice {
   status: InvoiceStatus
   lines: InvoiceLine[]
 }
+
+// ---- Compras parceladas (spec 010) ----
+
+export interface CreateInstallmentPurchase {
+  accountId: string
+  categoryId: string
+  totalCents: number
+  /** De 2 a 48. */
+  installmentCount: number
+  /** `AAAA-MM-DD`: a data da primeira parcela; as outras vêm mês a mês. */
+  firstOccurredOn: string
+  /** A descrição base: cada parcela recebe o sufixo " (N/T)". */
+  description: string
+  notes?: string
+  /** Ausente: a primeira parcela fica efetivada. */
+  firstInstallmentStatus?: 'CLEARED' | 'PENDING'
+}
+
+export interface InstallmentPlan {
+  groupId: string
+  /** A descrição base, sem o sufixo da parcela. */
+  description: string
+  /** O total original de parcelas, mesmo que alguma tenha sido excluída. */
+  installmentCount: number
+  accountId: string
+  categoryId: string
+  totalCents: number
+  clearedCents: number
+  pendingCents: number
+  installments: Transaction[]
+}
+
+export interface CancelInstallmentsResult {
+  cancelled: number
+}

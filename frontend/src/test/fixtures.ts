@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, Invoice, Me, MonthBudget, Role, Transaction, WeekBudget } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invoice, Me, MonthBudget, Role, Transaction, WeekBudget } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -174,6 +174,23 @@ export function makeInvoice(extra: Partial<Invoice> = {}): Invoice {
     remainingCents: 120000,
     status: 'OPEN',
     lines: [],
+    ...extra,
+  }
+}
+
+/** O plano de uma compra parcelada com as parcelas dadas (as não excluídas); os totais saem delas. */
+export function makeInstallmentPlan(installments: Transaction[], extra: Partial<InstallmentPlan> = {}): InstallmentPlan {
+  const value = (t: Transaction) => Math.abs(t.amountCents)
+  return {
+    groupId: 'g-plano',
+    description: 'Geladeira',
+    installmentCount: installments.length,
+    accountId: 'a-carteira',
+    categoryId: 'c-mercado',
+    totalCents: installments.reduce((sum, t) => sum + value(t), 0),
+    clearedCents: installments.filter((t) => t.status === 'CLEARED').reduce((sum, t) => sum + value(t), 0),
+    pendingCents: installments.filter((t) => t.status === 'PENDING').reduce((sum, t) => sum + value(t), 0),
+    installments,
     ...extra,
   }
 }
