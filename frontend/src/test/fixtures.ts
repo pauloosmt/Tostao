@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invoice, Me, MonthBudget, Role, Transaction, WeekBudget } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invoice, Me, MonthBudget, Recurrence, RecurrenceDetail, Role, Transaction, WeekBudget } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -191,6 +191,43 @@ export function makeInstallmentPlan(installments: Transaction[], extra: Partial<
     clearedCents: installments.filter((t) => t.status === 'CLEARED').reduce((sum, t) => sum + value(t), 0),
     pendingCents: installments.filter((t) => t.status === 'PENDING').reduce((sum, t) => sum + value(t), 0),
     installments,
+    ...extra,
+  }
+}
+
+export function makeRecurrence(extra: Partial<Recurrence> = {}): Recurrence {
+  sequence += 1
+  return {
+    id: `rec-${sequence}`,
+    accountId: 'a-carteira',
+    destinationAccountId: null,
+    categoryId: 'c-mercado',
+    type: 'EXPENSE',
+    amountCents: 120000,
+    description: `Aluguel ${sequence}`,
+    notes: null,
+    frequency: 'MONTHLY',
+    startOn: '2026-11-10',
+    endOn: null,
+    autoClear: false,
+    ended: false,
+    endedAt: null,
+    nextOccurrenceOn: '2026-12-10',
+    createdBy: 'u-ana',
+    createdAt: '2026-11-01T10:00:00Z',
+    ...extra,
+  }
+}
+
+/** A recorrência com as ocorrências dadas; os totais saem delas. */
+export function makeRecurrenceDetail(occurrences: Transaction[] = [], extra: Partial<RecurrenceDetail> = {}): RecurrenceDetail {
+  const value = (t: Transaction) => Math.abs(t.amountCents)
+  return {
+    ...makeRecurrence(),
+    totalCents: occurrences.reduce((sum, t) => sum + value(t), 0),
+    clearedCents: occurrences.filter((t) => t.status === 'CLEARED').reduce((sum, t) => sum + value(t), 0),
+    pendingCents: occurrences.filter((t) => t.status === 'PENDING').reduce((sum, t) => sum + value(t), 0),
+    occurrences,
     ...extra,
   }
 }

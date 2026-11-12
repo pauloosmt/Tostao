@@ -368,3 +368,56 @@ export interface InstallmentPlan {
 export interface CancelInstallmentsResult {
   cancelled: number
 }
+
+// ---- Recorrências (specs 011 e 014) ----
+
+export type RecurrenceFrequency = 'WEEKLY' | 'MONTHLY' | 'YEARLY'
+
+export interface Recurrence {
+  id: string
+  accountId: string
+  /** Só na transferência. */
+  destinationAccountId: string | null
+  categoryId: string | null
+  type: TransactionType
+  /** Sempre positivo, em centavos: o sinal vem do tipo. */
+  amountCents: number
+  description: string
+  notes: string | null
+  frequency: RecurrenceFrequency
+  startOn: string
+  endOn: string | null
+  autoClear: boolean
+  ended: boolean
+  endedAt: string | null
+  /** A menor data entre as ocorrências pendentes de hoje em diante; nulo se não há. */
+  nextOccurrenceOn: string | null
+  createdBy: string
+  createdAt: string
+}
+
+/** Os totais são positivos e somam só as ocorrências da lista. */
+export interface RecurrenceDetail extends Recurrence {
+  totalCents: number
+  clearedCents: number
+  pendingCents: number
+  occurrences: Transaction[]
+}
+
+export interface CreateRecurrence {
+  accountId: string
+  destinationAccountId?: string
+  categoryId?: string
+  type: TransactionType
+  amountCents: number
+  description: string
+  notes?: string
+  frequency: RecurrenceFrequency
+  startOn: string
+  endOn?: string
+  autoClear?: boolean
+}
+
+export interface EndRecurrenceResult {
+  cancelled: number
+}
