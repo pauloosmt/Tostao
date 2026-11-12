@@ -1,5 +1,6 @@
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { ApiError } from '../api/errors'
+import { createInstallmentPurchase } from '../api/installments'
 import { createTransaction, getTransaction, updateTransaction } from '../api/transactions'
 import { useResource } from '../data/useResource'
 import { FAILURE_MESSAGES } from '../forms/apiErrors'
@@ -7,6 +8,7 @@ import { usePermissions } from '../permissions/usePermissions'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { SheetDialog } from '../ui/SheetDialog'
+import { buildInstallmentPurchase } from '../validation/installmentForm'
 import { buildCreateTransaction, buildUpdateTransaction, emptyTransactionForm, transactionToForm } from '../validation/transactionForm'
 import { useSheetContext } from './sheetContext'
 import { TransactionActions } from './TransactionActions'
@@ -31,10 +33,11 @@ export function NewTransactionSheet() {
       reference={reference}
       submitLabel="Registrar"
       onClose={() => void navigate(BACK, { replace: true })}
-      onSubmit={async (values) => {
-        await createTransaction(workspaceId, buildCreateTransaction(values))
+      onSubmit={async (values, plan) => {
+        if (plan) await createInstallmentPurchase(workspaceId, buildInstallmentPurchase(values, plan.count))
+        else await createTransaction(workspaceId, buildCreateTransaction(values))
         changed()
-        void navigate(BACK, { replace: true, state: { notice: 'Lançamento registrado.' } })
+        void navigate(BACK, { replace: true, state: { notice: plan ? `Compra parcelada em ${plan.count} vezes.` : 'Lançamento registrado.' } })
       }}
     />
   )

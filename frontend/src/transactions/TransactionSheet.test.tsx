@@ -6,7 +6,7 @@ import { FAILURE_MESSAGES } from '../forms/apiErrors'
 import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, networkError, ok, problem, wsRoute, type Handler } from '../test/fakeApi'
 import { installTransactions } from '../test/fakeTransactions'
-import { WID, makeAccount, makeCategory, makeCategoryTree, makeMe, makeTransaction } from '../test/fixtures'
+import { WID, makeAccount, makeCategory, makeCategoryTree, makeInstallmentPlan, makeMe, makeTransaction } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 const TODAY = todayISO()
@@ -294,5 +294,87 @@ describe('editar, efetivar e excluir na folha', () => {
 
     expect(await screen.findByText(FAILURE_MESSAGES.notFound)).toBeInTheDocument()
     expect(screen.getByTestId('location').textContent).toBe('/lancamentos')
+  })
+})
+
+describe('a compra parcelada na folha de lançar', () => {
+  const PLAN = wsRoute('POST', WID, '/installment-purchases')
+  const planBody = (api: Ctx['api']) => api.callsTo(PLAN)[0].body as Record<string, unknown>
+
+  it('só a despesa oferece "Parcelar a compra"; marcar muda os rótulos e mostra a divisão; trocar de tipo desmarca', async () => {
+    const { user } = open('/lancamentos/novo')
+    await sheet('Novo lançamento')
+    expect(screen.getByRole('checkbox', { name: 'Parcelar a compra' })).not.toBeChecked()
+
+    await user.type(amount(), '1.000,00')
+    await user.click(screen.getByRole('checkbox', { name: 'Parcelar a compra' }))
+    await user.clear(screen.getByLabelText('Número de parcelas'))
+    await user.type(screen.getByLabelText('Número de parcelas'), '3')
+
+    expect(screen.getByLabelText('Valor total')).toBeInTheDocument()
+    expect(screen.getByLabelText('Data da primeira parcela')).toBeInTheDocument()
+    expect(screen.getByLabelText('Primeira parcela pendente (ainda não aconteceu)', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText(/3 parcelas: 1 de R\$\s*333,34 e 2 de R\$\s*333,33\./)).toBeInTheDocument()
+
+    await user.click(radio('Receita'))
+    expect(screen.queryByRole('checkbox', { name: 'Parcelar a compra' })).toBeNull()
+    await user.click(radio('Despesa'))
+    expect(screen.getByRole('checkbox', { name: 'Parcelar a compra' })).not.toBeChecked() // trocar de tipo desmarcou
+  })
+
+  it('cria o plano: total em centavos, parcelas, primeira data, categoria; fecha com o aviso', async () => {
+    const { api, user } = open('/lancamentos/novo')
+    await sheet('Novo lançamento')
+    api.on(PLAN, ok(makeInstallmentPlan([makeTransaction({ id: 'p1', amountCents: -33334 })]), 201))
+
+    await user.type(amount(), '1.000,00')
+    await user.click(screen.getByRole('checkbox', { name: 'Parcelar a compra' }))
+    await user.clear(screen.getByLabelText('Número de parcelas'))
+    await user.type(screen.getByLabelText('Número de parcelas'), '3')
+    await user.type(description(), '  Geladeira  ')
+    await user.selectOptions(account(), 'a-carteira')
+    await user.click(radio('Alimentação › Mercado'))
+    await user.click(screen.getByRole('checkbox', { name: /Primeira parcela pendente/ }))
+    await user.click(save())
+
+    expect(await screen.findByText('Compra parcelada em 3 vezes.')).toBeInTheDocument()
+    expect(planBody(api)).toEqual({ accountId: 'a-carteira', categoryId: 'c-mercado', totalCents: 100000, installmentCount: 3, firstOccurredOn: TODAY, description: 'Geladeira', firstInstallmentStatus: 'PENDING' })
+    expect(api.callsTo(POST)).toHaveLength(0) // não é um lançamento comum
+  })
+
+  it('pede um número de parcelas de 2 a 48 e um centavo por parcela, e nada é enviado', async () => {
+    const { api, user } = open('/lancamentos/novo')
+    await sheet('Novo lançamento')
+    await fillExpense(user)
+    await user.click(screen.getByRole('checkbox', { name: 'Parcelar a compra' }))
+    const count = screen.getByLabelText('Número de parcelas')
+
+    await user.clear(count)
+    await user.type(count, '49')
+    await user.click(save())
+    expect(await screen.findByText('Informe de 2 a 48 parcelas.')).toBeInTheDocument()
+    expect(count).toHaveFocus()
+
+    await user.clear(count)
+    await user.type(count, '48')
+    const total = screen.getByLabelText('Valor total')
+    await user.clear(total)
+    await user.type(total, '0,10')
+    await user.click(save())
+    expect(await screen.findByText(/pelo menos 1 centavo por parcela/)).toBeInTheDocument()
+    expect(api.callsTo(PLAN)).toHaveLength(0)
+  })
+
+  it('uma recusa da API do plano aparece no campo certo e os valores ficam', async () => {
+    const { api, user } = open('/lancamentos/novo')
+    await sheet('Novo lançamento')
+    api.on(PLAN, problem(400, 'Requisição inválida', { errors: [{ field: 'installmentCount', message: 'deve ser de 2 a 48' }] }))
+    await fillExpense(user)
+    await user.click(screen.getByRole('checkbox', { name: 'Parcelar a compra' }))
+
+    await user.click(save())
+
+    expect(await screen.findByText('deve ser de 2 a 48')).toBeInTheDocument()
+    expect(description()).toHaveValue('Almoço')
   })
 })
