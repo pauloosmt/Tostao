@@ -17,5 +17,5 @@ description: "Tarefas da feature 021-frontend-cartao"
 ---
 
 - [X] T001 API e tipos: `api/invoices.ts`, tipos do resumo e da fatura, fixtures (`SRC/api`, `SRC/test`)
-- [ ] T002 A tela `/contas/:id/fatura` (resumo, fatura do mês, seletor de mês) e o atalho "Fatura" na lista de contas (`SRC/cards/*`, `SRC/App.tsx`, `SRC/accounts/AccountsPage.tsx`)
+- [X] T002 A tela `/contas/:id/fatura` (resumo, fatura do mês, seletor de mês) e o atalho "Fatura" na lista de contas (`SRC/cards/*`, `SRC/App.tsx`, `SRC/accounts/AccountsPage.tsx`)
 - [ ] T003 Verificação completa, roteiro real contra a API e registro no `quickstart.md`

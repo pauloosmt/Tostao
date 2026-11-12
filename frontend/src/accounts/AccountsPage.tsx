@@ -14,7 +14,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { useWorkspace } from '../workspace/useWorkspace'
-import { cardNote, toCardType } from './accountTypes'
+import { cardNote, isCreditCard, toCardType } from './accountTypes'
 
 const RESTORE_CONFLICT = 'Já existe uma conta ativa com este nome. Renomeie a ativa antes de restaurar esta.'
 
@@ -127,9 +127,14 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
                     note={cardNote(account)}
                     archived={account.archived}
                   />
-                  {canWrite ? (
+                  {canWrite || (isCreditCard(account.type) && !account.archived) ? (
                     <div className="item-actions">
-                      {account.archived ? (
+                      {isCreditCard(account.type) && !account.archived ? (
+                        <ButtonLink size="sm" variant="secondary" to={`/contas/${account.id}/fatura`} aria-label={`Fatura de ${account.name}`}>
+                          Fatura
+                        </ButtonLink>
+                      ) : null}
+                      {!canWrite ? null : account.archived ? (
                         <Button
                           size="sm"
                           variant="secondary"

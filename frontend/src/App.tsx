@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { EditAccountPage, NewAccountPage } from './accounts/AccountFormPage'
 import { AccountsPage } from './accounts/AccountsPage'
 import { BudgetsPage } from './budgets/BudgetsPage'
+import { CardPage } from './cards/CardPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { CategoriesPage } from './categories/CategoriesPage'
 import { EditCategoryPage, NewCategoryPage, NewSubcategoryPage } from './categories/CategoryFormPage'
@@ -45,6 +46,7 @@ export function App() {
         </Route>
         <Route path="contas" element={<AccountsPage />} />
         <Route path="contas/nova" element={<NewAccountPage />} />
+        <Route path="contas/:id/fatura" element={<CardPage />} />
         <Route path="contas/:id" element={<EditAccountPage />} />
         <Route path="orcamentos" element={<BudgetsPage />} />
         <Route path="categorias" element={<CategoriesPage />} />
