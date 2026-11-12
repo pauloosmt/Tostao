@@ -10,14 +10,15 @@ const HOME: NavItem = { id: 'inicio', label: 'Início', icon: 'home', href: '/' 
 const TRANSACTIONS: NavItem = { id: 'lancamentos', label: 'Lançamentos', icon: 'list', href: '/lancamentos' }
 const ACCOUNTS: NavItem = { id: 'contas', label: 'Contas', icon: 'bank', href: '/contas' }
 const BUDGETS: NavItem = { id: 'orcamentos', label: 'Orçamentos', icon: 'chart', href: '/orcamentos' }
+const RECURRENCES: NavItem = { id: 'recorrencias', label: 'Recorrências', icon: 'swap', href: '/recorrencias' }
 const CATEGORIES: NavItem = { id: 'categorias', label: 'Categorias', icon: 'tag', href: '/categorias' }
 const PROFILE: NavItem = { id: 'perfil', label: 'Perfil', icon: 'user', href: '/perfil' }
 
 // No menu lateral o Perfil é o rodapé (o usuário); na barra de baixo cabem quatro itens e o botão de lançar no meio, e as categorias
-// e os orçamentos ficam num atalho dentro de Contas.
-const SIDE_ITEMS: NavItem[] = [HOME, TRANSACTIONS, ACCOUNTS, BUDGETS, CATEGORIES]
+// os orçamentos e as recorrências ficam num atalho dentro de Contas.
+const SIDE_ITEMS: NavItem[] = [HOME, TRANSACTIONS, ACCOUNTS, BUDGETS, RECURRENCES, CATEGORIES]
 const BOTTOM_ITEMS: NavItem[] = [HOME, TRANSACTIONS, ACCOUNTS, PROFILE]
-const PATH_OF: Record<string, string> = { inicio: '/', lancamentos: '/lancamentos', contas: '/contas', orcamentos: '/orcamentos', categorias: '/categorias', perfil: '/perfil' }
+const PATH_OF: Record<string, string> = { inicio: '/', lancamentos: '/lancamentos', contas: '/contas', orcamentos: '/orcamentos', recorrencias: '/recorrencias', categorias: '/categorias', perfil: '/perfil' }
 
 /**
  * A estrutura de quem está dentro: a navegação e, ao lado dela, a tela. No celular (abaixo de 960 px) a navegação é a barra de baixo;
@@ -56,7 +57,7 @@ export function AppShell() {
   }, [canWrite, navigate])
 
   const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
-  const active = inSection('/perfil') ? 'perfil' : inSection('/lancamentos') ? 'lancamentos' : inSection('/contas') ? 'contas' : inSection('/orcamentos') ? 'orcamentos' : inSection('/categorias') ? 'categorias' : 'inicio'
+  const active = inSection('/perfil') ? 'perfil' : inSection('/lancamentos') ? 'lancamentos' : inSection('/contas') ? 'contas' : inSection('/orcamentos') ? 'orcamentos' : inSection('/recorrencias') ? 'recorrencias' : inSection('/categorias') ? 'categorias' : 'inicio'
   const go = (to: string) => void navigate(to)
   const user = state.status === 'authenticated' ? { name: state.me.name, sub: current?.name, href: '/perfil' } : undefined
   const nav = (

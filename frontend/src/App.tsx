@@ -11,6 +11,7 @@ import { NewTransactionSheet, TransactionSheet } from './transactions/Transactio
 import { TransactionsPage } from './transactions/TransactionsPage'
 import { Logo } from './design-system/src'
 import { HomePage } from './pages/HomePage'
+import { RecurrencesPage } from './recurrences/RecurrencesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -54,6 +55,7 @@ export function App() {
           <Route path=":id" element={<EditCategorySheet />} />
           <Route path=":id/subcategorias/nova" element={<NewSubcategorySheet />} />
         </Route>
+        <Route path="recorrencias" element={<RecurrencesPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
