@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, Category, CategoryTree, Dashboard, Me, MonthBudget, Role, Transaction } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, Invoice, Me, MonthBudget, Role, Transaction } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -136,6 +136,34 @@ export function makeMonthBudget(budgets: BudgetItem[] = [], extra: Partial<Month
     totalSpentCents: 0,
     spentOutsideCategoryLimitsCents: 0,
     budgets,
+    ...extra,
+  }
+}
+
+export function makeCardSummary(extra: Partial<CardSummary> = {}): CardSummary {
+  return {
+    accountId: 'a-cartao',
+    name: 'Nubank',
+    archived: false,
+    limitCents: 500000,
+    owedCents: 120000,
+    availableCents: 380000,
+    openInvoice: { month: '2026-11', periodStart: '2026-10-11', closingDate: '2026-11-10', dueDate: '2026-11-17', totalCents: 120000 },
+    ...extra,
+  }
+}
+
+export function makeInvoice(extra: Partial<Invoice> = {}): Invoice {
+  return {
+    month: '2026-11',
+    periodStart: '2026-10-11',
+    closingDate: '2026-11-10',
+    dueDate: '2026-11-17',
+    totalCents: 120000,
+    paidCents: 0,
+    remainingCents: 120000,
+    status: 'OPEN',
+    lines: [],
     ...extra,
   }
 }

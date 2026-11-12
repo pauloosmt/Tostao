@@ -269,3 +269,52 @@ export interface CopyBudgetsResult {
   skippedExisting: number
   skippedArchivedCategory: number
 }
+
+// ---- Cartão de crédito e faturas (spec 008) ----
+
+export type InvoiceStatus = 'OPEN' | 'CLOSED' | 'PAID' | 'OVERDUE'
+
+export interface OpenInvoice {
+  month: string
+  periodStart: string
+  closingDate: string
+  dueDate: string
+  totalCents: number
+}
+
+export interface CardSummary {
+  accountId: string
+  name: string
+  archived: boolean
+  /** Nulo: cartão sem limite cadastrado. */
+  limitCents: number | null
+  /** O saldo negativo da conta (zero quando o saldo não é negativo). */
+  owedCents: number
+  /** O limite menos o devido (negativo se passou do limite); nulo sem limite. */
+  availableCents: number | null
+  /** Nula quando o cartão não tem os dois dias cadastrados. */
+  openInvoice: OpenInvoice | null
+}
+
+/** Um lançamento da fatura: `chargeCents` positivo é compra ou saque, negativo é estorno. */
+export interface InvoiceLine {
+  id: string
+  date: string
+  description: string
+  categoryId: string | null
+  categoryName: string | null
+  type: string
+  chargeCents: number
+}
+
+export interface Invoice {
+  month: string
+  periodStart: string
+  closingDate: string
+  dueDate: string
+  totalCents: number
+  paidCents: number
+  remainingCents: number
+  status: InvoiceStatus
+  lines: InvoiceLine[]
+}
