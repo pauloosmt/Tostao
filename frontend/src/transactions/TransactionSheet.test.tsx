@@ -379,6 +379,15 @@ describe('a compra parcelada na folha de lançar', () => {
   })
 })
 
+describe('o lançamento que nasceu de uma recorrência', () => {
+  it('a folha oferece "Ver recorrência", que leva à recorrência', async () => {
+    open('/lancamentos/tx-rec', { initial: [makeTransaction({ id: 'tx-rec', accountId: 'a-carteira', categoryId: 'c-mercado', amountCents: -5000, description: 'Aluguel', recurrenceId: 'r-1', occurrenceNumber: 2 })] })
+    await sheet('Editar lançamento')
+
+    expect(screen.getByRole('link', { name: 'Ver recorrência' })).toHaveAttribute('href', '/recorrencias/r-1')
+  })
+})
+
 describe('o plano de uma compra parcelada', () => {
   const parcela = (n: number, status: 'CLEARED' | 'PENDING') =>
     makeTransaction({ id: `p${n}`, accountId: 'a-carteira', categoryId: 'c-mercado', amountCents: -33333, description: `Geladeira (${n}/3)`, occurredOn: `2026-1${n}-10`, status, installmentGroupId: 'g-plano', installmentNumber: n, installmentCount: 3 })

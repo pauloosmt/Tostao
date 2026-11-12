@@ -4,7 +4,7 @@ import type { Recurrence } from '../api/types'
 import { expectNoSeriousViolations } from '../test/axe'
 import { todayISO } from '../dates/dates'
 import { fakeApi, networkError, ok, problem, wsRoute } from '../test/fakeApi'
-import { WID, makeAccount, makeCategory, makeCategoryTree, makeMe, makeRecurrence, makeRecurrenceDetail } from '../test/fixtures'
+import { WID, makeAccount, makeCategory, makeCategoryTree, makeMe, makeRecurrence, makeRecurrenceDetail, makeTransaction } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 import { setViewportWidth } from '../test/media'
 import { sortRecurrences } from './sortRecurrences'
@@ -192,3 +192,78 @@ describe('criar uma recorrência na folha', () => {
     await expectNoSeriousViolations(container)
   })
 })
+
+describe('os detalhes e o encerramento', () => {
+  const occurrence = (n: number, status: 'CLEARED' | 'PENDING') => makeTransaction({ id: `o${n}`, recurrenceId: 'r-aluguel', occurrenceNumber: n, amountCents: -120000, occurredOn: `2026-1${n}-10`, status })
+  const detail = (extra = {}) => makeRecurrenceDetail([occurrence(1, 'CLEARED'), occurrence(2, 'PENDING'), occurrence(3, 'PENDING')], { ...aluguel, ...extra })
+  const GET = wsRoute('GET', WID, '/recurrences/r-aluguel')
+  const END = wsRoute('POST', WID, '/recurrences/r-aluguel/end')
+
+  function openDetail(role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'OWNER', data = detail()) {
+    const ctx = open([aluguel], role, '/recorrencias/r-aluguel')
+    ctx.api.on(GET, ok(data))
+    return ctx
+  }
+
+  it('tocar numa recorrência abre os dados e as ocorrências com o estado em palavras e os totais', async () => {
+    const { api, user } = open([aluguel])
+    api.on(GET, ok(detail()))
+    await user.click(await screen.findByRole('button', { name: /Aluguel/ }))
+
+    expect(await screen.findByRole('heading', { name: 'Aluguel' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/recorrencias/r-aluguel')
+    expect(screen.getByText(/Despesa · Todo mês · começa em 10\/11\/2026 · sem fim/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Carteira · Moradia/).length).toBeGreaterThan(1) // na linha da lista e nos detalhes
+    expect(screen.getByText(/Total R\$\s*3\.600,00 · efetivado R\$\s*1\.200,00 · pendente R\$\s*2\.400,00/)).toBeInTheDocument()
+    const items = within(screen.getByRole('list', { name: 'Ocorrências da recorrência' })).getAllByRole('listitem')
+    expect(items).toHaveLength(3)
+    expect(items[0]).toHaveTextContent(/Efetivada/)
+    expect(items[1]).toHaveTextContent(/Pendente/)
+  })
+
+  it('encerrar pede confirmação (cancelar não encerra); confirmar exclui as pendentes e avisa quantas', async () => {
+    const { api, user } = openDetail()
+    api.on(END, ok({ cancelled: 2 }))
+    await user.click(await screen.findByRole('button', { name: 'Encerrar recorrência' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Encerrar esta recorrência?' })
+    expect(confirm).toHaveTextContent('As 2 ocorrências pendentes serão excluídas.')
+    await user.click(within(confirm).getByRole('button', { name: 'Voltar' }))
+    expect(api.callsTo(END)).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Encerrar recorrência' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Encerrar esta recorrência?' })).getByRole('button', { name: 'Encerrar' }))
+
+    expect(await screen.findByText('Recorrência encerrada. 2 ocorrências canceladas.')).toBeInTheDocument()
+    expect(api.callsTo(END)).toHaveLength(1)
+    expect(screen.getByTestId('location').textContent).toBe('/recorrencias')
+    expect(api.callsTo(wsRoute('GET', WID, '/recurrences'))).toHaveLength(2) // a lista recarregou
+  })
+
+  it('a encerrada e o leitor não têm "Encerrar"; a que não existe volta à lista com o aviso', async () => {
+    const ended = openDetail('OWNER', detail({ ended: true }))
+    expect(await screen.findByText('Recorrência encerrada.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Encerrar recorrência' })).toBeNull()
+    ended.unmount()
+
+    const viewer = openDetail('VIEWER')
+    expect(await screen.findByRole('list', { name: 'Ocorrências da recorrência' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Encerrar recorrência' })).toBeNull()
+    viewer.unmount()
+
+    const gone = open([aluguel], 'OWNER', '/recorrencias/r-aluguel')
+    gone.api.on(GET, problem(404, 'Não encontrado'))
+    expect(await screen.findByText('Não encontrada. A lista foi atualizada.')).toBeInTheDocument()
+  })
+
+  it('passa no axe e, sem rede, avisa com "Tentar de novo" sem derrubar a lista', async () => {
+    const first = openDetail()
+    await screen.findByRole('heading', { name: 'Aluguel' })
+    await expectNoSeriousViolations(first.container)
+    first.unmount()
+
+    const { api } = open([aluguel], 'OWNER', '/recorrencias/r-aluguel')
+    api.on(GET, networkError())
+    expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+  })
+})
+

@@ -5,6 +5,7 @@ import { createTransaction, getTransaction, updateTransaction } from '../api/tra
 import { useResource } from '../data/useResource'
 import { FAILURE_MESSAGES } from '../forms/apiErrors'
 import { usePermissions } from '../permissions/usePermissions'
+import { ButtonLink } from '../ui/ButtonLink'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { SheetDialog } from '../ui/SheetDialog'
@@ -79,6 +80,7 @@ export function TransactionSheet() {
       <SheetDialog title={transfer ? 'Transferência' : 'Lançamento'} onClose={close}>
         <TransactionDetails transaction={transaction} reference={reference} />
         {transaction.installmentGroupId ? <InstallmentPlan workspaceId={workspaceId} groupId={transaction.installmentGroupId} canWrite={false} onChanged={changed} /> : null}
+        {transaction.recurrenceId ? <ButtonLink variant="secondary" to={`/recorrencias/${transaction.recurrenceId}`}>Ver recorrência</ButtonLink> : null}
       </SheetDialog>
     )
   }
@@ -95,6 +97,7 @@ export function TransactionSheet() {
       after={
         <>
           {transaction.installmentGroupId ? <InstallmentPlan workspaceId={workspaceId} groupId={transaction.installmentGroupId} canWrite onChanged={changed} /> : null}
+          {transaction.recurrenceId ? <div><ButtonLink variant="secondary" to={`/recorrencias/${transaction.recurrenceId}`}>Ver recorrência</ButtonLink></div> : null}
           <TransactionActions workspaceId={workspaceId} transaction={transaction} onChanged={changed} />
         </>
       }
