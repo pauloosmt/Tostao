@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { archiveCategory, listCategories, restoreCategory } from '../api/categories'
 import type { Category, CategoryKind, CategoryTree } from '../api/types'
-import { Alert, Badge, Button, Card, Segmented } from '../design-system/src'
+import { Alert, Badge, Button, CategoryCoin, Card, PageHeader, Segmented } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { describeFailure } from '../forms/apiErrors'
 import { useSubmit } from '../forms/useSubmit'
@@ -32,21 +32,18 @@ export function CategoriesPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="heading-1">Categorias</h1>
-      </div>
+      <PageHeader title="Categorias" />
       {current ? <CategoriesOf workspaceId={current.id} /> : <Card><p className="text-body">Você não participa de nenhum workspace.</p></Card>}
     </>
   )
 }
 
-/** O ponto de cor de uma categoria (nada quando ela não tem cor). O nome da cor vai para o leitor de tela quando é da paleta. */
-export function ColorDot({ color }: { color: string | null }) {
-  if (color === null) return null
-  const name = paletteColor(color)?.name
+/** A moeda da categoria, na cor dela (neutra quando não tem cor). O nome da cor vai para o leitor de tela quando é da paleta. */
+export function ColorDot({ color, label }: { color: string | null; label: string }) {
+  const name = color === null ? undefined : paletteColor(color)?.name
   return (
     <>
-      <span className="color-dot" style={{ background: color }} aria-hidden="true" />
+      <CategoryCoin name={label} color={color ?? undefined} size={28} />
       {name ? <span className="sr-only">Cor {name}. </span> : null}
     </>
   )
@@ -55,7 +52,7 @@ export function ColorDot({ color }: { color: string | null }) {
 function CategoryName({ category }: { category: Category }) {
   return (
     <span className="category-name">
-      <ColorDot color={category.color} />
+      <ColorDot color={category.color} label={category.name} />
       <span className="category-name__text">{category.name}</span>
       {category.archived ? <Badge tone="neutral">Arquivada</Badge> : null}
     </span>

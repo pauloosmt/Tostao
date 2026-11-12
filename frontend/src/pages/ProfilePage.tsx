@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { Alert, Badge, Button, Card, Segmented, PageHeader } from '../design-system/src'
+import { Alert, Avatar, Badge, Button, Card, Segmented, PageHeader } from '../design-system/src'
 import { useTheme, type ThemeChoice } from '../theme/theme'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { roleLabel } from '../workspace/roles'
@@ -59,6 +59,9 @@ export function ProfilePage() {
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
       <Card title="Seus dados">
+        <div className="profile-id">
+          <Avatar name={me.name} size={56} />
+        </div>
         <dl className="profile-data">
           <dt className="text-label muted">Nome</dt>
           <dd className="text-body">{me.name}</dd>

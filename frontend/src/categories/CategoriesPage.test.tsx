@@ -54,25 +54,24 @@ describe('a árvore de categorias', () => {
     expect(api.callsTo(wsRoute('GET', WID, '/categories'))).toHaveLength(1)
   })
 
-  it('a cor aparece como ponto (com o nome da cor para o leitor de tela); sem cor, nenhum ponto', async () => {
+  it('cada categoria tem a moeda na sua cor (neutra sem cor) e o nome da cor da paleta vai para o leitor de tela', async () => {
     const { container } = open([alimentacao()])
     await tree()
 
-    const dots = container.querySelectorAll<HTMLElement>('.color-dot')
-    expect(dots).toHaveLength(2) // Alimentação (verde) e Mercado (azul); Restaurante não tem cor
-    expect(dots[0].style.background).toBe(rgb('#1A9E5C'))
-    expect(dots[0]).toHaveAttribute('aria-hidden', 'true')
+    const coins = container.querySelectorAll<HTMLElement>('.tx-coin')
+    expect(coins).toHaveLength(3) // Alimentação (verde), Mercado (azul) e Restaurante (sem cor, neutra)
+    expect(coins[0].style.background).toBe(rgb('#1A9E5C'))
+    expect(coins[0]).toHaveAttribute('aria-hidden', 'true')
+    expect(coins[0]).toHaveTextContent('A')
     expect(screen.getByText(/Cor Verde/)).toBeInTheDocument()
     expect(screen.getByText(/Cor Azul/)).toBeInTheDocument()
-    const restaurante = screen.getByText('Restaurante').closest('.category-name') as HTMLElement
-    expect(restaurante.querySelector('.color-dot')).toBeNull()
   })
 
-  it('uma cor que não é da paleta aparece como ponto, sem inventar nome', async () => {
+  it('uma cor que não é da paleta aparece na moeda, sem inventar nome', async () => {
     const { container } = open([makeCategoryTree({ name: 'Outra', kind: 'EXPENSE', color: '#123456' })])
     await tree()
 
-    expect((container.querySelector('.color-dot') as HTMLElement).style.background).toBe(rgb('#123456'))
+    expect((container.querySelector('.tx-coin') as HTMLElement).style.background).toBe(rgb('#123456'))
     expect(screen.queryByText(/^Cor /)).toBeNull()
   })
 
