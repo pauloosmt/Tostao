@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invoice, Me, MonthBudget, Recurrence, RecurrenceDetail, Role, Transaction, WeekBudget } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invitation, Invoice, Me, Member, MonthBudget, Recurrence, RecurrenceDetail, Role, Transaction, WeekBudget } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -230,4 +230,14 @@ export function makeRecurrenceDetail(occurrences: Transaction[] = [], extra: Par
     occurrences,
     ...extra,
   }
+}
+
+export function makeMember(extra: Partial<Member> = {}): Member {
+  sequence += 1
+  return { userId: `u-${sequence}`, name: `Pessoa ${sequence}`, email: `pessoa${sequence}@exemplo.com`, role: 'EDITOR', joinedAt: '2026-10-05T12:00:00Z', ...extra }
+}
+
+export function makeInvitation(extra: Partial<Invitation> = {}): Invitation {
+  sequence += 1
+  return { id: `inv-${sequence}`, email: `convidada${sequence}@exemplo.com`, role: 'VIEWER', createdBy: 'u-ana', createdAt: '2026-11-10T12:00:00Z', expiresAt: '2026-11-24T12:00:00Z', ...extra }
 }

@@ -421,3 +421,33 @@ export interface CreateRecurrence {
 export interface EndRecurrenceResult {
   cancelled: number
 }
+
+// ---- Membros e convites (spec 012) ----
+
+export interface Member {
+  userId: string
+  name: string
+  email: string
+  role: Role
+  joinedAt: string
+}
+
+export interface Invitation {
+  id: string
+  email: string
+  role: Role
+  createdBy: string
+  createdAt: string
+  expiresAt: string
+}
+
+/** O convite recém-criado: a única resposta com o `code` (que a API nunca guarda nem devolve de novo). */
+export interface InvitationCreated extends Invitation {
+  code: string
+}
+
+export interface AcceptedInvitation {
+  workspaceId: string
+  name: string
+  role: Role
+}

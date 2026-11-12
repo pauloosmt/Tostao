@@ -52,6 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchMe()
   }, [fetchMe])
 
+  // Atualiza o que a pessoa é para o aplicativo (os workspaces e os papéis) sem a tela de "carregando". Falha com o erro da API.
+  const refresh = useCallback(async () => {
+    const me = await authApi.me()
+    lookups.current.latest++
+    setState((current) => (current.status === 'authenticated' ? { status: 'authenticated', me } : current))
+  }, [])
+
   const enter = useCallback(async (call: () => Promise<Me>) => {
     const me = await call()
     lookups.current.latest++ // uma consulta inicial atrasada não pode desfazer a entrada
@@ -83,8 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthValue>(
-    () => ({ state, login, register, logout, logoutAll, retry }),
-    [state, login, register, logout, logoutAll, retry],
+    () => ({ state, login, register, logout, logoutAll, retry, refresh }),
+    [state, login, register, logout, logoutAll, retry, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

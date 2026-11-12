@@ -19,6 +19,8 @@ export interface AuthValue {
   logoutAll: () => Promise<void>
   /** Consulta o `/me` de novo (depois de `unavailable`). */
   retry: () => void
+  /** Atualiza o `/me` (os workspaces e os papéis) sem passar por "carregando": depois de aceitar um convite ou de sair de um workspace. */
+  refresh: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthValue | null>(null)

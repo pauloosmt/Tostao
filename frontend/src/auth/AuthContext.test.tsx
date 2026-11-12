@@ -305,3 +305,27 @@ describe('useAuth', () => {
     }
   })
 })
+
+describe('refresh', () => {
+  it('atualiza os workspaces e os papéis sem passar por "carregando"; se falha, a sessão fica como estava', async () => {
+    const api = fakeApi({ 'GET /api/v1/me': ok(me) })
+    mount()
+    await settled('authenticated')
+    const names = () => {
+      const state = auth().state
+      return state.status === 'authenticated' ? state.me.workspaces.map((workspace) => workspace.name) : []
+    }
+
+    const joined: Me = { ...me, workspaces: [...me.workspaces, { id: 'w2', name: 'Viagem', baseCurrency: 'BRL', role: 'EDITOR' }] }
+    api.on('GET /api/v1/me', ok(joined))
+    await act(async () => auth().refresh())
+
+    expect(status()).toBe('authenticated')
+    expect(names()).toEqual(['Casa', 'Viagem'])
+
+    api.on('GET /api/v1/me', networkError())
+    await expect(act(async () => auth().refresh())).rejects.toBeInstanceOf(NetworkError)
+    expect(status()).toBe('authenticated')
+    expect(names()).toHaveLength(2)
+  })
+})
