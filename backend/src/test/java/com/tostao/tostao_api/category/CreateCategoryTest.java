@@ -157,6 +157,8 @@ class CreateCategoryTest {
 		assertInvalid(fx, "{\"name\":\"Cor\",\"kind\":\"EXPENSE\",\"color\":\"vermelho\"}", "color");
 		assertInvalid(fx, "{\"name\":\"Cor\",\"kind\":\"EXPENSE\",\"color\":\"#12345\"}", "color");
 		assertInvalid(fx, "{\"name\":\"Ico\",\"kind\":\"EXPENSE\",\"icon\":\"\"}", "icon");
+		assertInvalid(fx, "{\"name\":\"Ico\",\"kind\":\"EXPENSE\",\"icon\":\"qualquercoisa\"}", "icon");
+		assertInvalid(fx, "{\"name\":\"Ico\",\"kind\":\"EXPENSE\",\"icon\":\"CART\"}", "icon");
 		assertInvalid(fx, "{\"name\":\"Ico\",\"kind\":\"EXPENSE\",\"icon\":\"%s\"}".formatted("i".repeat(41)), "icon");
 		assertThat(create(fx, root("Tipo", "OUTRO")).getResponse().getStatus()).isEqualTo(400);
 		assertThat(count(fx.workspaceId())).isZero();

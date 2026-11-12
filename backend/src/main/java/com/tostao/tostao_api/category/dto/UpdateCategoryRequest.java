@@ -26,6 +26,7 @@ public record UpdateCategoryRequest(
 		String color,
 
 		@Size(min = 1, max = 40, message = "deve ter de 1 a 40 caracteres")
+		@Pattern(regexp = CategoryIcons.PATTERN, message = CategoryIcons.MESSAGE)
 		String icon) {
 
 	public UpdateCategoryRequest {

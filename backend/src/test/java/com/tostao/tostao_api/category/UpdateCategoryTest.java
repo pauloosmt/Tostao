@@ -123,6 +123,7 @@ class UpdateCategoryTest {
 		assertInvalid(fx, id, "{\"name\":\"%s\"}".formatted("x".repeat(61)), "name");
 		assertInvalid(fx, id, "{\"name\":\"Ok\",\"color\":\"vermelho\"}", "color");
 		assertInvalid(fx, id, "{\"name\":\"Ok\",\"icon\":\"\"}", "icon");
+		assertInvalid(fx, id, "{\"name\":\"Ok\",\"icon\":\"qualquercoisa\"}", "icon");
 		assertInvalid(fx, id, "{\"name\":\"Ok\",\"icon\":\"%s\"}".formatted("i".repeat(41)), "icon");
 		for (String extra : new String[] { "\"archived\":true", "\"workspaceId\":\"" + UUID.randomUUID() + "\"" }) {
 			assertThat(update(fx, id, "{\"name\":\"Ok\"," + extra + "}").getResponse().getStatus()).isEqualTo(400);
