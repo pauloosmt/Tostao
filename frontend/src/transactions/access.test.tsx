@@ -43,7 +43,7 @@ function openApp(entry: Parameters<typeof renderApp>[0] = ['/lancamentos']) {
 type Ctx = ReturnType<typeof openApp>
 
 const switchTo = async (user: Ctx['user'], name: string) => {
-  await user.click(screen.getByRole('link', { name: 'Perfil' }))
+  await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
   await user.click(await screen.findByRole('button', { name: `Usar ${name}` }))
   await user.click(screen.getByRole('link', { name: 'Lançamentos' }))
 }
@@ -131,7 +131,7 @@ describe('trocar de workspace', () => {
     const { api, user } = openApp()
     api.on(wsRoute('GET', CASA, '/transactions'), async () => (await wait, ok({ items: [lunch], page: 1, size: 20, totalItems: 1, totalPages: 1 })))
     // a lista da Casa ainda carrega: a pessoa vai ao perfil, troca de workspace e abre os lançamentos do outro
-    await user.click(await screen.findByRole('link', { name: 'Perfil' }))
+    await user.click(await screen.findByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Viagem' }))
     await user.click(screen.getByRole('link', { name: 'Lançamentos' }))
     await screen.findByText('Passagem da Viagem')

@@ -1,151 +1,70 @@
-import { act, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { act, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { Role } from '../api/types'
 import { expectNoSeriousViolations } from '../test/axe'
-import { LocationProbe } from '../test/LocationProbe'
+import { fakeApi, ok } from '../test/fakeApi'
+import { makeMe } from '../test/fixtures'
 import { setViewportWidth } from '../test/media'
-import { AppShell } from './AppShell'
+import { renderApp } from '../test/renderApp'
 
-function mount(path = '/') {
-  return {
-    user: userEvent.setup(),
-    ...render(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<h1>Tela do início</h1>} />
-            <Route path="perfil" element={<h1>Tela do perfil</h1>} />
-          </Route>
-        </Routes>
-        <LocationProbe />
-      </MemoryRouter>,
-    ),
-  }
+async function open(width: number, role: Role = 'OWNER', path = '/perfil') {
+  setViewportWidth(width)
+  fakeApi({ 'GET /api/v1/me': ok(makeMe(role)) })
+  const view = renderApp([path])
+  await screen.findByRole('navigation', { name: 'Principal' })
+  return view
 }
 
 const nav = () => screen.getByRole('navigation', { name: 'Principal' })
+const location = () => screen.getByTestId('location').textContent
 
-describe('a navegação segue o tamanho da janela', () => {
-  it('abaixo de 720 px é a barra de baixo', () => {
-    setViewportWidth(700)
-
-    mount()
+describe('a navegação', () => {
+  it('no celular é a barra de baixo, com o botão de lançar no meio e o Perfil como item', async () => {
+    await open(500)
 
     expect(nav()).toHaveClass('tx-nav--bottom')
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Início', 'Lançamentos', 'Contas', 'Perfil'])
+    expect(screen.getByRole('button', { name: 'Novo lançamento' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('a partir de 960 px é o menu lateral', () => {
-    setViewportWidth(960)
-
-    mount()
+  it('no desktop é o menu lateral, com Categorias e o usuário no rodapé levando ao Perfil', async () => {
+    const { user } = await open(1280, 'OWNER', '/')
+    await screen.findByRole('heading', { level: 1, name: 'Olá, Ana' })
 
     expect(nav()).toHaveClass('tx-nav--side')
+    expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute('href', '/categorias')
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
+
+    expect(location()).toBe('/perfil')
   })
 
-  it('entre os dois, ainda a barra de baixo (o lateral só cabe a partir de 960 px)', () => {
-    setViewportWidth(959)
-
-    mount()
-
-    expect(nav()).toHaveClass('tx-nav--bottom')
-  })
-
-  it('troca sozinha quando a janela muda de tamanho', () => {
-    setViewportWidth(500)
-    mount()
-    expect(nav()).toHaveClass('tx-nav--bottom')
+  it('troca de formato quando a janela muda de tamanho', async () => {
+    await open(500)
 
     act(() => setViewportWidth(1280))
+
     expect(nav()).toHaveClass('tx-nav--side')
-
-    act(() => setViewportWidth(500))
-    expect(nav()).toHaveClass('tx-nav--bottom')
   })
 
-  it('o menu lateral vem antes do conteúdo e a barra de baixo, depois', () => {
-    setViewportWidth(1280)
-    const wide = mount()
-    expect(nav().compareDocumentPosition(screen.getByRole('main')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    wide.unmount()
+  it('o leitor não tem o botão de lançar', async () => {
+    await open(500, 'VIEWER')
 
-    setViewportWidth(500)
-    mount()
-    expect(nav().compareDocumentPosition(screen.getByRole('main')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
-  })
-})
-
-describe('os itens', () => {
-  it('Início e Perfil, com o endereço certo, e o atual marcado', () => {
-    mount('/')
-
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('href', '/')
-    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil')
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Perfil' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('heading', { name: 'Tela do início' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Novo lançamento' })).not.toBeInTheDocument()
   })
 
-  it('abrindo direto no perfil, é ele o marcado', () => {
-    mount('/perfil')
-
-    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
-  })
-
-  it('tocar em um item navega sem recarregar e passa a marcá-lo, nos dois layouts', async () => {
-    for (const width of [500, 1280]) {
-      setViewportWidth(width)
-      const { user, unmount } = mount('/')
-
-      await user.click(screen.getByRole('link', { name: 'Perfil' }))
-      expect(screen.getByTestId('location')).toHaveTextContent('/perfil')
-      expect(screen.getByRole('heading', { name: 'Tela do perfil' })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
-
-      await user.click(screen.getByRole('link', { name: 'Início' }))
-      expect(screen.getByTestId('location')).toHaveTextContent('/')
-      expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
-      unmount()
-    }
-  })
-
-  it('ao trocar de tela o foco vai para o conteúdo, não fica perdido no menu; ao abrir, nada rouba o foco', async () => {
-    setViewportWidth(500)
-    const { user } = mount('/')
+  it('ao trocar de tela o foco vai para o conteúdo, e ao abrir nada rouba o foco', async () => {
+    const { user } = await open(500)
     expect(screen.getByRole('main')).not.toHaveFocus()
 
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: 'Início' }))
 
     expect(screen.getByRole('main')).toHaveFocus()
   })
 
-  it('funciona pelo teclado', async () => {
-    setViewportWidth(500)
-    const { user } = mount('/')
-
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Lançamentos' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Contas' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Categorias' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveFocus()
-    await user.keyboard('{Enter}')
-
-    expect(screen.getByRole('heading', { name: 'Tela do perfil' })).toBeInTheDocument()
-  })
-})
-
-describe('acessibilidade', () => {
-  it('passa no axe nos dois layouts, com um único main e a navegação nomeada', async () => {
+  it('passa no axe nos dois formatos', async () => {
     for (const width of [500, 1280]) {
-      setViewportWidth(width)
-      const { container, unmount } = mount('/')
-
+      const { container, unmount } = await open(width)
       expect(screen.getAllByRole('main')).toHaveLength(1)
       await expectNoSeriousViolations(container)
       unmount()

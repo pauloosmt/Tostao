@@ -42,7 +42,7 @@ describe('ao abrir', () => {
     renderApp(['/'])
 
     expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
-    expect(screen.getByText('Casa da Ana')).toBeInTheDocument()
+    expect(within(screen.getByRole('main')).getByText('Casa da Ana')).toBeInTheDocument()
   })
 
   it('servidor fora do ar: avisa com "Tentar de novo", que consulta outra vez', async () => {
@@ -126,11 +126,10 @@ describe('quem tem sessão', () => {
     const { user } = renderApp(['/'])
     await screen.findByRole('heading', { name: 'Olá, Ana' })
 
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ })) // o usuário no rodapé do menu lateral
 
     expect(await screen.findByRole('heading', { name: 'Perfil' })).toBeInTheDocument()
     expect(location()).toBe('/perfil')
-    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('o aplicativo todo passa no axe', async () => {
@@ -227,7 +226,7 @@ describe('trocar de conta no mesmo aparelho', () => {
     expect(within(page).queryByText(/Ana/)).toBeNull()
     expect(within(page).queryByText('ana@exemplo.com')).toBeNull()
     expect(within(page).queryByText('Viagem da Ana')).toBeNull()
-    expect(within(page).getByText('Casa da Bia')).toBeInTheDocument()
+    expect(within(screen.getByRole('main')).getByText('Casa da Bia')).toBeInTheDocument()
     expect(within(page).getByText('Atual')).toBeInTheDocument()
   })
 })
