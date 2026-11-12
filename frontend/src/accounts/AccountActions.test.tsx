@@ -7,6 +7,9 @@ import { fakeApi, networkError, ok, problem, wsRoute, type Handler } from '../te
 import { WID, makeAccount, makeBalanceReport, makeMe } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
+// Os centavos de valores grandes ficam num span à parte; o espaço do real é não separável.
+const text = (value: string) => value.replace(/s+/g, ' ')
+
 const brl = (cents: number) => formatBRL(cents).replace(/ /g, ' ')
 
 interface Options {
@@ -75,7 +78,7 @@ describe('arquivar uma conta', () => {
     const a = carteira()
     const { api, user } = open([a, reserva()])
     await listed()
-    expect(within(stat()).getByText(brl(115000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(115000)))
 
     await user.click(screen.getByRole('button', { name: 'Arquivar Carteira' }))
     await user.click(screen.getByRole('button', { name: 'Arquivar' }))
@@ -83,7 +86,7 @@ describe('arquivar uma conta', () => {
     expect(await screen.findByText('Conta arquivada.')).toBeInTheDocument()
     await listed()
     expect(screen.queryByText('Carteira')).toBeNull()
-    expect(within(stat()).getByText(brl(100000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(100000)))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(api.callsTo(archivePath(a))).toHaveLength(1)
   })
@@ -138,7 +141,7 @@ describe('arquivar uma conta', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByText('Carteira')).toBeInTheDocument()
-    expect(within(stat()).getByText(brl(115000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(115000)))
     expect(screen.queryByText('Conta arquivada.')).toBeNull()
   })
 
@@ -179,7 +182,7 @@ describe('restaurar uma conta', () => {
     await listed()
     await user.click(screen.getByRole('checkbox', { name: 'Mostrar arquivadas' }))
     await screen.findByText('Conta antiga')
-    expect(within(stat()).getByText(brl(15000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(15000)))
 
     await user.click(screen.getByRole('button', { name: 'Restaurar Conta antiga' }))
 
@@ -187,7 +190,7 @@ describe('restaurar uma conta', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     await screen.findByText('Conta antiga')
     expect(screen.queryByText(/arquivada\b/)).toBeNull()
-    expect(within(stat()).getByText(brl(15999))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(15999)))
     expect(screen.getByRole('button', { name: 'Arquivar Conta antiga' })).toBeInTheDocument()
     expect(api.callsTo(restorePath(old))).toHaveLength(1)
   })

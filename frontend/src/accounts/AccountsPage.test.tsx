@@ -7,6 +7,9 @@ import { fakeApi, networkError, ok, problem, wsRoute } from '../test/fakeApi'
 import { WID, makeAccount, makeBalanceReport, makeMe } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
+// Os centavos de valores grandes ficam num span à parte; o espaço do real é não separável.
+const text = (value: string) => value.replace(/s+/g, ' ')
+
 // O Testing Library normaliza o espaço não separável do formatBRL em espaço comum.
 const brl = (cents: number) => formatBRL(cents).replace(/ /g, ' ')
 
@@ -32,10 +35,10 @@ describe('a lista de contas', () => {
 
     await screen.findByRole('list', { name: 'Contas' })
     expect(rows()).toHaveLength(3)
-    expect(within(stat()).getByText(brl(65000))).toBeInTheDocument()
-    expect(within(rows()[0]).getByText('Carteira')).toBeInTheDocument()
-    expect(within(rows()[0]).getByText('Dinheiro')).toBeInTheDocument()
-    expect(within(rows()[0]).getByText(brl(15000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(65000)))
+    expect(rows()[0]).toHaveTextContent(text('Carteira'))
+    expect(rows()[0]).toHaveTextContent(text('Dinheiro'))
+    expect(rows()[0]).toHaveTextContent(text(brl(15000)))
     expect(within(rows()[2]).getByText('Poupança')).toBeInTheDocument()
   })
 
@@ -47,7 +50,7 @@ describe('a lista de contas', () => {
     expect(api.callsTo(wsRoute('GET', WID, '/accounts'))).toHaveLength(1)
     expect(api.callsTo(wsRoute('GET', WID, '/reports/balance'))).toHaveLength(1)
     expect(api.callsTo(wsRoute('GET', WID, '/accounts'))[0].path).toBe(`/api/v1/workspaces/${WID}/accounts`)
-    expect(within(stat()).getByText(brl(115000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(115000)))
   })
 
   it('o cartão de crédito mostra fechamento, vencimento e limite; as outras contas não têm linha de apoio', async () => {
@@ -72,9 +75,9 @@ describe('a lista de contas', () => {
 
     await screen.findByRole('list', { name: 'Contas' })
 
-    expect(within(rows()[0]).getByText(/Saldo negativo/)).toBeInTheDocument()
-    expect(within(rows()[0]).getByText(`−${brl(50000)}`)).toBeInTheDocument()
-    expect(within(stat()).getByText(`−${brl(50000)}`)).toBeInTheDocument()
+    expect(rows()[0]).toHaveTextContent(/Saldo negativo/)
+    expect(rows()[0]).toHaveTextContent(text(`−${brl(50000)}`))
+    expect(stat()).toHaveTextContent(text(`−${brl(50000)}`))
   })
 
   it('um tipo desconhecido da API aparece como "Conta", sem quebrar a lista', async () => {
@@ -82,7 +85,7 @@ describe('a lista de contas', () => {
 
     await screen.findByRole('list', { name: 'Contas' })
 
-    expect(within(rows()[0]).getByText('Conta')).toBeInTheDocument()
+    expect(rows()[0]).toHaveTextContent(text('Conta'))
     expect(rows()).toHaveLength(2)
   })
 
@@ -94,7 +97,7 @@ describe('a lista de contas', () => {
 
     // (contado direto no DOM: as consultas por papel do Testing Library são lentas em listas grandes no jsdom)
     expect(container.querySelectorAll('ul[aria-label="Contas"] > li')).toHaveLength(300)
-    expect(within(stat()).getByText(brl(30000))).toBeInTheDocument()
+    expect(stat()).toHaveTextContent(text(brl(30000)))
   })
 })
 
@@ -108,7 +111,7 @@ describe('as contas arquivadas', () => {
 
     expect(await screen.findByText('Conta antiga')).toBeInTheDocument()
     expect(screen.getByText(/Conta corrente · arquivada/)).toBeInTheDocument()
-    expect(within(stat()).getByText(brl(15000))).toBeInTheDocument() // o total segue só com as ativas
+    expect(stat()).toHaveTextContent(text(brl(15000))) // o total segue só com as ativas
     expect(screen.getByText('Considera só as contas ativas.')).toBeInTheDocument()
     expect(api.callsTo(wsRoute('GET', WID, '/accounts')).map((c) => c.path.includes('includeArchived=true'))).toEqual([false, true])
 

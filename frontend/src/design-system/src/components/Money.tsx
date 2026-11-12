@@ -16,10 +16,14 @@ export interface MoneyProps {
 
 export function Money({ cents, kind = 'balance', size = 'md', className }: MoneyProps) {
   const sign = kind === 'balance' ? (cents < 0 ? '\u2212' : '') : kind === 'income' ? '+' : kind === 'expense' ? '\u2212' : '';
+  const str = formatBRL(cents);
+  const cut = str.lastIndexOf(',');
+  const big = size === 'lg' || size === 'xl';
   return (
     <span className={cx('tx-num', 'tx-money', AMOUNT[size], kind === 'income' && 'tx-money--income', kind === 'transfer' && 'tx-money--transfer', className)}>
       <span className="tx-sr">{WORDS[kind] + (kind === 'balance' && cents < 0 ? ' negativo ' : ' ')}</span>
-      {sign + formatBRL(cents)}
+      {big ? sign + str.slice(0, cut) : sign + str}
+      {big ? <span className="tx-money__cents">{str.slice(cut)}</span> : null}
     </span>
   );
 }

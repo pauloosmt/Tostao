@@ -19,6 +19,12 @@ const ICONS = {
   cash: 'M3 7h18v10H3zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
   card: 'M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18',
   trend: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
+  chevronLeft: 'M15 6l-6 6 6 6',
+  chevronRight: 'M9 6l6 6-6 6',
+  x: 'M6 6l12 12M18 6L6 18',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  filter: 'M4 6h16M7 12h10M10 18h4',
 } as const;
 
 export type IconName = keyof typeof ICONS;

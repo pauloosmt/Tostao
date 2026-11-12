@@ -3,7 +3,7 @@ import { Icon, type IconName } from './Icon';
 import { cx } from './utils';
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-quiet';
   size?: 'sm' | 'md' | 'lg';
   icon?: IconName;
   full?: boolean;

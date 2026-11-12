@@ -18,6 +18,7 @@
   --warning: #8a5a00;
   --warning-tint: #f8ecd0;
   --gold: #b07a0e;
+  --on-gold: #0a1716;
   --focus: var(--brand);
   --shadow-raised: 0 1px 2px rgba(28,42,40,0.08), 0 2px 8px rgba(28,42,40,0.06);
   color-scheme: light;
@@ -41,6 +42,7 @@
   --warning: #f0c35a;
   --warning-tint: #3a2e12;
   --gold: #e0a93a;
+  --on-gold: #08201f;
   --focus: var(--brand);
   --shadow-raised: 0 1px 2px rgba(0,0,0,0.5);
   color-scheme: dark;
@@ -66,6 +68,7 @@
     --warning: #f0c35a;
     --warning-tint: #3a2e12;
     --gold: #e0a93a;
+    --on-gold: #08201f;
     --focus: var(--brand);
     --shadow-raised: 0 1px 2px rgba(0,0,0,0.5);
     color-scheme: dark;
@@ -89,6 +92,7 @@
   --control-md: 44px;
   --control-lg: 52px;
   --content-max: 1120px;
+  --content-narrow: 720px;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: Fraunces, Georgia, "Times New Roman", serif;
 }

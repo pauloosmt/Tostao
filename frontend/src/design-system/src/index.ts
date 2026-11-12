@@ -15,4 +15,16 @@ export { AccountCard, type AccountCardProps, type AccountType } from './componen
 export { ProgressBar, type ProgressBarProps } from './components/ProgressBar';
 export { Alert, type AlertProps } from './components/Alert';
 export { Nav, type NavProps, type NavItem } from './components/Nav';
+export { CategoryCoin, type CategoryCoinProps } from './components/CategoryCoin';
+export { AttentionDot, type AttentionDotProps } from './components/AttentionDot';
+export { WalletHero, type WalletHeroProps } from './components/WalletHero';
+export { PillBars, type PillBarsProps, type PillBarItem } from './components/PillBars';
+export { PageHeader, MonthSwitcher, type PageHeaderProps, type MonthSwitcherProps } from './components/PageHeader';
+export { Avatar, type AvatarProps } from './components/Avatar';
+export { IconButton, type IconButtonProps } from './components/IconButton';
+export { Sheet, type SheetProps } from './components/Sheet';
+export { AmountInput, type AmountInputProps } from './components/AmountInput';
+export { CoinPicker, type CoinPickerProps, type CoinOption } from './components/CoinPicker';
+export { OptionTile, type OptionTileProps } from './components/OptionTile';
+export { WalletGate, type WalletGateProps } from './components/WalletGate';
 export { formatBRL } from './components/utils';

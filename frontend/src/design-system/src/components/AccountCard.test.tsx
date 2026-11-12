@@ -34,7 +34,7 @@ describe('AccountCard', () => {
     render(<AccountCard name="Cheque especial" type="corrente" balanceCents={-20000} />)
 
     expect(screen.getByText(/Saldo negativo/)).toBeInTheDocument()
-    expect(screen.getByText(/−R\$ 200,00/)).toBeInTheDocument() // (o espaço não separável é normalizado pelo Testing Library)
+    expect(document.body).toHaveTextContent(/−R\$\s*200,00/) // (os centavos ficam num span à parte, em tamanho menor)
   })
 
   it('a linha de apoio aparece quando há', () => {
