@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, Category, CategoryTree, Dashboard, Me, Role, Transaction } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, Category, CategoryTree, Dashboard, Me, MonthBudget, Role, Transaction } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -109,6 +109,33 @@ export function makeDashboard(accounts: Account[] = [], extra: Partial<Dashboard
       totalBalanceCents: active.reduce((sum, account) => sum + account.balanceCents, 0),
     },
     pending: { incomeCents: 0, expenseCents: 0, count: 0 },
+    ...extra,
+  }
+}
+
+/** Um limite do mês (por padrão, o de uma categoria de despesa); `extra` troca o que o teste quiser. */
+export function makeBudgetItem(extra: Partial<BudgetItem> = {}): BudgetItem {
+  sequence += 1
+  return {
+    id: `bud-${sequence}`,
+    categoryId: `cat-${sequence}`,
+    categoryName: `Categoria ${sequence}`,
+    categoryArchived: false,
+    amountCents: 100000,
+    spentCents: 0,
+    remainingCents: 100000,
+    percentUsed: 0,
+    status: 'WITHIN',
+    ...extra,
+  }
+}
+
+export function makeMonthBudget(budgets: BudgetItem[] = [], extra: Partial<MonthBudget> = {}): MonthBudget {
+  return {
+    month: { id: '2026-11', startDate: '2026-11-01', endDate: '2026-11-30' },
+    totalSpentCents: 0,
+    spentOutsideCategoryLimitsCents: 0,
+    budgets,
     ...extra,
   }
 }

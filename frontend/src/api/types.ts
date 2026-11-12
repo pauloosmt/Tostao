@@ -229,3 +229,43 @@ export interface Dashboard {
   /** O pendente do período: informativo, nunca entra nos totais. */
   pending: { incomeCents: number; expenseCents: number; count: number }
 }
+
+// ---- Orçamentos mensais (spec 007) ----
+
+export type BudgetStatus = 'WITHIN' | 'WARNING' | 'EXCEEDED'
+
+/** Um limite com o gasto do mês; `categoryId` nulo é o limite geral (todas as despesas). */
+export interface BudgetItem {
+  id: string
+  categoryId: string | null
+  categoryName: string | null
+  categoryArchived: boolean
+  amountCents: number
+  spentCents: number
+  remainingCents: number
+  /** Percentual do limite já gasto (pode passar de 100); nulo no limite zero. */
+  percentUsed: number | null
+  status: BudgetStatus
+}
+
+export interface MonthBudget {
+  month: { id: string; startDate: string; endDate: string }
+  totalSpentCents: number
+  /** O gasto que nenhum limite de categoria cobre. */
+  spentOutsideCategoryLimitsCents: number
+  budgets: BudgetItem[]
+}
+
+export interface MonthlyBudget {
+  id: string
+  month: string
+  categoryId: string | null
+  categoryName: string | null
+  amountCents: number
+}
+
+export interface CopyBudgetsResult {
+  created: number
+  skippedExisting: number
+  skippedArchivedCategory: number
+}
