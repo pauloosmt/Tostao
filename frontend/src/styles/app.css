@@ -216,3 +216,5 @@ h1, h2, h3, p { margin: 0; }
 .member-row__main { flex: 1; min-width: 200px; }
 .member-row__main p { margin: 0; }
 .tile-row--two { grid-template-columns: repeat(2, 1fr); }
+.invite-code { margin: 0; padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-300); overflow-wrap: anywhere; }
+.invite-code code { font: 600 18px/26px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; color: var(--ink); user-select: all; }

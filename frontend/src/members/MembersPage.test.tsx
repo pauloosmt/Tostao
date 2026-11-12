@@ -1,10 +1,10 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Me } from '../api/types'
 import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, networkError, noContent, ok, problem, wsRoute } from '../test/fakeApi'
 import { homeRoutes } from '../test/homeRoutes'
-import { WID, makeMe, makeMember } from '../test/fixtures'
+import { WID, makeInvitation, makeMe, makeMember } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 const ana = makeMember({ userId: 'u-ana', name: 'Ana Maria', email: 'ana@exemplo.com', role: 'OWNER', joinedAt: '2026-01-10T12:00:00Z' })
@@ -12,11 +12,13 @@ const bia = makeMember({ userId: 'u-bia', name: 'Bia Costa', email: 'bia@exemplo
 const caio = makeMember({ userId: 'u-caio', name: 'Caio Lima', email: 'caio@exemplo.com', role: 'VIEWER', joinedAt: '2026-03-30T12:00:00Z' })
 
 const LIST = wsRoute('GET', WID, '/members')
+const INVITES = wsRoute('GET', WID, '/invitations')
+const CREATE = wsRoute('POST', WID, '/invitations')
 const PUT_BIA = wsRoute('PUT', WID, '/members/u-bia')
 const DEL_BIA = wsRoute('DELETE', WID, '/members/u-bia')
 
-function open(me: Me, members = [ana, bia, caio], path = '/membros') {
-  const api = fakeApi({ 'GET /api/v1/me': ok(me), [LIST]: ok(members) })
+function open(me: Me, members = [ana, bia, caio], path = '/membros', invitations = [] as ReturnType<typeof makeInvitation>[]) {
+  const api = fakeApi({ 'GET /api/v1/me': ok(me), [LIST]: ok(members), [INVITES]: ok(invitations) })
   return { api, ...renderApp([path]) }
 }
 const owner = () => makeMe('OWNER')
@@ -38,7 +40,7 @@ describe('a lista de membros', () => {
   })
 
   it('falha ao carregar avisa com "Tentar de novo"; o Perfil leva a "Membros"', async () => {
-    const api = fakeApi({ 'GET /api/v1/me': ok(owner()), [LIST]: networkError() })
+    const api = fakeApi({ 'GET /api/v1/me': ok(owner()), [LIST]: networkError(), [INVITES]: ok([]) })
     const { user } = renderApp(['/perfil'])
 
     await user.click(await screen.findByRole('link', { name: 'Membros' }))
@@ -114,6 +116,7 @@ describe('quem não é dono', () => {
     await screen.findByRole('list', { name: 'Membros' })
     api.on('GET /api/v1/me', ok(outro)) // depois de sair, a API devolve só o workspace que sobrou
     for (const [route, reply] of Object.entries(homeRoutes([], 'w-outro'))) api.on(route, reply as never)
+    api.on(wsRoute('GET', 'w-outro', '/invitations'), ok([]))
     api.on(wsRoute('GET', 'w-outro', '/members'), ok([ana])) // a tela de membros ainda aparece por um instante, já no workspace novo
 
     await user.click(screen.getByRole('button', { name: 'Sair do workspace' }))
@@ -122,5 +125,78 @@ describe('quem não é dono', () => {
     expect(await screen.findByText('Crie sua primeira conta')).toBeInTheDocument() // o Início do Viagem
     expect(screen.getByTestId('location').textContent).toBe('/')
     expect(api.callsTo(DEL_BIA)).toHaveLength(1)
+  })
+})
+
+describe('os convites', () => {
+  const pendente = makeInvitation({ id: 'inv-1', email: 'dani@exemplo.com', role: 'EDITOR', expiresAt: '2026-11-24T12:00:00Z' })
+
+  it('o dono vê os pendentes (e-mail, papel, validade) e revoga com confirmação; quem não é dono nem os consulta', async () => {
+    const { api, user } = open(owner(), [ana, bia, caio], '/membros', [pendente])
+    const del = wsRoute('DELETE', WID, '/invitations/inv-1')
+    api.on(del, noContent())
+
+    const list = await screen.findByRole('list', { name: 'Convites pendentes' })
+    expect(list).toHaveTextContent(/dani@exemplo.com.*Editor.*Expira em 24\/11\/2026/)
+    await user.click(screen.getByRole('button', { name: 'Revogar o convite de dani@exemplo.com' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Revogar este convite?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Cancelar' }))
+    expect(api.callsTo(del)).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: 'Revogar o convite de dani@exemplo.com' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Revogar este convite?' })).getByRole('button', { name: 'Revogar' }))
+
+    expect(await screen.findByText('O convite para dani@exemplo.com foi revogado.')).toBeInTheDocument()
+    expect(api.callsTo(del)).toHaveLength(1)
+    expect(api.callsTo(INVITES)).toHaveLength(2)
+  })
+
+  it('quem não é dono não vê convites nem "Convidar", e a API de convites nem é chamada', async () => {
+    const { api } = open(asBia())
+    await screen.findByRole('list', { name: 'Membros' })
+
+    expect(screen.queryByRole('button', { name: 'Convidar' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Convites pendentes' })).toBeNull()
+    expect(api.callsTo(INVITES)).toHaveLength(0)
+  })
+
+  it('convidar mostra o código uma só vez, com "Copiar"; ao concluir o código some e a lista de pendentes se atualiza', async () => {
+    const { api, user } = open(owner())
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText') // (o userEvent já trocou a área de transferência por uma de teste)
+    api.on(CREATE, ok({ ...makeInvitation({ id: 'inv-9', email: 'nova@exemplo.com', role: 'VIEWER' }), code: 'ABCD-1234-SEGREDO' }, 201))
+    await screen.findByRole('list', { name: 'Membros' })
+
+    await user.click(screen.getByRole('button', { name: 'Convidar' }))
+    await user.click(await screen.findByRole('button', { name: 'Criar convite' }))
+    expect(await screen.findByText('Informe o e-mail da pessoa.')).toBeInTheDocument() // vazio: nada é enviado
+    expect(api.callsTo(CREATE)).toHaveLength(0)
+    await user.type(screen.getByLabelText('E-mail da pessoa'), '  nova@exemplo.com ')
+    await user.click(screen.getByRole('button', { name: 'Criar convite' }))
+
+    expect(await screen.findByLabelText('Código do convite')).toHaveTextContent('ABCD-1234-SEGREDO')
+    expect(api.callsTo(CREATE)[0].body).toEqual({ email: 'nova@exemplo.com', role: 'VIEWER' })
+    await user.click(screen.getByRole('button', { name: 'Copiar código' }))
+    expect(writeText).toHaveBeenCalledWith('ABCD-1234-SEGREDO')
+    expect(await screen.findByText('Código copiado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Concluir' }))
+    expect(await screen.findByText('Convite criado para nova@exemplo.com.')).toBeInTheDocument()
+    expect(screen.queryByText('ABCD-1234-SEGREDO')).toBeNull() // o código não fica na tela
+    expect(document.body.textContent).not.toContain('ABCD-1234-SEGREDO')
+    expect(api.callsTo(INVITES)).toHaveLength(2)
+  })
+
+  it('uma recusa da API aparece como ela disse e o e-mail digitado fica', async () => {
+    const { api, user } = open(owner())
+    api.on(CREATE, problem(409, 'Conflito de estado', { detail: 'Esta pessoa já participa do workspace' }))
+    await screen.findByRole('list', { name: 'Membros' })
+
+    await user.click(screen.getByRole('button', { name: 'Convidar' }))
+    await user.type(await screen.findByLabelText('E-mail da pessoa'), 'bia@exemplo.com')
+    await user.click(screen.getByRole('radio', { name: 'Editor' }))
+    await user.click(screen.getByRole('button', { name: 'Criar convite' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Esta pessoa já participa do workspace')
+    expect(screen.getByLabelText('E-mail da pessoa')).toHaveValue('bia@exemplo.com')
+    expect(api.callsTo(CREATE)[0].body).toEqual({ email: 'bia@exemplo.com', role: 'EDITOR' })
   })
 })

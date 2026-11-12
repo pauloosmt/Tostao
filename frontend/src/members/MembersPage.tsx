@@ -13,6 +13,8 @@ import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { roleLabel } from '../workspace/roles'
 import { useWorkspace } from '../workspace/useWorkspace'
+import { InvitationsSection } from './InvitationsSection'
+import { InviteSheet } from './InviteSheet'
 import { RoleSheet } from './RoleSheet'
 
 export function MembersPage() {
@@ -36,6 +38,9 @@ function MembersOf({ workspaceId, workspaceName, isOwner }: { workspaceId: strin
   const [target, setTarget] = useState<Target>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
+  const [inviting, setInviting] = useState(false)
+  // Muda a cada convite criado: a lista de pendentes consulta de novo.
+  const [invitationsVersion, setInvitationsVersion] = useState(0)
   // A chave leva o workspace: trocar volta a "carregando" e descarta a resposta que ficou para trás.
   const resource = useResource(`members:${workspaceId}`, () => listMembers(workspaceId))
   const myId = state.status === 'authenticated' ? state.me.id : ''
@@ -72,6 +77,7 @@ function MembersOf({ workspaceId, workspaceName, isOwner }: { workspaceId: strin
       <PageHeader
         title="Membros"
         context={resource.status === 'ready' ? `${members.length} ${members.length === 1 ? 'pessoa' : 'pessoas'} em ${workspaceName}` : undefined}
+        action={isOwner ? <Button onClick={() => setInviting(true)}>Convidar</Button> : undefined}
       />
       {notice ? <Alert tone="info">{notice}</Alert> : null}
       {problem ? <Alert tone="danger">{problem}</Alert> : null}
@@ -117,6 +123,21 @@ function MembersOf({ workspaceId, workspaceName, isOwner }: { workspaceId: strin
             )
           })}
         </ul>
+      ) : null}
+
+      {isOwner ? <InvitationsSection workspaceId={workspaceId} version={invitationsVersion} /> : null}
+
+      {inviting ? (
+        <InviteSheet
+          workspaceId={workspaceId}
+          onClose={() => setInviting(false)}
+          onCreated={(email) => {
+            setInviting(false)
+            setProblem(null)
+            setNotice(`Convite criado para ${email}.`)
+            setInvitationsVersion((version) => version + 1)
+          }}
+        />
       ) : null}
 
       {target?.kind === 'role' ? (
