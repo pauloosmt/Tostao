@@ -41,25 +41,24 @@ const toggle = () => screen.getByRole('button', { name: /^Filtros/ })
 const openPanel = async (user: ReturnType<typeof open>['user']) => {
   await screen.findByText(/^\d+ lançamentos?$/)
   await user.click(toggle())
-  return screen.findByRole('form', { name: 'Filtros' })
+  return screen.findByRole('heading', { name: 'Filtros' })
 }
 const choose = (user: ReturnType<typeof open>['user'], label: string, value: string) => user.selectOptions(screen.getByLabelText(label), value)
 const apply = (user: ReturnType<typeof open>['user']) => user.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
 const countRows = (container: HTMLElement) => container.querySelectorAll('.transaction-list > li').length
 
 describe('o painel de filtros', () => {
-  it('abre e fecha pelo botão "Filtros", que informa o estado', async () => {
+  it('abre a folha pelo botão "Filtros" e fecha por "Fechar", devolvendo o foco ao botão', async () => {
     const { user } = open()
     await screen.findByText('4 lançamentos')
-    expect(toggle()).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('form', { name: 'Filtros' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Filtros' })).toBeNull()
 
     await user.click(toggle())
-    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
-    expect(await screen.findByRole('form', { name: 'Filtros' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Filtros' })).toBeInTheDocument()
 
-    await user.click(toggle())
-    expect(screen.queryByRole('form', { name: 'Filtros' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('heading', { name: 'Filtros' })).toBeNull()
+    expect(toggle()).toHaveFocus()
   })
 
   it('traz período, conta, categoria, tipo, estado e busca', async () => {
@@ -160,7 +159,7 @@ describe('aplicar e limpar', () => {
     expect(toggle()).toHaveTextContent('Filtros (2)')
     expect(screen.getByRole('list', { name: 'Filtros ativos' })).toHaveTextContent('Conta: Carteira')
     expect(screen.getByRole('list', { name: 'Filtros ativos' })).toHaveTextContent('Tipo: Despesa')
-    expect(screen.queryByRole('form', { name: 'Filtros' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Filtros' })).toBeNull()
     expect(toggle()).toHaveFocus()
   })
 
@@ -250,7 +249,7 @@ describe('as recusas no próprio painel', () => {
     expect(screen.getByLabelText('Até')).toHaveAccessibleDescription('A data final não pode ser anterior à inicial.')
     expect(screen.getByLabelText('Até')).toHaveFocus()
     expect(api.callsTo(LIST)).toHaveLength(calls)
-    expect(screen.getByRole('form', { name: 'Filtros' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Filtros' })).toBeInTheDocument()
   })
 
   it('a busca de 101 caracteres é recusada no campo', async () => {
@@ -276,7 +275,7 @@ describe('as recusas no próprio painel', () => {
     fireEvent.change(screen.getByLabelText('Até'), { target: { value: '2026-11-30' } })
     await apply(user)
 
-    await waitFor(() => expect(screen.queryByRole('form', { name: 'Filtros' })).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Filtros' })).toBeNull())
     expect(await screen.findByText('1 lançamento')).toBeInTheDocument()
   })
 })

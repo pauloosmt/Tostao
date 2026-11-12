@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { listTransactions } from '../api/transactions'
-import { Alert, Badge, Button, Card, TransactionRow } from '../design-system/src'
+import { Alert, Badge, Button, Card, PageHeader, TransactionRow } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { formatDay } from '../dates/dates'
 import { usePermissions } from '../permissions/usePermissions'
@@ -20,12 +20,12 @@ import { useTransactionFilters } from './useFilters'
 export function TransactionsPage() {
   const { current } = useWorkspace()
 
-  return (
+  return current ? (
+    <TransactionsOf workspaceId={current.id} />
+  ) : (
     <>
-      <div className="page-header">
-        <h1 className="heading-1">Lançamentos</h1>
-      </div>
-      {current ? <TransactionsOf workspaceId={current.id} /> : <Card><p className="text-body">Você não participa de nenhum workspace.</p></Card>}
+      <PageHeader title="Lançamentos" />
+      <Card><p className="text-body">Você não participa de nenhum workspace.</p></Card>
     </>
   )
 }
@@ -75,25 +75,29 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
+      <PageHeader
+        title="Lançamentos"
+        context={reference.status === 'ready' && list.status === 'ready' && !beyond && list.data.items.length > 0 ? `${list.data.totalItems} ${list.data.totalItems === 1 ? 'lançamento' : 'lançamentos'}` : undefined}
+        action={canWrite ? <ButtonLink variant="primary" to="/lancamentos/novo">Novo lançamento</ButtonLink> : undefined}
+      />
+
       {notice ? <Alert tone="info">{notice}</Alert> : null}
 
       <div className="list-toolbar">
         <Button
           id="transaction-filters-button"
           variant="secondary"
-          aria-expanded={filtersOpen}
-          aria-controls="transaction-filters"
+          icon="filter"
+          aria-haspopup="dialog"
           disabled={reference.status !== 'ready'}
-          onClick={() => setFiltersOpen((open) => !open)}
+          onClick={() => setFiltersOpen(true)}
         >
           {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
         </Button>
-        {canWrite ? <ButtonLink variant="primary" to="/lancamentos/novo">Novo lançamento</ButtonLink> : null}
       </div>
 
       {reference.status === 'ready' && filtersOpen ? (
         <TransactionFilters
-          id="transaction-filters"
           reference={reference}
           onDone={() => {
             setFiltersOpen(false)
@@ -152,9 +156,6 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
           </Card>
         ) : (
           <>
-            <p className="text-body-sm muted">
-              {list.data.totalItems} {list.data.totalItems === 1 ? 'lançamento' : 'lançamentos'}
-            </p>
             {groupByDay(list.data.items.map((tx) => toDisplayRow(tx, reference.names))).map((group) => (
               <section key={`${group.day}-${group.rows[0].id}`} className="day-group" aria-label={formatDay(group.day)}>
                 <h3 className="text-label muted day-group__title">{formatDay(group.day)}</h3>
@@ -167,7 +168,9 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
                         kind={row.kind}
                         account={row.account}
                         category={row.category}
+                        categoryColor={row.categoryColor}
                         pending={row.pending}
+                        attention={row.pending ? 'Pendente' : undefined}
                         tags={row.tags}
                         onClick={() => void navigate(`/lancamentos/${row.id}`)}
                       />
