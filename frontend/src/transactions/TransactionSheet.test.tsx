@@ -378,3 +378,77 @@ describe('a compra parcelada na folha de lançar', () => {
     expect(description()).toHaveValue('Almoço')
   })
 })
+
+describe('o plano de uma compra parcelada', () => {
+  const parcela = (n: number, status: 'CLEARED' | 'PENDING') =>
+    makeTransaction({ id: `p${n}`, accountId: 'a-carteira', categoryId: 'c-mercado', amountCents: -33333, description: `Geladeira (${n}/3)`, occurredOn: `2026-1${n}-10`, status, installmentGroupId: 'g-plano', installmentNumber: n, installmentCount: 3 })
+  const parcelas = () => [parcela(1, 'CLEARED'), parcela(2, 'PENDING'), parcela(3, 'PENDING')]
+  const PLAN_GET = wsRoute('GET', WID, '/installment-purchases/g-plano')
+  const CANCEL = wsRoute('POST', WID, '/installment-purchases/g-plano/cancel')
+
+  function openPlan(role: Role = 'OWNER') {
+    const ctx = open('/lancamentos/p2', { role, initial: parcelas() })
+    ctx.api.on(PLAN_GET, ok(makeInstallmentPlan(parcelas(), { installmentCount: 3 })))
+    return ctx
+  }
+
+  it('mostra o total, o efetivado, o pendente e cada parcela com o estado em palavras', async () => {
+    openPlan()
+    await sheet('Editar lançamento')
+
+    const plan = await screen.findByRole('region', { name: 'Compra parcelada' })
+    expect(plan).toHaveTextContent(/Geladeira: 3 parcelas\. Total R\$\s*999,99 · efetivado R\$\s*333,33 · pendente R\$\s*666,66/)
+    const items = within(screen.getByRole('list', { name: 'Parcelas' })).getAllByRole('listitem')
+    expect(items).toHaveLength(3)
+    expect(items[0]).toHaveTextContent(/1\/3.*Efetivada/)
+    expect(items[1]).toHaveTextContent(/2\/3.*Pendente/)
+  })
+
+  it('cancelar pede confirmação e exclui só as pendentes: avisa quantas e atualiza a lista', async () => {
+    const { api, user } = openPlan()
+    api.on(CANCEL, ok({ cancelled: 2 }))
+    await sheet('Editar lançamento')
+
+    await user.click(await screen.findByRole('button', { name: 'Cancelar parcelas pendentes' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Cancelar as parcelas pendentes?' })
+    expect(confirm).toHaveTextContent('As 2 parcelas pendentes serão excluídas. As efetivadas continuam.')
+    await user.click(within(confirm).getByRole('button', { name: 'Voltar' }))
+    expect(api.callsTo(CANCEL)).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar parcelas pendentes' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Cancelar as parcelas pendentes?' })).getByRole('button', { name: 'Cancelar parcelas' }))
+
+    expect(await screen.findByText('2 parcelas canceladas.')).toBeInTheDocument()
+    expect(api.callsTo(CANCEL)).toHaveLength(1)
+    expect(screen.getByTestId('location').textContent).toBe('/lancamentos')
+  })
+
+  it('sem pendentes não há o que cancelar; o leitor vê o plano e nenhuma ação', async () => {
+    const todas = () => [parcela(1, 'CLEARED'), parcela(2, 'CLEARED'), parcela(3, 'CLEARED')]
+    const done = open('/lancamentos/p2', { initial: todas() })
+    done.api.on(PLAN_GET, ok(makeInstallmentPlan(todas(), { installmentCount: 3 })))
+    await screen.findByRole('region', { name: 'Compra parcelada' })
+    expect(screen.queryByRole('button', { name: 'Cancelar parcelas pendentes' })).toBeNull()
+    done.unmount()
+
+    openPlan('VIEWER')
+    expect(await screen.findByRole('region', { name: 'Compra parcelada' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancelar parcelas pendentes' })).toBeNull()
+  })
+
+  it('um lançamento comum não mostra plano', async () => {
+    open('/lancamentos/tx-lunch', { initial: [lunch()] })
+    await sheet('Editar lançamento')
+    expect(screen.queryByRole('region', { name: 'Compra parcelada' })).toBeNull()
+  })
+
+  it('falha ao carregar o plano: aviso com "Tentar de novo", e o resto da folha segue utilizável', async () => {
+    const { api } = openPlan()
+    api.on(PLAN_GET, networkError())
+    await sheet('Editar lançamento')
+
+    expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument()
+  })
+})
+

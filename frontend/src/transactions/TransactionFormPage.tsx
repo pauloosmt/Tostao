@@ -10,6 +10,7 @@ import { LoadingNote } from '../ui/LoadingNote'
 import { SheetDialog } from '../ui/SheetDialog'
 import { buildInstallmentPurchase } from '../validation/installmentForm'
 import { buildCreateTransaction, buildUpdateTransaction, emptyTransactionForm, transactionToForm } from '../validation/transactionForm'
+import { InstallmentPlan } from './InstallmentPlan'
 import { useSheetContext } from './sheetContext'
 import { TransactionActions } from './TransactionActions'
 import { TransactionDetails } from './TransactionDetails'
@@ -77,6 +78,7 @@ export function TransactionSheet() {
     return (
       <SheetDialog title={transfer ? 'Transferência' : 'Lançamento'} onClose={close}>
         <TransactionDetails transaction={transaction} reference={reference} />
+        {transaction.installmentGroupId ? <InstallmentPlan workspaceId={workspaceId} groupId={transaction.installmentGroupId} canWrite={false} onChanged={changed} /> : null}
       </SheetDialog>
     )
   }
@@ -90,7 +92,12 @@ export function TransactionSheet() {
       reference={reference}
       submitLabel="Salvar"
       onClose={close}
-      after={<TransactionActions workspaceId={workspaceId} transaction={transaction} onChanged={changed} />}
+      after={
+        <>
+          {transaction.installmentGroupId ? <InstallmentPlan workspaceId={workspaceId} groupId={transaction.installmentGroupId} canWrite onChanged={changed} /> : null}
+          <TransactionActions workspaceId={workspaceId} transaction={transaction} onChanged={changed} />
+        </>
+      }
       onSubmit={async (values) => {
         try {
           await updateTransaction(workspaceId, transaction.id, buildUpdateTransaction(values))

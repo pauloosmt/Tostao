@@ -17,5 +17,5 @@ description: "Tarefas da feature 023-frontend-compras-parceladas"
 
 - [X] T001 Base pura e API: `api/installments.ts`, tipos, `validation/installmentForm.ts` (divisão em centavos, datas, validação, corpo do pedido), fixtures, com testes (`SRC/api`, `SRC/validation`, `SRC/test`)
 - [X] T002 A folha de lançar com "Parcelar a compra" (só em despesa nova) e o envio do plano (`SRC/transactions/TransactionForm.tsx`, `TransactionFormPage.tsx`) com testes
-- [ ] T003 O plano e "Cancelar parcelas pendentes" na folha de um lançamento parcelado (`SRC/transactions/InstallmentPlan.tsx`, `TransactionFormPage.tsx`, `TransactionDetails.tsx`) com testes
+- [X] T003 O plano e "Cancelar parcelas pendentes" na folha de um lançamento parcelado (`SRC/transactions/InstallmentPlan.tsx`, `TransactionFormPage.tsx`, `TransactionDetails.tsx`) com testes
 - [ ] T004 Verificação completa, roteiro real contra a API e registro no `quickstart.md`
