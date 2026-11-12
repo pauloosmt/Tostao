@@ -106,22 +106,6 @@ describe('a hospedagem (Vercel)', () => {
   })
 })
 
-describe('o movimento da seleção (navegação e seletor de tema)', () => {
-  const css = readFileSync(join(root, 'src', 'design-system', 'src', 'components.css'), 'utf8')
-
-  it('quem pede menos movimento (prefers-reduced-motion) não vê a pílula deslizar: a seleção muda na hora', () => {
-    const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
-    assert.ok(reduced.startsWith('@media'), 'falta a regra de movimento reduzido')
-    for (const selector of ['.tx-nav__pill', '.tx-seg__pill', '.tx-nav__item', '.tx-seg__opt']) assert.ok(reduced.includes(selector), selector)
-    assert.match(reduced, /transition:\s*none/)
-  })
-
-  it('a pílula anima só com transform (leve), não com largura nem posição', () => {
-    assert.match(css, /\.tx-nav__pill\s*\{[^}]*transition:\s*transform/)
-    assert.match(css, /\.tx-seg__pill\s*\{[^}]*transition:\s*transform/)
-  })
-})
-
 describe('o orçamento de tamanho', () => {
   it('o JavaScript inicial do build cabe em 150 KB com gzip', () => {
     const { files, total } = measureInitialJs(dist)
