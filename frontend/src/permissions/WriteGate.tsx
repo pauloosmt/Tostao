@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Card } from '../design-system/src'
+import { Card, PageHeader } from '../design-system/src'
 import { roleLabel } from '../workspace/roles'
 import { usePermissions } from './usePermissions'
 
@@ -18,7 +18,7 @@ export function WriteGate({ backTo, backLabel, children }: WriteGateProps) {
 
   return (
     <>
-      <h1 className="heading-1">Somente consulta</h1>
+      <PageHeader title="Somente consulta" />
       <Card>
         <div className="stack">
           <p className="text-body">

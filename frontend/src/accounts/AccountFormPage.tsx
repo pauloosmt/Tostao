@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router'
 import { createAccount, getAccount, updateAccount } from '../api/accounts'
 import { ApiError } from '../api/errors'
-import { Card } from '../design-system/src'
+import { Card, PageHeader } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { FAILURE_MESSAGES } from '../forms/apiErrors'
 import { WriteGate } from '../permissions/WriteGate'
@@ -20,7 +20,7 @@ export function NewAccountPage() {
 
   return (
     <WriteGate backTo="/contas" backLabel="Voltar às contas">
-      <h1 className="heading-1">Criar conta</h1>
+      <PageHeader title="Criar conta" />
       <Card>
         {current ? (
           <AccountForm
@@ -68,7 +68,7 @@ function EditAccount({ workspaceId, accountId }: { workspaceId: string; accountI
   if (account.archived) {
     return (
       <>
-        <h1 className="heading-1">{account.name}</h1>
+        <PageHeader title={account.name} />
         <Card title="Conta arquivada">
           <div className="stack">
             <p className="text-body">Restaure a conta antes de editá-la. Pela lista, em "Mostrar arquivadas", escolha "Restaurar".</p>
@@ -83,7 +83,7 @@ function EditAccount({ workspaceId, accountId }: { workspaceId: string; accountI
 
   return (
     <>
-      <h1 className="heading-1">Editar conta</h1>
+      <PageHeader title="Editar conta" />
       <Card>
         <AccountForm
           key={account.id}

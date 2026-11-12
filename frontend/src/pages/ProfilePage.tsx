@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { Alert, Badge, Button, Card, Segmented } from '../design-system/src'
+import { Alert, Badge, Button, Card, Segmented, PageHeader } from '../design-system/src'
 import { useTheme, type ThemeChoice } from '../theme/theme'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { roleLabel } from '../workspace/roles'
@@ -54,7 +54,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <h1 className="heading-1">Perfil</h1>
+      <PageHeader title="Perfil" />
 
       {error ? <Alert tone="danger">{error}</Alert> : null}
 

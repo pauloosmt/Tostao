@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { archiveAccount, balanceReport, listAccounts, restoreAccount } from '../api/accounts'
 import type { Account } from '../api/types'
-import { AccountCard, Alert, Button, Card, StatTile } from '../design-system/src'
+import { AccountCard, Alert, Button, Card, PageHeader, StatTile } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { describeFailure } from '../forms/apiErrors'
 import { useSubmit } from '../forms/useSubmit'
@@ -19,12 +19,19 @@ const RESTORE_CONFLICT = 'Já existe uma conta ativa com este nome. Renomeie a a
 
 export function AccountsPage() {
   const { current } = useWorkspace()
+  const { canWrite } = usePermissions()
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="heading-1">Contas</h1>
-      </div>
+      <PageHeader
+        title="Contas"
+        action={
+          <>
+            <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>
+            {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
+          </>
+        }
+      />
       {current ? <AccountsOf workspaceId={current.id} /> : <Card><p className="text-body">Você não participa de nenhum workspace.</p></Card>}
     </>
   )
@@ -80,7 +87,6 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
 
       <div className="list-toolbar">
         <CheckboxField label="Mostrar arquivadas" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
-        {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
       </div>
 
       {resource.status === 'loading' ? <LoadingNote>Carregando contas…</LoadingNote> : null}

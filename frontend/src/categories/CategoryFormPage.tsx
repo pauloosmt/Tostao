@@ -2,7 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router'
 import { ApiError } from '../api/errors'
 import { createCategory, getCategory, updateCategory } from '../api/categories'
 import type { CategoryKind } from '../api/types'
-import { Card } from '../design-system/src'
+import { Card, PageHeader } from '../design-system/src'
 import { useResource } from '../data/useResource'
 import { WriteGate } from '../permissions/WriteGate'
 import { ButtonLink } from '../ui/ButtonLink'
@@ -25,7 +25,7 @@ export function NewCategoryPage() {
 
   return (
     <WriteGate backTo={BACK} backLabel="Voltar às categorias">
-      <h1 className="heading-1">Criar categoria</h1>
+      <PageHeader title="Criar categoria" />
       <Card>
         {current ? (
           <CategoryForm
@@ -76,7 +76,7 @@ function NewSubcategory({ workspaceId, parentId }: { workspaceId: string; parent
   if (parent.archived) {
     return (
       <>
-        <h1 className="heading-1">{parent.name}</h1>
+        <PageHeader title={parent.name} />
         <Card title="Categoria arquivada">
           <div className="stack">
             <p className="text-body">Restaure a categoria principal antes de criar subcategorias nela.</p>
@@ -93,7 +93,7 @@ function NewSubcategory({ workspaceId, parentId }: { workspaceId: string; parent
 
   return (
     <>
-      <h1 className="heading-1">Nova subcategoria</h1>
+      <PageHeader title="Nova subcategoria" />
       <p className="text-body muted">Em {parent.name}</p>
       <Card>
         <CategoryForm
@@ -142,7 +142,7 @@ function EditCategory({ workspaceId, categoryId }: { workspaceId: string; catego
   if (category.archived) {
     return (
       <>
-        <h1 className="heading-1">{category.name}</h1>
+        <PageHeader title={category.name} />
         <Card title={isSub ? 'Subcategoria arquivada' : 'Categoria arquivada'}>
           <div className="stack">
             <p className="text-body">Restaure {isSub ? 'a subcategoria' : 'a categoria'} antes de editá-la. Pela lista, em "Mostrar arquivadas", escolha "Restaurar".</p>
@@ -159,7 +159,7 @@ function EditCategory({ workspaceId, categoryId }: { workspaceId: string; catego
 
   return (
     <>
-      <h1 className="heading-1">{isSub ? 'Editar subcategoria' : 'Editar categoria'}</h1>
+      <PageHeader title={isSub ? 'Editar subcategoria' : 'Editar categoria'} />
       <Card>
         <CategoryForm
           key={category.id}

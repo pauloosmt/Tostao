@@ -1,5 +1,5 @@
 import type { Transaction } from '../api/types'
-import { Badge, Card, Money } from '../design-system/src'
+import { Badge, Card, Money, PageHeader } from '../design-system/src'
 import { formatDate } from '../dates/dates'
 import { ButtonLink } from '../ui/ButtonLink'
 import type { ReferenceData } from './reference'
@@ -23,7 +23,7 @@ export function TransactionDetails({ transaction, reference, title }: Transactio
 
   return (
     <>
-      <h1 className="heading-1">{title}</h1>
+      <PageHeader title={title} />
       <Card>
         <div className="stack">
           <p className="text-body-sm muted">{row.description}</p>

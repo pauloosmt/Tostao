@@ -1,4 +1,4 @@
-import { Card } from '../design-system/src'
+import { Card, PageHeader } from '../design-system/src'
 import { ButtonLink } from './ButtonLink'
 
 /**
@@ -8,7 +8,7 @@ import { ButtonLink } from './ButtonLink'
 export function MissingItem({ title, backTo, backLabel }: { title: string; backTo: string; backLabel: string }) {
   return (
     <>
-      <h1 className="heading-1">{title}</h1>
+      <PageHeader title={title} />
       <Card>
         <div className="stack">
           <p className="text-body">Ela não existe neste workspace ou foi removida.</p>

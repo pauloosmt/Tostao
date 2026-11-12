@@ -19,7 +19,7 @@ description: "Tarefas da feature 018-frontend-redesign"
 
 - [X] T001 Design system: fontes pelo `@fontsource`, `TransactionRow` como botão com `tags`, tipo desconhecido de conta; testes de Nav, Segmented, AccountCard e dos componentes novos (`design-system/src/**`)
 - [X] T002 Entrar e criar conta com `WalletGate` (`SRC/pages/LoginPage.tsx`, `RegisterPage.tsx`, estilos e testes ajustados)
-- [ ] T003 Moldura: navegação com lançar e usuário, `PageHeader` em cada tela, atalho para Categorias em Contas (`SRC/layout/AppShell.tsx`, páginas, `styles/app.css`)
+- [X] T003 Moldura: navegação com lançar e usuário, `PageHeader` em cada tela, atalho para Categorias em Contas (`SRC/layout/AppShell.tsx`, páginas, `styles/app.css`)
 - [ ] T004 Início com a Carteira: saldo total, estado vazio, contas (`SRC/pages/HomePage.tsx`)
 - [ ] T005 Folha de lançar: contexto `useLaunch`, `LaunchSheet` (dialog + Sheet), tecla N, formulário com `AmountInput`, `OptionTile`, `CoinPicker`; sai a rota `/lancamentos/novo` (`SRC/transactions/*`, `layout/AppShell.tsx`)
 - [ ] T006 Editar, efetivar e excluir na folha; leitor vê os detalhes (`SRC/transactions/*`)
