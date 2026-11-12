@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { cx } from './utils';
 
 export interface SegmentedProps<T extends string = string> {
@@ -10,8 +11,12 @@ export interface SegmentedProps<T extends string = string> {
 }
 
 export function Segmented<T extends string = string>({ label, value, options, onChange, className }: SegmentedProps<T>) {
+  const index = options.findIndex((o) => o.value === value);
+  const track = { '--tx-index': Math.max(index, 0), '--tx-count': options.length } as CSSProperties;
   return (
-    <div className={cx('tx-seg', className)} role="radiogroup" aria-label={label}>
+    <div className={cx('tx-seg', className)} style={track} role="radiogroup" aria-label={label}>
+      {/* A pílula desliza até a opção escolhida (só decoração: o estado vai em aria-checked). */}
+      <span className={cx('tx-seg__pill', index < 0 && 'is-hidden')} aria-hidden="true" />
       {options.map((o) => {
         const on = o.value === value;
         return (

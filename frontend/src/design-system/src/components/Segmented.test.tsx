@@ -10,6 +10,8 @@ const options = [
   { value: 'light', label: 'Claro' },
   { value: 'dark', label: 'Escuro' },
 ]
+const pill = (container: HTMLElement) => container.querySelector('.tx-seg__pill') as HTMLElement
+const group = (container: HTMLElement) => container.querySelector('.tx-seg') as HTMLElement
 
 function Controlled() {
   const [value, setValue] = useState('system')
@@ -26,6 +28,22 @@ describe('Segmented', () => {
 
     expect(screen.getByRole('radio', { name: 'Escuro' })).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Sistema' })).not.toBeChecked()
+  })
+
+  it('a pílula desliza até a opção escolhida (sempre o mesmo elemento), é decoração e some sem opção escolhida', async () => {
+    const user = userEvent.setup()
+    const { container, rerender } = render(<Controlled />)
+    const first = pill(container)
+    expect(group(container).style.getPropertyValue('--tx-index')).toBe('0')
+    expect(group(container).style.getPropertyValue('--tx-count')).toBe('3')
+    expect(first).toHaveAttribute('aria-hidden', 'true')
+
+    await user.click(screen.getByRole('radio', { name: 'Escuro' }))
+    expect(group(container).style.getPropertyValue('--tx-index')).toBe('2')
+    expect(pill(container)).toBe(first)
+
+    rerender(<Segmented label="Tema" value="nenhum" options={options} />)
+    expect(pill(container)).toHaveClass('is-hidden')
   })
 
   it('passa no axe', async () => {

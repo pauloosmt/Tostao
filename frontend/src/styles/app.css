@@ -74,6 +74,9 @@ h1, h2, h3, p { margin: 0; }
 .app-shell__main:focus { outline: none; } /* o foco programático ao trocar de tela não desenha contorno */
 .app-shell--side .app-shell__main { padding: var(--space-6) var(--space-6); }
 
+/* O seletor de uma tela (Mensal | Semanal) tem o tamanho das opções, não a largura da tela */
+.app-shell__main > .tx-seg { justify-self: start; }
+
 /* Listas (contas, categorias) */
 .page-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
