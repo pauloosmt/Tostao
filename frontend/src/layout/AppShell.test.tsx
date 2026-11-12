@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Role } from '../api/types'
 import { expectNoSeriousViolations } from '../test/axe'
@@ -24,7 +24,7 @@ describe('a navegação', () => {
     await open(500)
 
     expect(nav()).toHaveClass('tx-nav--bottom')
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Início', 'Lançamentos', 'Contas', 'Perfil'])
+    expect(within(nav()).getAllByRole('link').map((link) => link.textContent)).toEqual(['Início', 'Lançamentos', 'Contas', 'Perfil'])
     expect(screen.getByRole('button', { name: 'Novo lançamento' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
   })
