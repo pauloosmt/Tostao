@@ -57,7 +57,7 @@ export function AppShell() {
   }, [canWrite, navigate])
 
   const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
-  const active = inSection('/perfil') ? 'perfil' : inSection('/lancamentos') ? 'lancamentos' : inSection('/contas') ? 'contas' : inSection('/orcamentos') ? 'orcamentos' : inSection('/recorrencias') ? 'recorrencias' : inSection('/categorias') ? 'categorias' : 'inicio'
+  const active = inSection('/perfil') || inSection('/membros') ? 'perfil' : inSection('/lancamentos') ? 'lancamentos' : inSection('/contas') ? 'contas' : inSection('/orcamentos') ? 'orcamentos' : inSection('/recorrencias') ? 'recorrencias' : inSection('/categorias') ? 'categorias' : 'inicio'
   const go = (to: string) => void navigate(to)
   const user = state.status === 'authenticated' ? { name: state.me.name, sub: current?.name, href: '/perfil' } : undefined
   const nav = (

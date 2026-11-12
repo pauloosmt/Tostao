@@ -209,3 +209,10 @@ h1, h2, h3, p { margin: 0; }
 .category-preview { display: flex; align-items: center; gap: var(--space-4); padding: 18px 20px; border-radius: var(--radius-lg); background: var(--brand-tint); }
 .category-preview p { margin: 0; }
 .category-preview .muted { margin-top: 2px; }
+
+/* Membros */
+.member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.member-row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface-200); }
+.member-row__main { flex: 1; min-width: 200px; }
+.member-row__main p { margin: 0; }
+.tile-row--two { grid-template-columns: repeat(2, 1fr); }

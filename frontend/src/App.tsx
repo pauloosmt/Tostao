@@ -10,6 +10,7 @@ import { useAuth } from './auth/useAuth'
 import { NewTransactionSheet, TransactionSheet } from './transactions/TransactionFormPage'
 import { TransactionsPage } from './transactions/TransactionsPage'
 import { Logo } from './design-system/src'
+import { MembersPage } from './members/MembersPage'
 import { HomePage } from './pages/HomePage'
 import { RecurrencesPage } from './recurrences/RecurrencesPage'
 import { RecurrenceDetailSheet } from './recurrences/RecurrenceDetailSheet'
@@ -61,6 +62,7 @@ export function App() {
           <Route path="nova" element={<NewRecurrenceSheet />} />
           <Route path=":id" element={<RecurrenceDetailSheet />} />
         </Route>
+        <Route path="membros" element={<MembersPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

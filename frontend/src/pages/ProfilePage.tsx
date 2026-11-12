@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { Alert, Avatar, Badge, Button, Card, Segmented, PageHeader } from '../design-system/src'
 import { useTheme, type ThemeChoice } from '../theme/theme'
+import { ButtonLink } from '../ui/ButtonLink'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { roleLabel } from '../workspace/roles'
 import { useWorkspace } from '../workspace/useWorkspace'
@@ -83,6 +84,7 @@ export function ProfilePage() {
                     {isCurrent ? <Badge tone="brand">Atual</Badge> : null}
                   </div>
                 </div>
+                {isCurrent ? <ButtonLink size="sm" variant="secondary" to="/membros">Membros</ButtonLink> : null}
                 {workspaces.length > 1 && !isCurrent ? (
                   <Button variant="secondary" size="sm" aria-label={`Usar ${workspace.name}`} onClick={() => select(workspace.id)}>
                     Usar este
