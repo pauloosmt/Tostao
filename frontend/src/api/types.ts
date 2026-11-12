@@ -248,10 +248,25 @@ export interface BudgetItem {
   status: BudgetStatus
 }
 
+/** O que a API devolve do mês (`month`) e da semana (`week`); a tela usa o formato único `PeriodBudget`. */
 export interface MonthBudget {
   month: { id: string; startDate: string; endDate: string }
   totalSpentCents: number
   /** O gasto que nenhum limite de categoria cobre. */
+  spentOutsideCategoryLimitsCents: number
+  budgets: BudgetItem[]
+}
+
+export interface WeekBudget {
+  week: { id: string; startDate: string; endDate: string }
+  totalSpentCents: number
+  spentOutsideCategoryLimitsCents: number
+  budgets: BudgetItem[]
+}
+
+export interface PeriodBudget {
+  period: { id: string; startDate: string; endDate: string }
+  totalSpentCents: number
   spentOutsideCategoryLimitsCents: number
   budgets: BudgetItem[]
 }

@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, Invoice, Me, MonthBudget, Role, Transaction } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, Invoice, Me, MonthBudget, Role, Transaction, WeekBudget } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -126,6 +126,16 @@ export function makeBudgetItem(extra: Partial<BudgetItem> = {}): BudgetItem {
     remainingCents: 100000,
     percentUsed: 0,
     status: 'WITHIN',
+    ...extra,
+  }
+}
+
+export function makeWeekBudget(budgets: BudgetItem[] = [], extra: Partial<WeekBudget> = {}): WeekBudget {
+  return {
+    week: { id: '2026-W46', startDate: '2026-11-09', endDate: '2026-11-15' },
+    totalSpentCents: 0,
+    spentOutsideCategoryLimitsCents: 0,
+    budgets,
     ...extra,
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { defineMonthlyBudget, updateMonthlyBudget } from '../api/budgets'
+import { definePeriodBudget, updatePeriodBudget, type BudgetPeriodKind } from '../api/budgets'
 import type { BudgetItem } from '../api/types'
 import { Alert, Button } from '../design-system/src'
 import { describeFailure, type Failure } from '../forms/apiErrors'
@@ -9,7 +9,6 @@ import { AmountField } from '../ui/AmountField'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { SelectField } from '../ui/SelectField'
 import { SheetDialog } from '../ui/SheetDialog'
-import { monthLabel } from '../dates/months'
 
 type Field = 'category' | 'amount'
 const API_FIELDS: Record<string, Field> = { categoryId: 'category', amountCents: 'amount' }
@@ -17,7 +16,11 @@ const AMOUNT_ID = 'budget-amount'
 
 export interface BudgetSheetProps {
   workspaceId: string
-  month: string
+  kind: BudgetPeriodKind
+  /** O período do limite: `AAAA-MM` ou `AAAA-Www`. */
+  period: string
+  /** O período por extenso, para a pessoa ver de qual é o limite. */
+  periodLabel: string
   /** Sem `item`: um limite novo; com `item`: o novo valor dele (o escopo não muda). */
   item?: BudgetItem
   /** As categorias de despesa ativas, para o limite novo. */
@@ -28,7 +31,7 @@ export interface BudgetSheetProps {
 }
 
 /** A folha de um limite do mês: a categoria (ou o geral) e o valor, em reais. */
-export function BudgetSheet({ workspaceId, month, item, categories, onClose, onSaved }: BudgetSheetProps) {
+export function BudgetSheet({ workspaceId, kind, period, periodLabel, item, categories, onClose, onSaved }: BudgetSheetProps) {
   const [categoryId, setCategoryId] = useState('')
   const [amount, setAmount] = useState(item ? formatReaisInput(item.amountCents) : '')
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
@@ -46,8 +49,8 @@ export function BudgetSheet({ workspaceId, month, item, categories, onClose, onS
     setErrors({})
     await run(async () => {
       try {
-        if (item) await updateMonthlyBudget(workspaceId, item.id, parsed.cents)
-        else await defineMonthlyBudget(workspaceId, { month, ...(categoryId ? { categoryId } : {}), amountCents: parsed.cents })
+        if (item) await updatePeriodBudget(workspaceId, kind, item.id, parsed.cents)
+        else await definePeriodBudget(workspaceId, kind, { period, ...(categoryId ? { categoryId } : {}), amountCents: parsed.cents })
         onSaved(item ? 'Limite atualizado.' : 'Limite salvo.')
       } catch (error) {
         const described = describeFailure<Field>(error, { fieldMap: API_FIELDS })
@@ -70,7 +73,7 @@ export function BudgetSheet({ workspaceId, month, item, categories, onClose, onS
       }
     >
       {failure?.general ? failure.retry ? <ErrorNotice onRetry={() => void submit()}>{failure.general}</ErrorNotice> : <Alert tone="danger">{failure.general}</Alert> : null}
-      <p className="text-body-sm muted">{monthLabel(month)}</p>
+      <p className="text-body-sm muted">{periodLabel}</p>
       {item ? (
         <p className="text-body">{item.categoryName ?? 'Limite geral (todas as despesas)'}</p>
       ) : (
@@ -83,7 +86,7 @@ export function BudgetSheet({ workspaceId, month, item, categories, onClose, onS
           error={errors.category}
         />
       )}
-      <AmountField id={AMOUNT_ID} kind="expense" label="Limite do mês" value={amount} onChange={setAmount} error={errors.amount} />
+      <AmountField id={AMOUNT_ID} kind="expense" label={kind === 'month' ? 'Limite do mês' : 'Limite da semana'} value={amount} onChange={setAmount} error={errors.amount} />
     </SheetDialog>
   )
 }

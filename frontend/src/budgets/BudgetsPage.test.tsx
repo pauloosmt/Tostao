@@ -1,9 +1,10 @@
 import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { currentMonth, monthLabel, shiftMonth } from '../dates/months'
+import { currentWeek, shiftWeek, weekLabel } from '../dates/weeks'
 import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, networkError, ok, problem, wsRoute } from '../test/fakeApi'
-import { WID, makeBudgetItem, makeCategory, makeCategoryTree, makeMe, makeMonthBudget } from '../test/fixtures'
+import { WID, makeBudgetItem, makeCategory, makeCategoryTree, makeMe, makeMonthBudget, makeWeekBudget } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 const MES = currentMonth()
@@ -187,6 +188,114 @@ describe('definir, editar, remover e copiar', () => {
 
   it('o leitor vê tudo e nenhuma ação', async () => {
     open(undefined, 'VIEWER')
+
+    expect(await screen.findByRole('progressbar', { name: 'Mercado' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Novo limite|Copiar|Editar limite|Remover limite/ })).toBeNull()
+  })
+})
+
+describe('os limites semanais', () => {
+  const SEMANA = currentWeek()
+  const ANTES_SEMANA = shiftWeek(SEMANA, -1) as string
+  const WROUTE = wsRoute('GET', WID, '/budgets')
+  const semanal = makeWeekBudget([makeBudgetItem({ id: 'w-mercado', categoryId: 'c-mercado', categoryName: 'Mercado', amountCents: 20000, spentCents: 5000, remainingCents: 15000, percentUsed: 25 })], { totalSpentCents: 5000 })
+
+  function openWeekly(role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'OWNER') {
+    const api = fakeApi({
+      'GET /api/v1/me': ok(makeMe(role)),
+      [ROUTE]: ok(makeMonthBudget([geral])),
+      [WROUTE]: ok(semanal),
+      [wsRoute('GET', WID, '/categories')]: ok(categorias),
+    })
+    return { api, ...renderApp(['/orcamentos']) }
+  }
+
+  it('"Semanal" mostra a semana corrente com os limites semanais; voltar a "Mensal" mostra o mês', async () => {
+    const { api, user } = openWeekly()
+    await screen.findByRole('progressbar', { name: 'Todas as despesas' })
+
+    await user.click(await screen.findByRole('radio', { name: 'Semanal' }))
+
+    expect(await screen.findByRole('progressbar', { name: 'Mercado' })).toBeInTheDocument()
+    expect(screen.getByText(weekLabel(SEMANA))).toBeInTheDocument()
+    expect(screen.getByText('Limites de gasto da semana')).toBeInTheDocument()
+    expect(screen.getByText(/Total gasto na semana: R\$\s*50,00/)).toBeInTheDocument()
+    expect(api.callsTo(WROUTE).map((call) => call.path.split('week=')[1])).toEqual([SEMANA])
+
+    await user.click(screen.getByRole('radio', { name: 'Mensal' }))
+    expect(await screen.findByRole('progressbar', { name: 'Todas as despesas' })).toBeInTheDocument()
+    expect(screen.getByText(monthLabel(MES))).toBeInTheDocument()
+  })
+
+  it('a semana anterior consulta a semana certa e nunca mostra a outra no lugar', async () => {
+    let release!: () => void
+    const wait = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { api, user } = openWeekly()
+    api.on(WROUTE, async (call) => {
+      if (call.path.includes(`week=${ANTES_SEMANA}`)) await wait
+      return ok(semanal)
+    })
+    await user.click(await screen.findByRole('radio', { name: 'Semanal' }))
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+
+    await user.click(screen.getByRole('button', { name: 'Semana anterior' }))
+
+    expect(screen.getByText(weekLabel(ANTES_SEMANA))).toBeInTheDocument()
+    expect(screen.getByText('Carregando o orçamento da semana…')).toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    await act(async () => release())
+    expect(await screen.findByRole('progressbar', { name: 'Mercado' })).toBeInTheDocument()
+  })
+
+  it('um limite novo da semana vai para a rota semanal com o campo "week"; copiar aceita até 52 semanas', async () => {
+    const { api, user } = openWeekly()
+    const put = wsRoute('PUT', WID, '/budgets')
+    const copy = wsRoute('POST', WID, '/budgets/copy')
+    api.on(put, ok({ id: 'novo', month: SEMANA, categoryId: 'c-mercado', categoryName: 'Mercado', amountCents: 25000 }, 201))
+    api.on(copy, ok({ created: 1, skippedExisting: 0, skippedArchivedCategory: 0 }))
+    await user.click(await screen.findByRole('radio', { name: 'Semanal' }))
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+
+    await user.click(screen.getByRole('button', { name: 'Novo limite' }))
+    await user.selectOptions(await screen.findByLabelText('Categoria'), 'c-mercado')
+    await user.type(screen.getByLabelText('Limite da semana'), '250')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Limite salvo.')).toBeInTheDocument()
+    expect(api.callsTo(put)[0].body).toEqual({ week: SEMANA, categoryId: 'c-mercado', amountCents: 25000 })
+
+    await user.click(screen.getByRole('button', { name: 'Copiar para as próximas semanas' }))
+    const weeks = await screen.findByLabelText('Quantas semanas')
+    await user.clear(weeks)
+    await user.type(weeks, '53')
+    await user.click(screen.getByRole('button', { name: 'Copiar limites' }))
+    expect(await screen.findByText('Informe de 1 a 52 semanas.')).toBeInTheDocument()
+    await user.clear(weeks)
+    await user.type(weeks, '4')
+    await user.click(screen.getByRole('button', { name: 'Copiar limites' }))
+
+    expect(await screen.findByText('1 limite criado.')).toBeInTheDocument()
+    expect(api.callsTo(copy)[0].body).toEqual({ fromWeek: SEMANA, weeks: 4 })
+  })
+
+  it('remover e editar usam a rota semanal; o leitor não tem ações', async () => {
+    const { api, user } = openWeekly()
+    const del = wsRoute('DELETE', WID, '/budgets/w-mercado')
+    api.on(del, () => ({ status: 204 }) as never)
+    await user.click(await screen.findByRole('radio', { name: 'Semanal' }))
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+
+    await user.click(screen.getByRole('button', { name: 'Remover limite de Mercado' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Remover este limite?' })).getByRole('button', { name: 'Remover' }))
+
+    expect(await screen.findByText('Limite removido.')).toBeInTheDocument()
+    expect(api.callsTo(del)).toHaveLength(1)
+  })
+
+  it('o leitor vê a semana e nenhuma ação', async () => {
+    const { user } = openWeekly('VIEWER')
+    await user.click(await screen.findByRole('radio', { name: 'Semanal' }))
 
     expect(await screen.findByRole('progressbar', { name: 'Mercado' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Novo limite|Copiar|Editar limite|Remover limite/ })).toBeNull()
