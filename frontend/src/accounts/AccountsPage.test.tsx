@@ -5,6 +5,7 @@ import { formatBRL } from '../design-system/src'
 import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, networkError, ok, problem, wsRoute } from '../test/fakeApi'
 import { WID, makeAccount, makeBalanceReport, makeMe } from '../test/fixtures'
+import { setViewportWidth } from '../test/media'
 import { renderApp } from '../test/renderApp'
 
 // Os centavos de valores grandes ficam num span à parte; o espaço do real é não separável.
@@ -223,5 +224,20 @@ describe('a navegação e a acessibilidade', () => {
     failing.api.on(wsRoute('GET', WID, '/accounts'), networkError())
     await screen.findByRole('alert')
     await expectNoSeriousViolations(failing.container)
+  })
+})
+
+describe('o atalho para as categorias', () => {
+  it('no celular a tela de contas oferece o atalho (o menu de baixo não tem Categorias); no desktop não, o menu lateral já tem', async () => {
+    setViewportWidth(500)
+    const phone = open([carteira])
+    await screen.findByRole('list', { name: 'Contas' })
+    expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute('href', '/categorias')
+    phone.unmount()
+
+    setViewportWidth(1280)
+    open([carteira])
+    await screen.findByRole('list', { name: 'Contas' })
+    expect(screen.getAllByRole('link', { name: 'Categorias' })).toHaveLength(1) // só o do menu lateral
   })
 })

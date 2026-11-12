@@ -6,6 +6,7 @@ import { AccountCard, Alert, Button, Card, PageHeader, StatTile } from '../desig
 import { useResource } from '../data/useResource'
 import { describeFailure } from '../forms/apiErrors'
 import { useSubmit } from '../forms/useSubmit'
+import { useMediaQuery } from '../layout/useMediaQuery'
 import { usePermissions } from '../permissions/usePermissions'
 import { ButtonLink } from '../ui/ButtonLink'
 import { CheckboxField } from '../ui/CheckboxField'
@@ -20,6 +21,8 @@ const RESTORE_CONFLICT = 'Já existe uma conta ativa com este nome. Renomeie a a
 export function AccountsPage() {
   const { current } = useWorkspace()
   const { canWrite } = usePermissions()
+  // Na barra de baixo (celular) não cabe o item Categorias: o atalho fica aqui. No menu lateral ele já existe.
+  const wide = useMediaQuery('(min-width: 960px)')
 
   return (
     <>
@@ -27,7 +30,7 @@ export function AccountsPage() {
         title="Contas"
         action={
           <>
-            <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>
+            {wide ? null : <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>}
             {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
           </>
         }

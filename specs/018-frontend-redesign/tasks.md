@@ -25,4 +25,4 @@ description: "Tarefas da feature 018-frontend-redesign"
 - [X] T006 Editar, efetivar e excluir na folha; leitor vê os detalhes (`SRC/transactions/*`)
 - [X] T007 Lista de lançamentos: cabeçalho, moedas, tostão, filtros numa folha (`SRC/transactions/TransactionsPage.tsx`, `TransactionFilters.tsx`)
 - [X] T008 Contas, categorias e perfil com cabeçalho, moedas e avatar (`SRC/accounts/*`, `categories/*`, `pages/ProfilePage.tsx`)
-- [ ] T009 Verificação completa (`npm run verify`), orçamento, roteiro no navegador e registro no `quickstart.md`; marcar o que falta
+- [X] T009 Verificação completa (`npm run verify`), orçamento, roteiro no navegador e registro no `quickstart.md`; marcar o que falta

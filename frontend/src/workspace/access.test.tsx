@@ -45,7 +45,7 @@ describe('o papel vale por workspace', () => {
     expect(screen.getByRole('link', { name: 'Criar conta' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Editar Carteira da Casa' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Viagem' }))
     await user.click(screen.getByRole('link', { name: 'Contas' }))
 
@@ -74,7 +74,7 @@ describe('trocar de workspace', () => {
     const { api, user } = openApp(['/contas'])
     await screen.findByText('Carteira da Casa')
 
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Viagem' }))
     await user.click(screen.getByRole('link', { name: 'Contas' }))
 
@@ -92,12 +92,12 @@ describe('trocar de workspace', () => {
   it('voltar ao workspace anterior mostra os dados dele de novo (consultados outra vez, sem cache entre workspaces)', async () => {
     const { api, user } = openApp(['/contas'])
     await screen.findByText('Carteira da Casa')
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Viagem' }))
     await user.click(screen.getByRole('link', { name: 'Contas' }))
     await screen.findByText('Dólares da Viagem')
 
-    await user.click(screen.getByRole('link', { name: 'Perfil' }))
+    await user.click(screen.getByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Casa' }))
     await user.click(screen.getByRole('link', { name: 'Contas' }))
 
@@ -116,7 +116,7 @@ describe('trocar de workspace', () => {
       [wsRoute('GET', CASA, '/accounts')]: async () => (await wait, ok([contaDaCasa])),
     })
     // a lista da Casa ainda está carregando: a pessoa vai ao perfil, troca de workspace e abre as contas do outro
-    await user.click(await screen.findByRole('link', { name: 'Perfil' }))
+    await user.click(await screen.findByRole('link', { name: /Ana Maria/ }))
     await user.click(await screen.findByRole('button', { name: 'Usar Viagem' }))
     await user.click(screen.getByRole('link', { name: 'Contas' }))
     await screen.findByText('Dólares da Viagem')
