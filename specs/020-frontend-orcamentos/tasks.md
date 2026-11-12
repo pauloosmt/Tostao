@@ -17,5 +17,5 @@ description: "Tarefas da feature 020-frontend-orcamentos"
 
 - [X] T001 API e tipos: `api/budgets.ts`, tipos do acompanhamento, fixture `makeMonthBudget` (`SRC/api`, `SRC/test`)
 - [X] T002 A tela `/orcamentos`: seletor de mês, limite geral, limites por categoria, total e fora dos limites, estados, item no menu e atalho em Contas (`SRC/budgets/*`, `SRC/App.tsx`, `SRC/layout/AppShell.tsx`, `SRC/accounts/AccountsPage.tsx`)
-- [ ] T003 Definir, editar, remover e copiar limites em folhas, com os papéis (`SRC/budgets/*`)
+- [X] T003 Definir, editar, remover e copiar limites em folhas, com os papéis (`SRC/budgets/*`)
 - [ ] T004 Verificação completa, roteiro real contra a API e registro no `quickstart.md`

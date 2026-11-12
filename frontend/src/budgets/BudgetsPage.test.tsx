@@ -2,8 +2,8 @@ import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { currentMonth, monthLabel, shiftMonth } from '../dates/months'
 import { expectNoSeriousViolations } from '../test/axe'
-import { fakeApi, networkError, ok, wsRoute } from '../test/fakeApi'
-import { WID, makeBudgetItem, makeMe, makeMonthBudget } from '../test/fixtures'
+import { fakeApi, networkError, ok, problem, wsRoute } from '../test/fakeApi'
+import { WID, makeBudgetItem, makeCategory, makeCategoryTree, makeMe, makeMonthBudget } from '../test/fixtures'
 import { renderApp } from '../test/renderApp'
 
 const MES = currentMonth()
@@ -15,8 +15,15 @@ const mercado = makeBudgetItem({ id: 'b-mercado', categoryId: 'c-mercado', categ
 const lazer = makeBudgetItem({ id: 'b-lazer', categoryId: 'c-lazer', categoryName: 'Lazer', amountCents: 20000, spentCents: 24000, remainingCents: -4000, percentUsed: 120, status: 'EXCEEDED' })
 const antiga = makeBudgetItem({ id: 'b-antiga', categoryId: 'c-antiga', categoryName: 'Antiga', categoryArchived: true, amountCents: 10000, spentCents: 0, remainingCents: 10000, percentUsed: 0 })
 
-function open(handler = ok(makeMonthBudget([geral, mercado, lazer, antiga], { totalSpentCents: 212000, spentOutsideCategoryLimitsCents: 20000 }))) {
-  const api = fakeApi({ 'GET /api/v1/me': ok(makeMe('OWNER')), [ROUTE]: handler })
+const categorias = [
+  makeCategoryTree({ id: 'c-mercado', name: 'Mercado', kind: 'EXPENSE' }, [makeCategory({ id: 'c-feira', name: 'Feira' })]),
+  makeCategoryTree({ id: 'c-sal', name: 'Salário', kind: 'INCOME' }),
+]
+const PUT = wsRoute('PUT', WID, '/monthly-budgets')
+const COPY = wsRoute('POST', WID, '/monthly-budgets/copy')
+
+function open(handler = ok(makeMonthBudget([geral, mercado, lazer, antiga], { totalSpentCents: 212000, spentOutsideCategoryLimitsCents: 20000 })), role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'OWNER') {
+  const api = fakeApi({ 'GET /api/v1/me': ok(makeMe(role)), [ROUTE]: handler, [wsRoute('GET', WID, '/categories')]: ok(categorias) })
   return { api, ...renderApp(['/orcamentos']) }
 }
 
@@ -69,5 +76,119 @@ describe('o orçamento do mês', () => {
     open(networkError() as never)
 
     expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+  })
+})
+
+describe('definir, editar, remover e copiar', () => {
+  it('um limite novo: escolhe só categorias de despesa ativas, envia o valor em centavos e a tela se atualiza', async () => {
+    const { api, user } = open()
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+    api.on(PUT, ok({ id: 'novo', month: MES, categoryId: 'c-feira', categoryName: 'Mercado › Feira', amountCents: 15050 }, 201))
+
+    await user.click(screen.getByRole('button', { name: 'Novo limite' }))
+    const category = await screen.findByLabelText('Categoria')
+    expect(Array.from(category.querySelectorAll('option')).map((o) => o.textContent)).toEqual(['Geral (todas as despesas)', 'Mercado', 'Mercado › Feira'])
+    await user.selectOptions(category, 'c-feira')
+    await user.type(screen.getByLabelText('Limite do mês'), '150,50')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Limite salvo.')).toBeInTheDocument()
+    expect(api.callsTo(PUT)[0].body).toEqual({ month: MES, categoryId: 'c-feira', amountCents: 15050 })
+    expect(screen.queryByLabelText('Limite do mês')).toBeNull()
+    expect(api.callsTo(ROUTE)).toHaveLength(2) // a lista recarregou
+  })
+
+  it('o limite geral não envia categoria; valor vazio pede o valor e nada é enviado; zero é aceito', async () => {
+    const { api, user } = open()
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+    api.on(PUT, ok({ id: 'g', month: MES, categoryId: null, categoryName: null, amountCents: 0 }))
+    await user.click(screen.getByRole('button', { name: 'Novo limite' }))
+
+    await user.click(await screen.findByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Informe o valor do limite.')).toBeInTheDocument()
+    expect(api.callsTo(PUT)).toHaveLength(0)
+
+    await user.type(screen.getByLabelText('Limite do mês'), '0')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Limite salvo.')).toBeInTheDocument()
+    expect(api.callsTo(PUT)[0].body).toEqual({ month: MES, amountCents: 0 })
+  })
+
+  it('uma recusa da API aparece como ela disse e o valor digitado fica', async () => {
+    const { api, user } = open()
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+    api.on(PUT, problem(409, 'Conflito', { detail: 'A categoria está arquivada' }))
+    await user.click(screen.getByRole('button', { name: 'Novo limite' }))
+
+    await user.type(await screen.findByLabelText('Limite do mês'), '10')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('A categoria está arquivada')
+    expect(screen.getByLabelText('Limite do mês')).toHaveValue('10,00')
+  })
+
+  it('editar troca só o valor (com o valor atual preenchido)', async () => {
+    const { api, user } = open()
+    const put = wsRoute('PUT', WID, '/monthly-budgets/b-mercado')
+    api.on(put, ok({ id: 'b-mercado', month: MES, categoryId: 'c-mercado', categoryName: 'Mercado', amountCents: 90000 }))
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+
+    await user.click(screen.getByRole('button', { name: 'Editar limite de Mercado' }))
+    const amount = await screen.findByLabelText('Limite do mês')
+    expect(amount).toHaveValue('800,00')
+    await user.clear(amount)
+    await user.type(amount, '900')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Limite atualizado.')).toBeInTheDocument()
+    expect(api.callsTo(put)[0].body).toEqual({ amountCents: 90000 })
+  })
+
+  it('remover pede confirmação: cancelar não remove, confirmar remove e a lista recarrega', async () => {
+    const { api, user } = open()
+    const del = wsRoute('DELETE', WID, '/monthly-budgets/b-lazer')
+    api.on(del, () => ({ status: 204 }) as never)
+    await screen.findByRole('progressbar', { name: 'Lazer' })
+
+    await user.click(screen.getByRole('button', { name: 'Remover limite de Lazer' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Remover este limite?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Cancelar' }))
+    expect(api.callsTo(del)).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Remover limite de Lazer' }))
+    await user.click(within(await screen.findByRole('dialog', { name: 'Remover este limite?' })).getByRole('button', { name: 'Remover' }))
+
+    expect(await screen.findByText('Limite removido.')).toBeInTheDocument()
+    expect(api.callsTo(del)).toHaveLength(1)
+    expect(api.callsTo(ROUTE)).toHaveLength(2)
+  })
+
+  it('copiar: pede de 1 a 24 meses e conta o que foi criado, o que já existia e o que foi ignorado', async () => {
+    const { api, user } = open()
+    api.on(COPY, ok({ created: 3, skippedExisting: 1, skippedArchivedCategory: 2 }))
+    await screen.findByRole('progressbar', { name: 'Mercado' })
+
+    await user.click(screen.getByRole('button', { name: 'Copiar para os próximos meses' }))
+    const months = await screen.findByLabelText('Quantos meses')
+    await user.clear(months)
+    await user.type(months, '25')
+    await user.click(screen.getByRole('button', { name: 'Copiar limites' }))
+    expect(await screen.findByText('Informe de 1 a 24 meses.')).toBeInTheDocument()
+    expect(api.callsTo(COPY)).toHaveLength(0)
+
+    await user.clear(months)
+    await user.type(months, '6')
+    await user.click(screen.getByRole('button', { name: 'Copiar limites' }))
+
+    expect(await screen.findByText('3 limites criados, 1 já existia, 2 ignorados por categoria arquivada.')).toBeInTheDocument()
+    expect(api.callsTo(COPY)[0].body).toEqual({ fromMonth: MES, months: 6 })
+  })
+
+  it('o leitor vê tudo e nenhuma ação', async () => {
+    open(undefined, 'VIEWER')
+
+    expect(await screen.findByRole('progressbar', { name: 'Mercado' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Novo limite|Copiar|Editar limite|Remover limite/ })).toBeNull()
   })
 })
