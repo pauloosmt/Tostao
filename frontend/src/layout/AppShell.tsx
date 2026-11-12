@@ -39,6 +39,21 @@ export function AppShell() {
     main.current?.focus()
   }, [pathname])
 
+  // A tecla N abre o lançamento (a dica está no botão do menu lateral): só para quem pode escrever, fora de campos de texto e sem folha aberta.
+  useEffect(() => {
+    if (!canWrite) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return
+      const target = event.target instanceof HTMLElement ? event.target : null
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return
+      if (document.querySelector('dialog[open]')) return
+      event.preventDefault()
+      void navigate('/lancamentos/novo')
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [canWrite, navigate])
+
   const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
   const active = inSection('/perfil') ? 'perfil' : inSection('/lancamentos') ? 'lancamentos' : inSection('/contas') ? 'contas' : inSection('/categorias') ? 'categorias' : 'inicio'
   const go = (to: string) => void navigate(to)

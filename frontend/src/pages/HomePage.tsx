@@ -18,10 +18,11 @@ export function HomePage() {
   const { state, logout } = useAuth()
   const { current } = useWorkspace()
   const [logoutFailed, setLogoutFailed] = useState(false)
+  const [today] = useState(() => TODAY.format(new Date()))
 
   if (state.status !== 'authenticated') return null
   const firstName = state.me.name.trim().split(/\s+/)[0] || state.me.name
-  const header = <PageHeader eyebrow={TODAY.format(new Date())} title={`Olá, ${firstName}`} />
+  const header = <PageHeader eyebrow={today} title={`Olá, ${firstName}`} />
 
   // Não deve ocorrer (o cadastro cria o workspace pessoal), mas nunca vira tela em branco.
   if (current === null) {

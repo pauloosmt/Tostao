@@ -5,11 +5,12 @@ import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, ok } from '../test/fakeApi'
 import { makeMe } from '../test/fixtures'
 import { setViewportWidth } from '../test/media'
+import { homeRoutes } from '../test/homeRoutes'
 import { renderApp } from '../test/renderApp'
 
 async function open(width: number, role: Role = 'OWNER', path = '/perfil') {
   setViewportWidth(width)
-  fakeApi({ 'GET /api/v1/me': ok(makeMe(role)) })
+  fakeApi({ 'GET /api/v1/me': ok(makeMe(role)), ...homeRoutes() })
   const view = renderApp([path])
   await screen.findByRole('navigation', { name: 'Principal' })
   return view

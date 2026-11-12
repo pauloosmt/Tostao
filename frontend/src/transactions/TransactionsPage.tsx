@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { listTransactions } from '../api/transactions'
 import { Alert, Badge, Button, Card, TransactionRow } from '../design-system/src'
 import { useResource } from '../data/useResource'
@@ -14,6 +14,7 @@ import { Pager } from './Pager'
 import { TransactionFilters } from './TransactionFilters'
 import { useReferenceData } from './reference'
 import { groupByDay, toDisplayRow } from './rows'
+import type { SheetContext } from './sheetContext'
 import { useTransactionFilters } from './useFilters'
 
 export function TransactionsPage() {
@@ -36,11 +37,18 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
   const { filters, page, activeCount, clear, setPage } = useTransactionFilters()
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  // O aviso do que acabou de acontecer (o lançamento foi registrado) vem no estado do roteador, é lido uma vez e tirado do histórico.
-  const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice ?? null)
+  // O aviso do que acabou de acontecer (o lançamento foi registrado) vem no estado do roteador: é lido e tirado do histórico. A lista
+  // continua montada atrás da folha, então o aviso pode chegar com ela já aberta.
+  const incoming = (location.state as { notice?: string } | null)?.notice ?? null
+  const [notice, setNotice] = useState<string | null>(incoming)
+  const [seen, setSeen] = useState(incoming)
+  if (incoming !== seen) {
+    setSeen(incoming)
+    if (incoming !== null) setNotice(incoming)
+  }
   useEffect(() => {
-    if (notice !== null) void navigate(location.pathname, { replace: true, state: null })
-  }, [notice, navigate, location.pathname])
+    if (incoming !== null) void navigate(location.pathname, { replace: true, state: null })
+  }, [incoming, navigate, location.pathname])
 
   const reference = useReferenceData(workspaceId)
   // A chave leva tudo o que muda o resultado: trocar de workspace, de página ou de filtro volta a "carregando" e descarta a resposta atrasada.
@@ -172,6 +180,9 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
           </>
         )
       ) : null}
+
+      {/* As folhas de criar e editar são rotas filhas: a lista fica atrás, e `changed` a atualiza. */}
+      {reference.status === 'ready' ? <Outlet context={{ workspaceId, reference, changed: list.reload } satisfies SheetContext} /> : null}
     </>
   )
 }

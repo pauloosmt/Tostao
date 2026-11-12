@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Account, Me } from '../api/types'
+import { FAILURE_MESSAGES } from '../forms/apiErrors'
 import { expectNoSeriousViolations } from '../test/axe'
 import { fakeApi, ok, problem, wsRoute } from '../test/fakeApi'
 import { installTransactions } from '../test/fakeTransactions'
@@ -68,8 +69,8 @@ describe('o papel vale por workspace', () => {
     localStorage.setItem('tostao.workspace.u-ana', VIAGEM)
     const { api, viagem } = openApp(['/lancamentos/novo'])
 
-    expect(await screen.findByRole('heading', { name: 'Somente consulta' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voltar aos lançamentos' })).toHaveAttribute('href', '/lancamentos')
+    expect(await screen.findByText(/só para consulta/)).toBeInTheDocument()
+    expect(screen.getByTestId('location').textContent).toBe('/lancamentos')
     expect(screen.queryByLabelText('Valor')).toBeNull()
     expect(api.calls.filter((call) => call.method !== 'GET')).toEqual([])
     expect(viagem.store).toHaveLength(1)
@@ -145,7 +146,7 @@ describe('trocar de workspace', () => {
   it('um endereço de lançamento do outro workspace é "não encontrado": a consulta vai ao workspace atual, igual a um inexistente', async () => {
     const { api } = openApp(['/lancamentos/tx-viagem'])
 
-    expect(await screen.findByRole('heading', { name: 'Lançamento não encontrado' })).toBeInTheDocument()
+    expect(await screen.findByText(FAILURE_MESSAGES.notFound)).toBeInTheDocument()
     expect(api.callsTo(wsRoute('GET', CASA, '/transactions/tx-viagem'))).toHaveLength(1)
     expect(api.callsTo(wsRoute('GET', VIAGEM, '/transactions/tx-viagem'))).toHaveLength(0)
     expect(screen.queryByText('Passagem da Viagem')).toBeNull()
@@ -169,7 +170,7 @@ describe('a sessão que termina no meio do uso', () => {
     await user.type(screen.getByLabelText('Valor'), '10')
     await user.type(screen.getByLabelText('Descrição'), 'x')
     await user.selectOptions(screen.getByLabelText('Conta'), 'a-casa')
-    await user.selectOptions(screen.getByLabelText('Categoria'), 'c-mercado')
+    await user.click(screen.getByRole('radio', { name: /Mercado/ }))
 
     await user.click(screen.getByRole('button', { name: 'Registrar' }))
 
@@ -197,8 +198,8 @@ describe('as recusas de permissão da API (o papel mudou em outro aparelho)', ()
     await waitFor(() => expect(shown()).toBe(true))
 
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull()) // a falha fecha o diálogo
+    await user.click(within(screen.getByRole('dialog', { name: 'Excluir este lançamento?' })).getByRole('button', { name: 'Excluir' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Excluir este lançamento?' })).toBeNull()) // a falha fecha o diálogo
     expect(shown()).toBe(true)
 
     expect(casa.store.find((t) => t.id === 'tx-p')).toMatchObject({ status: 'PENDING' })

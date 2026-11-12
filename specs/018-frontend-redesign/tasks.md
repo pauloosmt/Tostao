@@ -21,8 +21,8 @@ description: "Tarefas da feature 018-frontend-redesign"
 - [X] T002 Entrar e criar conta com `WalletGate` (`SRC/pages/LoginPage.tsx`, `RegisterPage.tsx`, estilos e testes ajustados)
 - [X] T003 Moldura: navegação com lançar e usuário, `PageHeader` em cada tela, atalho para Categorias em Contas (`SRC/layout/AppShell.tsx`, páginas, `styles/app.css`)
 - [X] T004 Início com a Carteira: saldo total, estado vazio, contas (`SRC/pages/HomePage.tsx`)
-- [ ] T005 Folha de lançar: contexto `useLaunch`, `LaunchSheet` (dialog + Sheet), tecla N, formulário com `AmountInput`, `OptionTile`, `CoinPicker`; sai a rota `/lancamentos/novo` (`SRC/transactions/*`, `layout/AppShell.tsx`)
-- [ ] T006 Editar, efetivar e excluir na folha; leitor vê os detalhes (`SRC/transactions/*`)
+- [X] T005 Folha de lançar: contexto `useLaunch`, `LaunchSheet` (dialog + Sheet), tecla N, formulário com `AmountInput`, `OptionTile`, `CoinPicker`; sai a rota `/lancamentos/novo` (`SRC/transactions/*`, `layout/AppShell.tsx`)
+- [X] T006 Editar, efetivar e excluir na folha; leitor vê os detalhes (`SRC/transactions/*`)
 - [ ] T007 Lista de lançamentos: cabeçalho, moedas, tostão, filtros numa folha (`SRC/transactions/TransactionsPage.tsx`, `TransactionFilters.tsx`)
 - [ ] T008 Contas, categorias e perfil com cabeçalho, moedas e avatar (`SRC/accounts/*`, `categories/*`, `pages/ProfilePage.tsx`)
 - [ ] T009 Verificação completa (`npm run verify`), orçamento, roteiro no navegador e registro no `quickstart.md`; marcar o que falta
