@@ -5,6 +5,7 @@ import type { Names } from './rows'
 const names: Names = {
   accountName: (id) => (id === 'a1' ? 'Carteira' : 'Conta removida'),
   categoryName: (id) => (id === 'c1' ? 'Alimentação › Mercado' : null),
+  categoryColor: () => null,
 }
 
 describe('summarize', () => {

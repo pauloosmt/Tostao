@@ -174,3 +174,28 @@ h1, h2, h3, p { margin: 0; }
 /* Paginação da lista */
 .pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .pager__status { margin: 0; color: var(--muted); }
+
+/* A folha de lançar e de filtrar: um <dialog> modal com o Sheet do design system (lateral no desktop, de baixo no celular) */
+.launch-dialog {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(440px, 100%);
+  max-width: 100%;
+  height: 100%;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: visible;
+}
+.launch-dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+.launch-dialog--bottom { inset: auto 0 0 0; width: 100%; height: auto; max-height: 92svh; }
+.launch-dialog--bottom .tx-sheet { max-height: 92svh; }
+.launch-form { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.launch-dialog--bottom .launch-form { height: auto; max-height: 92svh; }
+
+/* Escolhas lado a lado dentro da folha (tipo, atalhos de data) */
+.tile-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.tile-row--chips { display: flex; flex-wrap: wrap; }

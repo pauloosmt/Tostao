@@ -10,6 +10,8 @@ import type { Names } from './rows'
 export interface Option {
   value: string
   label: string
+  /** A cor da categoria (`#RRGGBB`), quando há: a moeda dela. */
+  color?: string
 }
 
 export interface ReferenceData {
@@ -34,13 +36,18 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
   const accountById = new Map(accounts.map((account) => [account.id, account]))
   const categoryLabel = new Map<string, string>()
   const categoryInfo = new Map<string, { kind: CategoryKind; archived: boolean }>()
+  // A subcategoria sem cor própria usa a da principal.
+  const categoryColor = new Map<string, string>()
 
   for (const principal of categories) {
     categoryLabel.set(principal.id, principal.name + (principal.archived ? ARCHIVED : ''))
     categoryInfo.set(principal.id, { kind: principal.kind, archived: principal.archived })
+    if (principal.color) categoryColor.set(principal.id, principal.color)
     for (const sub of principal.subcategories) {
       categoryLabel.set(sub.id, `${principal.name} › ${sub.name}${sub.archived ? ARCHIVED : ''}`)
       categoryInfo.set(sub.id, { kind: principal.kind, archived: sub.archived })
+      const color = sub.color ?? principal.color
+      if (color) categoryColor.set(sub.id, color)
     }
   }
 
@@ -53,6 +60,7 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
         return account ? accountLabel(account) : REMOVED_ACCOUNT
       },
       categoryName: (id) => categoryLabel.get(id) ?? null,
+      categoryColor: (id) => categoryColor.get(id) ?? null,
     },
     accountOptions: (currentId) =>
       accounts
@@ -62,9 +70,9 @@ export function buildReference(accounts: Account[], categories: CategoryTree[]):
       const options: Option[] = []
       for (const principal of categories) {
         if (principal.kind !== kind) continue
-        if (!principal.archived || principal.id === currentId) options.push({ value: principal.id, label: categoryLabel.get(principal.id) as string })
+        if (!principal.archived || principal.id === currentId) options.push({ value: principal.id, label: categoryLabel.get(principal.id) as string, color: categoryColor.get(principal.id) })
         for (const sub of principal.subcategories) {
-          if (!sub.archived || sub.id === currentId) options.push({ value: sub.id, label: categoryLabel.get(sub.id) as string })
+          if (!sub.archived || sub.id === currentId) options.push({ value: sub.id, label: categoryLabel.get(sub.id) as string, color: categoryColor.get(sub.id) })
         }
       }
       return options

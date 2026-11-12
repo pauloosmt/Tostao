@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Transaction } from '../api/types'
-import { groupByDay, tagsOf, toDisplayRow, type Names } from './rows'
+import { deleteText, groupByDay, tagsOf, toDisplayRow, type Names } from './rows'
 
 const names: Names = {
   accountName: (id) => ({ a1: 'Carteira', a2: 'Reserva', a3: 'Conta antiga (arquivada)' })[id] ?? 'Conta removida',
   categoryName: (id) => ({ c1: 'Alimentação › Mercado', c2: 'Salário' })[id] ?? null,
+  categoryColor: (id) => ({ c1: '#2a9d8f' })[id] ?? null,
 }
 
 const tx = (extra: Partial<Transaction> = {}): Transaction => ({
@@ -17,7 +18,7 @@ const tx = (extra: Partial<Transaction> = {}): Transaction => ({
 describe('toDisplayRow', () => {
   it('despesa: valor absoluto, tipo despesa, nomes no lugar dos identificadores', () => {
     expect(toDisplayRow(tx(), names)).toEqual({
-      id: 't1', description: 'Almoço', cents: 3590, kind: 'expense', account: 'Carteira', category: 'Alimentação › Mercado', date: '2026-11-11', pending: false, tags: [],
+      id: 't1', description: 'Almoço', cents: 3590, kind: 'expense', account: 'Carteira', category: 'Alimentação › Mercado', categoryColor: '#2a9d8f', date: '2026-11-11', pending: false, tags: [],
     })
   })
 
@@ -112,5 +113,15 @@ describe('groupByDay', () => {
     const groups = groupByDay([row('1', '2026-11-11'), row('2', '2026-11-10'), row('3', '2026-11-11')])
 
     expect(groups.map((g) => g.day)).toEqual(['2026-11-11', '2026-11-10', '2026-11-11'])
+  })
+})
+
+describe('deleteText', () => {
+  const base = { type: 'EXPENSE' as const, installmentNumber: null, recurrenceId: null }
+
+  it('explica o efeito conforme o tipo do lançamento', () => {
+    expect(deleteText(base)).toBe('O lançamento sai da lista e do saldo da conta.')
+    expect(deleteText({ ...base, type: 'TRANSFER' })).toBe('A transferência sai da lista e do saldo das duas contas.')
+    expect(deleteText({ ...base, installmentNumber: 2 })).toBe('O lançamento sai da lista e do saldo da conta. Só esta parcela é excluída.')
   })
 })

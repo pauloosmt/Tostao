@@ -6,6 +6,8 @@ import type { Transaction } from '../api/types'
 export interface Names {
   accountName: (id: string) => string
   categoryName: (id: string) => string | null
+  /** A cor da categoria (`#RRGGBB`), ou `null` quando não tem. */
+  categoryColor: (id: string) => string | null
 }
 
 export interface DisplayRow {
@@ -17,6 +19,8 @@ export interface DisplayRow {
   account: string
   /** A categoria; na transferência, a direção ("Para Reserva" / "De Carteira"). */
   category: string
+  /** A cor da categoria, para a moeda da linha; `null` na transferência e na categoria sem cor. */
+  categoryColor: string | null
   /** `AAAA-MM-DD`. */
   date: string
   pending: boolean
@@ -57,6 +61,7 @@ export function toDisplayRow(tx: Transaction, names: Names): DisplayRow {
     kind: KIND[tx.type] ?? 'expense',
     account: names.accountName(tx.accountId),
     category,
+    categoryColor: tx.type === 'TRANSFER' || tx.categoryId === null ? null : names.categoryColor(tx.categoryId),
     date: tx.occurredOn,
     pending: tx.status === 'PENDING',
     tags: tagsOf(tx),
