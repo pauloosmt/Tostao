@@ -54,14 +54,14 @@ describe('a lista', () => {
     expect(page.items.map((t) => t.occurredOn)).toEqual(['2026-11-30', '2026-11-15', '2026-11-01'])
   })
 
-  it('data final antes da inicial é 400 no campo "to"', async () => {
+  it('data final antes da inicial é 400 no campo "from"', async () => {
     setup()
 
     const e = await error(listTransactions(WID, 1, { from: '2026-11-10', to: '2026-11-01' }))
 
     expect(e).toBeInstanceOf(ApiError)
     expect(e.status).toBe(400)
-    expect(e.errors.map((x) => x.field)).toEqual(['to'])
+    expect(e.errors.map((x) => x.field)).toEqual(['from'])
   })
 
   it('conta, tipo e estado', async () => {

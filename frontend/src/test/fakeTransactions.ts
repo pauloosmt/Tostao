@@ -98,7 +98,7 @@ export function installTransactions(api: FakeApi, initial: Transaction[], { work
     const to = query.get('to')
     if (from !== null && !isDate(from)) errors.push({ field: 'from', message: 'data inválida' })
     if (to !== null && !isDate(to)) errors.push({ field: 'to', message: 'data inválida' })
-    if (from !== null && to !== null && isDate(from) && isDate(to) && to < from) errors.push({ field: 'to', message: 'não pode ser anterior à data inicial' })
+    if (from !== null && to !== null && isDate(from) && isDate(to) && to < from) errors.push({ field: 'from', message: 'não pode ser anterior à data inicial' })
     const q = query.get('q')
     if (q !== null && q.length > 100) errors.push({ field: 'q', message: 'deve ter no máximo 100 caracteres' })
     const type = query.get('type')

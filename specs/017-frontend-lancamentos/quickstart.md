@@ -59,3 +59,22 @@ Script fora do repositório, como nas specs anteriores, contra a API do Compose:
 ## 7. Limpeza
 
 Apagar os dados de teste (`qs17*@example.com` e os workspaces deles) e conferir que só restam os dados que já existiam.
+
+## 8. Resultado da validação (2026-11-12)
+
+**Automatizado**
+
+- `npm run verify` (front): guard-rails 10, Vitest **890 testes em 60 arquivos**, `tsc` e build ok, JavaScript inicial de **100,5 KB** de 150 KB (gzip) e testes do build ok.
+- Back-end: **não foi rodado** — esta spec não toca o back-end (sem diferença em `backend/` em relação a `origin/main`); vale a rodada da spec 016 (1414 testes, 0 falhas).
+
+**Roteiro com a API real** (HTTP direto no Compose; script fora do repositório): **92 de 92** conferências.
+Cobre receita, despesa e transferência (saldos e as duas pontas na lista, sem categoria), pendente que não mexe no saldo, efetivar (idempotente) e voltar
+para pendente, ordem da lista e 20 por página (página além do fim vazia, página 0 e tamanho 101 recusados), filtros por período inclusivo, conta,
+categoria principal (inclui as subcategorias), tipo e estado, editar sem reenviar o tipo e mudar o tipo recusado, editar e excluir uma transferência pela
+ponta de destino (a outra ponta acompanha e os saldos voltam), as recusas (valor, categoria de outro tipo, conta e categoria arquivadas) e os papéis
+(leitor lê e recebe `403` ao escrever, editor escreve, intrusa `404`, sem cookie `401`). A limpeza removeu só os dados `qs17*`.
+
+**Achado na validação:** a API recusa data final antes da inicial no campo `from` (não `to`); a API de teste do front e o teste dela foram alinhados.
+
+**Ainda sem conferência no navegador** (seções 3 a 6): o fluxo visual de lista, filtros, formulário, efetivar e excluir, o leitor, o teclado, 320 px e
+zoom de 200%. Há teste automatizado para o comportamento (com axe nas telas); a conferência visual fica com quem usa.
