@@ -15,23 +15,25 @@ export interface TransactionRowProps {
   category?: string | null;
   /** Cor da categoria: troca a seta pela moeda. */
   categoryColor?: string | null;
+  /** Campo `icon` da categoria. Ausente: sugerido pelo nome. */
+  categoryIcon?: string | false | null;
   /** Já formatada, ex.: "3 nov". */
   date?: string;
   /** Texto ao lado do tostão dourado, ex.: "Pendente". */
   attention?: string;
   pending?: boolean;
-  /** Selos extras (ex.: "Parcela 2 de 10", "Recorrente"). Fazem parte da linha: n\u00e3o s\u00e3o controles. */
+  /** Selos extras (ex.: "Parcela 2 de 10", "Recorrente"). Fazem parte da linha: não são controles. */
   tags?: string[];
   onClick?: () => void;
   className?: string;
 }
 
-export function TransactionRow({ description, cents, kind = 'expense', account, category, categoryColor, date, attention, pending, tags, onClick, className }: TransactionRowProps) {
+export function TransactionRow({ description, cents, kind = 'expense', account, category, categoryColor, categoryIcon, date, attention, pending, tags, onClick, className }: TransactionRowProps) {
   const meta = [account, category, date].filter(Boolean).join(' \u00b7 ');
   const content = (
     <>
       {categoryColor ? (
-        <CategoryCoin name={category || description} color={categoryColor} size={36} />
+        <CategoryCoin name={category || description} color={categoryColor} icon={categoryIcon} size={36} />
       ) : (
         <span className="tx-row__icon"><Icon name={ICON[kind]} size={18} /></span>
       )}

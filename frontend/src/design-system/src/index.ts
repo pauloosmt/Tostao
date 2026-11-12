@@ -15,7 +15,10 @@ export { AccountCard, type AccountCardProps, type AccountType } from './componen
 export { ProgressBar, type ProgressBarProps } from './components/ProgressBar';
 export { Alert, type AlertProps } from './components/Alert';
 export { Nav, type NavProps, type NavItem } from './components/Nav';
-export { CategoryCoin, type CategoryCoinProps } from './components/CategoryCoin';
+export { CategoryCoin, CategoryGlyph, type CategoryCoinProps } from './components/CategoryCoin';
+export { IconPicker, type IconPickerProps } from './components/IconPicker';
+export { SwatchPicker, type SwatchPickerProps } from './components/SwatchPicker';
+export { CATEGORY_ICONS, CATEGORY_ICON_ORDER, CATEGORY_COLORS, suggestCategoryIcon, suggestCategoryIcons, isCategoryIcon, type CategoryIconName } from './components/categoryIcons';
 export { AttentionDot, type AttentionDotProps } from './components/AttentionDot';
 export { WalletHero, type WalletHeroProps } from './components/WalletHero';
 export { PillBars, type PillBarsProps, type PillBarItem } from './components/PillBars';

@@ -4,6 +4,7 @@ import { cx } from './utils';
 export interface CoinOption {
   name: string;
   color: string;
+  icon?: string | false | null;
 }
 
 export interface CoinPickerProps {
@@ -22,7 +23,7 @@ export function CoinPicker({ label, value, options, onChange, className }: CoinP
         const on = o.name === value;
         return (
           <button key={o.name} type="button" role="radio" aria-checked={on} className={cx('tx-coinpick__opt', on && 'is-on')} onClick={() => onChange?.(o.name)}>
-            <span className="tx-coinpick__coin"><CategoryCoin name={o.name} color={o.color} size={44} /></span>
+            <span className="tx-coinpick__coin"><CategoryCoin name={o.name} color={o.color} icon={o.icon} size={44} /></span>
             <span className="tx-coinpick__name text-caption">{o.name}</span>
           </button>
         );

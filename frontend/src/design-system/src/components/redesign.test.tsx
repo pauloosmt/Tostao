@@ -46,10 +46,10 @@ describe('componentes do redesign', () => {
   })
 
   it('CategoryCoin é decoração: some do leitor de tela', () => {
-    const { container } = render(<CategoryCoin name="Mercado" color="#3a7" />)
+    const { container } = render(<CategoryCoin name="Xodó" color="#3a7" />)
 
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true')
-    expect(container).toHaveTextContent('M')
+    expect(container).toHaveTextContent('X')
   })
 
   it('WalletHero mostra o saldo, ou a frase de vazio quando não há saldo', () => {
