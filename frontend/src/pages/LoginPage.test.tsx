@@ -38,6 +38,22 @@ function gate(reply: Reply) {
   return { handler: async () => (await wait, reply), release }
 }
 
+describe('baixar o app', () => {
+  it('o link para Windows só aparece no navegador de um computador com Windows', async () => {
+    fakeApi({ 'GET /api/v1/me': noSession })
+    const { unmount } = renderRoutes(routes, ['/entrar'])
+    await heading()
+    expect(screen.queryByRole('link', { name: 'Baixar o app para Windows' })).not.toBeInTheDocument() // o jsdom não é Windows
+    unmount()
+
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36')
+    renderRoutes(routes, ['/entrar'])
+    await heading()
+    expect(screen.getByRole('link', { name: 'Baixar o app para Windows' })).toHaveAttribute('href', '/baixar/windows')
+    vi.restoreAllMocks()
+  })
+})
+
 describe('entrar', () => {
   it('com sucesso, envia o e-mail sem espaços e a senha como digitada, e vai para o início', async () => {
     const api = fakeApi({ 'GET /api/v1/me': noSession, 'POST /api/v1/auth/login': ok(me) })

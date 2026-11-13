@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/baixar/windows",
+      "destination": "https://github.com/pauloosmt/Tostao/releases/latest/download/Tostao-Instalador.exe",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" },
     { "source": "/api/:path*", "destination": "https://tostao-api.onrender.com/api/:path*" }

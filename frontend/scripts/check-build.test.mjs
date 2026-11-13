@@ -56,7 +56,7 @@ describe('o service worker', () => {
   })
 
   it('a navegação do app não responde por /api/ (nunca devolve a página no lugar da API)', () => {
-    assert.match(sw, /denylist:\[\/\^\\\/api\\\/\/\]/)
+    assert.match(sw, /denylist:\[\/\^\\\/api\\\/\/,\/\^\\\/baixar\\\/\/\]/) // e /baixar/ (o redirect do instalador) também chega ao servidor
   })
 
   it('tudo o que pré-carrega existe no build', () => {
@@ -104,7 +104,12 @@ describe('a hospedagem (Vercel)', () => {
     const api = config.rewrites.find((r) => r.source.startsWith('/api/'))
     assert.match(api.destination, /^https:\/\/[^/]+\/api\/:path\*$/)
     assert.equal(config.rewrites.length, 2)
-    assert.equal(JSON.stringify(config).match(/https?:\/\//g).length, 1)
+    assert.equal(JSON.stringify(config.rewrites).match(/https?:\/\//g).length, 1)
+  })
+
+  it('o instalador do app para Windows sai por um redirect do próprio site, para um arquivo publicado no GitHub', () => {
+    const download = config.redirects.find((r) => r.source === '/baixar/windows')
+    assert.match(download.destination, /^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/latest\/download\/[^/]+\.exe$/)
   })
 })
 

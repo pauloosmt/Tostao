@@ -41,7 +41,7 @@ export default defineConfig({
       },
       // Chamadas à API nunca passam pelo cache do service worker
       // (as fontes woff2 entram no pré-cache para o aplicativo abrir igual sem rede)
-      workbox: { navigateFallbackDenylist: [/^\/api\//], globPatterns: ['**/*.{js,css,html,woff2}'] },
+      workbox: { navigateFallbackDenylist: [/^\/api\//, /^\/baixar\//], globPatterns: ['**/*.{js,css,html,woff2}'] },
     }),
   ],
   test: {

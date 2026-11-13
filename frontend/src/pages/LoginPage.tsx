@@ -7,6 +7,7 @@ import { Alert, Field, Logo, WalletGate } from '../design-system/src'
 import { useSubmit } from '../forms/useSubmit'
 import { useMediaQuery } from '../layout/useMediaQuery'
 import { firstInvalid, validateLogin, type FieldMessages } from '../validation/account'
+import { DesktopAppLink } from '../ui/DesktopAppLink'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { PasswordField } from '../ui/PasswordField'
 
@@ -148,6 +149,7 @@ export function LoginPage() {
             Criar conta
           </Link>
         </p>
+        <DesktopAppLink />
       </div>
     </main>
   )
