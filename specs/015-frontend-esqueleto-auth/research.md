@@ -118,7 +118,8 @@ design system (tokens). As demais regras (rótulos, nomes de botões, papéis AR
 
 **Decisão**: `frontend/vercel.json` com a regra de SPA (`/((?!api/).*)` → `/index.html`), para recarregar `/perfil` não dar 404. O
 rewrite de `/api/*` para o Render **não** entra no arquivo: ele depende da URL do serviço (e a constituição manda manter isso fora do
-código); a pessoa o configura no painel da Vercel. No desenvolvimento e no `vite preview`, o proxy do Vite espelha o rewrite.
+código); a pessoa o configura no painel da Vercel.
+**Revisto no deploy (2026-11-13)**: a regra de `/api/*` passou para o `vercel.json` (a URL do serviço não é segredo e o arquivo é a forma garantida); o teste agora exige a regra, com destino https e nenhuma outra URL. No desenvolvimento e no `vite preview`, o proxy do Vite espelha o rewrite.
 
 ## 12. Orçamento de tamanho
 

@@ -1,7 +1,7 @@
 # Deploy: Supabase + Render + Vercel
 
-O navegador só fala com a Vercel; `/api/*` é encaminhado ao Render por um rewrite configurado **no painel da Vercel** (a URL da API
-não entra no código; o `frontend/vercel.json` só tem o fallback das rotas do app), então o cookie de sessão
+O navegador só fala com a Vercel; `/api/*` é encaminhado ao Render por um rewrite no `frontend/vercel.json` (junto do fallback das
+rotas do app; a URL do serviço não é segredo), então o cookie de sessão
 (`SameSite=Lax`, HttpOnly, Secure) funciona como no ambiente local. Ordem: banco, API, front, rewrite e por fim a origem do CORS.
 
 ## 1. Banco (Supabase)
@@ -39,9 +39,8 @@ Se o nome `tostao-api` já estiver em uso, o Render dá outro endereço: use o q
 
 ## 4. Ligar os dois
 
-1. Na Vercel, em *Project Settings → Rewrites*, crie a regra `/api/:path*` → `https://tostao-api.onrender.com/api/:path*` (o endereço do passo 2).
-   (O fallback do app já ignora `/api/`, então a ordem não importa.) Se o painel da sua conta não oferecer essa tela, a alternativa é pôr a regra
-   no `frontend/vercel.json` (e ajustar o teste que hoje proíbe URL nesse arquivo).
+1. A regra `/api/:path*` → `https://tostao-api.onrender.com/api/:path*` já está no `frontend/vercel.json`. Se o Render der outro endereço
+   ao serviço, troque-o ali e faça push (o fallback do app já ignora `/api/`, então a ordem das regras não importa).
 2. No Render, defina `CORS_ORIGIN` com o endereço exato do site na Vercel (sem barra no fim) e reimplante. A API só aceita essa origem
 (e recusa as demais com 403). Se usar domínio próprio, use esse domínio aqui.
 

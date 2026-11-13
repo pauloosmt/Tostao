@@ -100,9 +100,11 @@ describe('a hospedagem (Vercel)', () => {
     for (const path of ['/api/v1/me', '/api/v1/auth/login', '/api/']) assert.ok(!matches(path), path)
   })
 
-  it('não escreve a URL da API no código: só a regra de rotas', () => {
-    assert.equal(config.rewrites.length, 1)
-    assert.doesNotMatch(JSON.stringify(config), /https?:\/\//)
+  it('encaminha /api/* ao Render por https, sem expor outra URL', () => {
+    const api = config.rewrites.find((r) => r.source.startsWith('/api/'))
+    assert.match(api.destination, /^https:\/\/[^/]+\/api\/:path\*$/)
+    assert.equal(config.rewrites.length, 2)
+    assert.equal(JSON.stringify(config).match(/https?:\/\//g).length, 1)
   })
 })
 
