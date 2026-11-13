@@ -1,0 +1,40 @@
+# Render Blueprint: a API do Tostão (container Docker do backend). O banco é o Supabase (ver docs/deploy.md).
+# Segredos com `sync: false` são pedidos no painel na primeira criação; nada de segredo fica no repositório.
+services:
+  - type: web
+    name: tostao-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: '8080'
+      # o plano free tem 512 MB: deixa a JVM usar a maior parte e sobrar folga para o resto
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=65 -XX:+UseSerialGC
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: '5'
+      - key: COOKIE_SECURE
+        value: 'true'
+      # a origem do site na Vercel (ex.: https://tostao.vercel.app), sem barra no fim e sem curinga
+      - key: CORS_ORIGIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      # Flyway conecta como dono do schema; a aplicação conecta como tostao_app (sem BYPASSRLS)
+      - key: DB_MIGRATION_URL
+        sync: false
+      - key: DB_MIGRATION_USER
+        sync: false
+      - key: DB_MIGRATION_PASSWORD
+        sync: false
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_APP_PASSWORD
+        sync: false
