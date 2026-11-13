@@ -21,3 +21,4 @@ Thumbs.db
 
 # App desktop: instaladores gerados
 desktop/release/
+desktop/build/

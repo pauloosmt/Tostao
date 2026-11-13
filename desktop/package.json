@@ -9,5 +9,43 @@
     "test": "node --test",
     "start": "electron .",
     "dist": "node scripts/prepare.mjs && electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "app.tostao.desktop",
+    "productName": "Tostão",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Tostao-Instalador-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Tostao-Portatil-${version}.${ext}"
+    }
   }
 }
