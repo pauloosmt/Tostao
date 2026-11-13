@@ -35,7 +35,12 @@ function open(path: string, { role = 'OWNER' as Role, post = ok(makeCategory({ n
 }
 type Ctx = ReturnType<typeof open>
 
-const sheet = (title: string) => screen.findByRole('heading', { name: title })
+// A folha abre e, em seguida, carrega a categoria (ou a mãe): espera o formulário aparecer, não só o título.
+const sheet = async (title: string) => {
+  const heading = await screen.findByRole('heading', { name: title })
+  await screen.findByLabelText('Nome')
+  return heading
+}
 const name = () => screen.getByLabelText('Nome')
 const save = () => screen.getByRole('button', { name: /^(Criar categoria|Criar subcategoria|Salvar|Salvando…)$/ })
 const icons = () => within(screen.getByRole('radiogroup', { name: 'Ícone' }))
@@ -103,7 +108,7 @@ describe('criar uma categoria na folha', () => {
     await user.click(await screen.findByRole('link', { name: 'Adicionar subcategoria em Lazer' }))
     await sheet('Nova subcategoria')
 
-    expect(screen.getByText('Subcategoria de Lazer')).toBeInTheDocument()
+    expect(await screen.findByText('Subcategoria de Lazer')).toBeInTheDocument() // a folha carrega a mãe depois de abrir
     expect(screen.queryByRole('radiogroup', { name: 'Categoria mãe' })).toBeNull()
     await user.type(name(), 'Cinema')
     await user.click(save())

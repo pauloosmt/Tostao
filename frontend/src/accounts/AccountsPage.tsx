@@ -147,6 +147,9 @@ function AccountsOf({ workspaceId }: { workspaceId: string }) {
                         </Button>
                       ) : (
                         <>
+                          <ButtonLink size="sm" variant="secondary" to={`/contas/${account.id}/importar`} aria-label={`Importar extrato em ${account.name}`}>
+                            Importar extrato
+                          </ButtonLink>
                           <ButtonLink size="sm" to={`/contas/${account.id}`} aria-label={`Editar ${account.name}`}>
                             Editar
                           </ButtonLink>
