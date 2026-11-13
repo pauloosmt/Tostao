@@ -82,6 +82,9 @@ read -r -p "Carregar esses dados na PRODUÇÃO ($PROD_HOST)? Digite SIM para con
 echo "Carregando (uma transação só)…"
 prod_psql --single-transaction -f - < "$FILE"
 
+# Tentativas de entrada falhas feitas enquanto a conta ainda não existia na produção deixam o e-mail bloqueado por 15 minutos: limpa.
+prod_psql -q -c "select reset_login_attempts(email) from users" > /dev/null
+
 echo
 echo "Conferindo o resultado (local | produção):"
 OK=1

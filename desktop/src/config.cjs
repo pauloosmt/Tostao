@@ -1,10 +1,11 @@
 'use strict'
 // A configuração do app desktop: onde está a API e qual origem ela aceita. Vive num arquivo do usuário (nunca no código do front) e pode
-// ser sobreposta por variáveis de ambiente. Os padrões são os do Docker Compose do projeto.
+// ser sobreposta por variáveis de ambiente. Os padrões são os da produção (Render e Vercel); para o Docker Compose do projeto use
+// http://127.0.0.1:8080 e http://localhost:5173 em Arquivo → Configurar servidor.
 const fs = require('node:fs')
 const path = require('node:path')
 
-const DEFAULTS = Object.freeze({ apiUrl: 'http://127.0.0.1:8080', apiOrigin: 'http://localhost:5173' })
+const DEFAULTS = Object.freeze({ apiUrl: 'https://tostao-api.onrender.com', apiOrigin: 'https://tostao-roan.vercel.app' })
 
 /** Só aceita um endereço http ou https, sem usuário e senha, sem caminho, consulta ou âncora; devolve a origem normalizada. */
 function validateUrl(text, label) {

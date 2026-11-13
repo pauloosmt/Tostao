@@ -42,10 +42,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Tostao-Instalador-${version}.${ext}"
+      "artifactName": "Tostao-Instalador.${ext}"
     },
     "portable": {
-      "artifactName": "Tostao-Portatil-${version}.${ext}"
+      "artifactName": "Tostao-Portatil.${ext}"
     }
   }
 }

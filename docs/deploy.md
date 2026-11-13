@@ -51,5 +51,10 @@ saia e entre de novo. Isso exercita o cookie, o rewrite, o CORS e o banco.
 
 ## App desktop e celular
 
-- Desktop: em *Arquivo → Configurar servidor…* (Ctrl+,) use `https://tostao-api.onrender.com` e, como origem, o endereço do site na Vercel.
-- Celular: abra o site da Vercel e use *Adicionar à tela inicial* (PWA).
+- **Celular:** abra o site da Vercel e use *Adicionar à tela inicial* (PWA).
+- **Desktop (Windows):** a tela de login mostra "Baixar o app para Windows" só em navegador de PC com Windows. O link (`/baixar/windows`) é um redirect do
+  `frontend/vercel.json` para o arquivo `Tostao-Instalador.exe` da última *release* do GitHub, então o instalador precisa estar publicado lá:
+  1. `cd desktop && npm run dist` gera `desktop/release/Tostao-Instalador.exe` (e o portátil).
+  2. No GitHub: *Releases → Draft a new release*, crie uma tag (ex.: `v0.1.0`), anexe o `Tostao-Instalador.exe` e publique.
+  3. O app já vem apontando para a produção; para outro servidor, *Arquivo → Configurar servidor…* (Ctrl+,).
+  O instalador não é assinado: o Windows pode avisar (SmartScreen) ou, com o Smart App Control ligado, bloquear.

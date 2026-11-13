@@ -8,11 +8,11 @@ cd ../desktop && npm install        # primeira vez (Electron e electron-builder)
 npm run dist                        # prepara (front + ícone) e gera os executáveis em desktop/release/
 ```
 
-Saídas em `desktop/release/` (ignorada pelo git): `Tostao-Instalador-0.1.0.exe` (instalador NSIS) e `Tostao-Portatil-0.1.0.exe` (um único arquivo, sem instalar). O front compilado vai dentro do programa; depois de mudar o front, rode `npm run dist` de novo (use `node scripts/prepare.mjs --rebuild` para forçar a recompilação).
+Saídas em `desktop/release/` (ignorada pelo git): `Tostao-Instalador.exe` (instalador NSIS) e `Tostao-Portatil.exe` (um único arquivo, sem instalar). O front compilado vai dentro do programa; depois de mudar o front, rode `npm run dist` de novo (use `node scripts/prepare.mjs --rebuild` para forçar a recompilação).
 
 ## Usar
 
-1. Suba a API (Docker Compose do projeto, `http://127.0.0.1:8080`) e abra o programa.
+1. Abra o programa. Por padrão ele fala com a produção (`https://tostao-api.onrender.com`, origem `https://tostao-roan.vercel.app`); para o Docker Compose do projeto, configure `http://127.0.0.1:8080` e `http://localhost:5173` (passo 3).
 2. O app serve o front em `http://127.0.0.1:47321` (se a porta estiver ocupada, usa uma livre) e repassa `/api` à API.
 3. **Arquivo → Configurar servidor…** (Ctrl+,) muda o endereço da API e a origem que ela aceita; salvar recarrega a janela. A barra de menus fica escondida (aparece com Alt). Valores em `config.json` na pasta de dados do usuário; `TOSTAO_API_URL` e `TOSTAO_API_ORIGIN` têm precedência.
 4. Os dados do app (sessão, preferências) ficam na pasta do usuário, e uma segunda abertura só traz a janela existente para a frente.

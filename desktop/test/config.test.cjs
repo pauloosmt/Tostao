@@ -24,9 +24,9 @@ describe('o endereço', () => {
 })
 
 describe('carregar e gravar', () => {
-  it('sem arquivo, valem os padrões do Docker Compose do projeto', () => {
+  it('sem arquivo, valem os padrões da produção', () => {
     assert.deepEqual(load(tmp(), {}), DEFAULTS)
-    assert.deepEqual(DEFAULTS, { apiUrl: 'http://127.0.0.1:8080', apiOrigin: 'http://localhost:5173' })
+    assert.deepEqual(DEFAULTS, { apiUrl: 'https://tostao-api.onrender.com', apiOrigin: 'https://tostao-roan.vercel.app' })
   })
 
   it('grava só se os dois endereços servem; depois carrega o que foi gravado', () => {
