@@ -26,14 +26,14 @@ const lines = (): ImportLinePreview[] => [
   makeImportLine({ line: 5, key: 'k5', description: 'Mercado do Zé', amountCents: -9900, possibleDuplicate: true, suggestedCategoryId: 'c-sal' }), // uma sugestão que não serve a uma saída
 ]
 
-function open(path = '/contas/a-carteira/importar', role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'OWNER', preview = ok(makeImportPreview(lines()))) {
+function open(path = '/contas/a-carteira/importar', role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'OWNER', preview = ok(makeImportPreview(lines())), list = accounts) {
   const api = fakeApi({
     'GET /api/v1/me': ok(makeMe(role)),
-    [wsRoute('GET', WID, '/accounts')]: ok(accounts),
+    [wsRoute('GET', WID, '/accounts')]: (call) => ok(call.path.includes('includeArchived=true') ? list : list.filter((account) => !account.archived)),
     [wsRoute('GET', WID, '/categories')]: ok(categories),
     [wsRoute('GET', WID, '/accounts/a-carteira')]: ok(carteira),
     [wsRoute('GET', WID, '/accounts/a-antiga')]: ok(antiga),
-    [wsRoute('GET', WID, '/reports/balance')]: ok(makeBalanceReport(accounts)),
+    [wsRoute('GET', WID, '/reports/balance')]: ok(makeBalanceReport(list)),
     [PREVIEW]: preview,
   })
   return { api, ...renderApp([path]) }
@@ -50,6 +50,45 @@ async function toPreview(ctx: Ctx) {
   await ctx.user.click(screen.getByRole('button', { name: 'Ler extrato' }))
   await screen.findByRole('list', { name: 'Linhas do extrato' })
 }
+
+describe('a entrada: "Importar extrato" nos cabeçalhos e a escolha da conta', () => {
+  const reserva = makeAccount({ id: 'a-reserva', name: 'Reserva' })
+
+  it('Lançamentos e Contas têm o botão para quem escreve (e só para ele)', async () => {
+    const owner = open('/lancamentos')
+    owner.api.on(wsRoute('GET', WID, '/transactions'), ok({ items: [], page: 1, size: 20, totalItems: 0, totalPages: 0 }))
+    expect(await screen.findByRole('link', { name: 'Importar extrato' })).toHaveAttribute('href', '/importar')
+    owner.unmount()
+
+    const accountsPage = open('/contas')
+    expect(await screen.findByRole('link', { name: 'Importar extrato' })).toHaveAttribute('href', '/importar')
+    accountsPage.unmount()
+
+    const viewer = open('/contas', 'VIEWER')
+    await screen.findByText('Carteira')
+    expect(screen.queryByRole('link', { name: 'Importar extrato' })).toBeNull()
+    viewer.unmount()
+  })
+
+  it('com várias contas ativas pergunta de qual é o extrato (sem as arquivadas); com uma só, vai direto à importação dela', async () => {
+    const many = open('/importar', 'OWNER', undefined, [carteira, reserva, antiga])
+    expect(await screen.findByText('De qual conta é o extrato?')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Importar o extrato de Carteira' })).toHaveAttribute('href', '/contas/a-carteira/importar')
+    expect(screen.getByRole('link', { name: 'Importar o extrato de Reserva' })).toHaveAttribute('href', '/contas/a-reserva/importar')
+    expect(screen.queryByRole('link', { name: /Antiga/ })).toBeNull()
+    many.unmount()
+
+    open('/importar') // só a Carteira está ativa
+    expect(await screen.findByLabelText('Arquivo do extrato')).toBeInTheDocument()
+    expect(screen.getByTestId('location').textContent).toBe('/contas/a-carteira/importar')
+  })
+
+  it('o leitor vê o aviso de papel', async () => {
+    open('/importar', 'VIEWER')
+
+    expect(await screen.findByRole('heading', { name: 'Somente consulta' })).toBeInTheDocument()
+  })
+})
 
 describe('enviar o extrato', () => {
   it('a lista de contas oferece "Importar extrato" só para quem escreve e só nas contas ativas', async () => {

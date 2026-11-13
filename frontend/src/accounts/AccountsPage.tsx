@@ -33,6 +33,7 @@ export function AccountsPage() {
             {wide ? null : <ButtonLink variant="secondary" to="/recorrencias">Recorrências</ButtonLink>}
             {wide ? null : <ButtonLink variant="secondary" to="/orcamentos">Orçamentos</ButtonLink>}
             {wide ? null : <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>}
+            {canWrite ? <ButtonLink variant="secondary" to="/importar">Importar extrato</ButtonLink> : null}
             {canWrite ? <ButtonLink variant="primary" to="/contas/nova">Criar conta</ButtonLink> : null}
           </>
         }

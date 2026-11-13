@@ -24,6 +24,7 @@ const CategoriesPage = named(() => import('./categories/CategoriesPage'), 'Categ
 const NewCategorySheet = named(() => import('./categories/CategoryFormPage'), 'NewCategorySheet')
 const EditCategorySheet = named(() => import('./categories/CategoryFormPage'), 'EditCategorySheet')
 const NewSubcategorySheet = named(() => import('./categories/CategoryFormPage'), 'NewSubcategorySheet')
+const ImportAccountsPage = named(() => import('./imports/ImportAccountsPage'), 'ImportAccountsPage')
 const ImportPage = named(() => import('./imports/ImportPage'), 'ImportPage')
 const MembersPage = named(() => import('./members/MembersPage'), 'MembersPage')
 const RecurrencesPage = named(() => import('./recurrences/RecurrencesPage'), 'RecurrencesPage')
@@ -64,6 +65,7 @@ export function App() {
         <Route path="contas/:id/fatura" element={<CardPage />} />
         <Route path="contas/:id/importar" element={<ImportPage />} />
         <Route path="contas/:id" element={<EditAccountPage />} />
+        <Route path="importar" element={<ImportAccountsPage />} />
         <Route path="orcamentos" element={<BudgetsPage />} />
         <Route path="categorias" element={<CategoriesPage />}>
           <Route path="nova" element={<Sheet><NewCategorySheet /></Sheet>} />

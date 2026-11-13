@@ -78,7 +78,14 @@ function TransactionsOf({ workspaceId }: { workspaceId: string }) {
       <PageHeader
         title="Lançamentos"
         context={reference.status === 'ready' && list.status === 'ready' && !beyond && list.data.items.length > 0 ? `${list.data.totalItems} ${list.data.totalItems === 1 ? 'lançamento' : 'lançamentos'}` : undefined}
-        action={canWrite ? <ButtonLink variant="primary" to="/lancamentos/novo">Novo lançamento</ButtonLink> : undefined}
+        action={
+          canWrite ? (
+            <>
+              <ButtonLink variant="secondary" to="/importar">Importar extrato</ButtonLink>
+              <ButtonLink variant="primary" to="/lancamentos/novo">Novo lançamento</ButtonLink>
+            </>
+          ) : undefined
+        }
       />
 
       {notice ? <Alert tone="info">{notice}</Alert> : null}
