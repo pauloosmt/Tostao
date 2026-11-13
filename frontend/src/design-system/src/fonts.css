@@ -1,7 +1,9 @@
 /* Fontes servidas pelo próprio aplicativo (pacotes @fontsource, subconjunto latin, que cobre o português):
-   Fraunces (títulos) e IBM Plex Sans (todo o resto). Nenhuma fonte vem de outro domínio. */
-@import "@fontsource/fraunces/latin-500.css";
-@import "@fontsource/fraunces/latin-600.css";
+   League Spartan (títulos) e IBM Plex Sans (todo o resto). Nenhuma fonte vem de outro domínio. */
+@import "@fontsource/league-spartan/latin-400.css";
+@import "@fontsource/league-spartan/latin-500.css";
+@import "@fontsource/league-spartan/latin-600.css";
+@import "@fontsource/league-spartan/latin-700.css";
 @import "@fontsource/ibm-plex-sans/latin-400.css";
 @import "@fontsource/ibm-plex-sans/latin-500.css";
 @import "@fontsource/ibm-plex-sans/latin-600.css";
