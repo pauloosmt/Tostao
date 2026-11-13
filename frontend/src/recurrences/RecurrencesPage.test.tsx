@@ -1,3 +1,4 @@
+import { isoToBr } from '../dates/calendar'
 import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Recurrence } from '../api/types'
@@ -107,7 +108,7 @@ describe('criar uma recorrência na folha', () => {
 
     expect(screen.getByRole('radio', { name: 'Despesa' })).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Todo mês' })).toBeChecked()
-    expect(screen.getByLabelText('Começa em')).toHaveValue(TODAY)
+    expect(screen.getByLabelText('Começa em')).toHaveValue(isoToBr(TODAY))
     expect(screen.getByLabelText('Termina em (opcional)')).toHaveValue('')
     await user.type(screen.getByLabelText('Valor'), '1.200,00')
     await user.type(screen.getByLabelText('Descrição'), '  Aluguel novo  ')
@@ -131,11 +132,11 @@ describe('criar uma recorrência na folha', () => {
     await user.click(screen.getByRole('radio', { name: 'Transferência' }))
     expect(screen.queryByRole('radiogroup', { name: 'Categoria' })).toBeNull()
     await user.click(screen.getByRole('radio', { name: 'Toda semana' }))
-    await user.type(screen.getByLabelText('Valor'), '200')
+    await user.type(screen.getByLabelText('Valor'), '20000')
     await user.type(screen.getByLabelText('Descrição'), 'Reserva')
     await user.selectOptions(screen.getByLabelText('De'), 'a-carteira')
     await user.selectOptions(screen.getByLabelText('Para'), 'a-reserva')
-    await user.type(screen.getByLabelText('Termina em (opcional)'), '2099-12-31')
+    await user.type(screen.getByLabelText('Termina em (opcional)'), '31122099')
     await user.click(save())
 
     expect(await screen.findByText('Recorrência criada.')).toBeInTheDocument()
@@ -152,7 +153,7 @@ describe('criar uma recorrência na folha', () => {
     expect(screen.getByText('Informe a descrição.')).toBeInTheDocument()
     expect(screen.getByLabelText('Valor')).toHaveFocus()
 
-    await user.type(screen.getByLabelText('Termina em (opcional)'), '2000-01-01')
+    await user.type(screen.getByLabelText('Termina em (opcional)'), '01012000')
     await user.click(save())
     expect(await screen.findByText('O fim não pode ser antes do início.')).toBeInTheDocument()
     expect(api.callsTo(POST)).toHaveLength(0)
@@ -167,7 +168,7 @@ describe('criar uma recorrência na folha', () => {
     api.on(POST, async () => (await wait, problem(400, 'Requisição inválida', { errors: [{ field: 'startOn', message: 'deve ser uma data de até 366 dias atrás até 2100-12-31' }] })))
     await user.click(await screen.findByRole('link', { name: 'Nova recorrência' }))
     await sheet()
-    await user.type(screen.getByLabelText('Valor'), '10')
+    await user.type(screen.getByLabelText('Valor'), '1000')
     await user.type(screen.getByLabelText('Descrição'), 'Café')
     await user.selectOptions(screen.getByLabelText('Conta'), 'a-carteira')
     await user.click(screen.getByRole('radio', { name: 'Moradia' }))

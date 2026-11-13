@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { TransactionFilters as Filters } from '../api/transactions'
 import type { TransactionStatus, TransactionType } from '../api/types'
 import { Button, Field } from '../design-system/src'
+import { DateField } from '../ui/DateField'
 import { SelectField } from '../ui/SelectField'
 import { SheetDialog } from '../ui/SheetDialog'
 import { validateFilters, type FilterField } from './filterSummary'
@@ -98,8 +99,8 @@ export function TransactionFilters({ reference, onDone }: TransactionFiltersProp
       }
     >
       <div className="form-row">
-        <Field id={FIELD_ID.from} label="De" type="date" value={draft.from} onChange={(event) => set('from', event.target.value)} error={errors.from} />
-        <Field id={FIELD_ID.to} label="Até" type="date" value={draft.to} onChange={(event) => set('to', event.target.value)} error={errors.to} />
+        <DateField id={FIELD_ID.from} label="De" value={draft.from} onChange={(iso) => set('from', iso)} error={errors.from} />
+        <DateField id={FIELD_ID.to} label="Até" value={draft.to} onChange={(iso) => set('to', iso)} error={errors.to} />
       </div>
       <SelectField label="Conta" placeholder="Todas" options={reference.accountFilterOptions()} value={draft.accountId} onChange={(event) => set('accountId', event.target.value)} />
       <SelectField label="Categoria" placeholder="Todas" options={reference.categoryFilterOptions()} value={draft.categoryId} onChange={(event) => set('categoryId', event.target.value)} />

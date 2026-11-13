@@ -303,3 +303,26 @@ button.tx-row:last-child { border-bottom: 0; }
 @media (prefers-reduced-motion: reduce) {
   .tx-wallet__cover, .tx-wallet__flap, .tx-wallet__content { transition: none; }
 }
+
+/* Campo de data com o calendário do sistema */
+.tx-datefield__anchor { position: relative; }
+.tx-datefield__toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; margin-right: calc(var(--space-2) * -1); border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted); cursor: pointer; }
+.tx-datefield__toggle:hover { color: var(--ink); }
+.tx-datefield__toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tx-cal { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; box-sizing: border-box; width: min(20rem, calc(100vw - 2rem)); padding: var(--space-3); background: var(--surface-200); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-raised), 0 12px 32px rgba(0, 0, 0, 0.28); color: var(--ink); }
+.tx-cal--right { left: auto; right: 0; }
+.tx-cal__head { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-2); }
+.tx-cal__title { flex: 1; text-transform: capitalize; }
+.tx-cal__grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tx-cal__grid td { padding: 1px; text-align: center; }
+.tx-cal__weekday { padding: var(--space-1) 0; color: var(--muted); font-weight: 500; text-align: center; }
+.tx-cal__day { box-sizing: border-box; width: 100%; min-height: 38px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-md); background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.tx-cal__day:hover { background: var(--surface-300); }
+.tx-cal__day:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tx-cal__day--out { color: var(--muted); }
+.tx-cal__day[aria-current="date"] { border-color: var(--brand); }
+.tx-cal__day--selected, .tx-cal__day--selected:hover { background: var(--brand); color: var(--on-fill); font-weight: 600; }
+.tx-cal__foot { display: flex; justify-content: space-between; margin-top: var(--space-2); }
+.tx-cal__link { min-height: 40px; padding: 0 var(--space-2); border: 0; background: transparent; color: var(--brand); cursor: pointer; font-family: var(--font-sans); }
+.tx-cal__link:hover { text-decoration: underline; }
+@media (max-width: 360px) { .tx-cal { padding: var(--space-2); } .tx-cal__day { min-height: 36px; } }

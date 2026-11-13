@@ -1,3 +1,4 @@
+import { isoToBr } from '../dates/calendar'
 import { act, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Account, CategoryTree, Transaction } from '../api/types'
@@ -66,7 +67,7 @@ describe('registrar na folha', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/lancamentos/novo')
     expect(radio('Despesa')).toBeChecked()
     expect(amount()).toHaveValue('')
-    expect(screen.getByLabelText('Data')).toHaveValue(TODAY)
+    expect(screen.getByLabelText('Data')).toHaveValue(isoToBr(TODAY))
     expect(radio('Hoje')).toBeChecked()
     expect(account()).toHaveValue('')
     expect(Array.from(account().querySelectorAll('option')).map((o) => o.textContent)).toEqual(['Escolha a conta', 'Carteira', 'Reserva'])

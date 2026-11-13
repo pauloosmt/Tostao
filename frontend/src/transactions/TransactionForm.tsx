@@ -17,6 +17,7 @@ import {
   type TransactionFormValues,
 } from '../validation/transactionForm'
 import { AmountField } from '../ui/AmountField'
+import { DateField } from '../ui/DateField'
 import { CheckboxField } from '../ui/CheckboxField'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { SelectField } from '../ui/SelectField'
@@ -173,7 +174,7 @@ export function TransactionForm({ mode, initial, reference, title, submitLabel, 
       ) : null}
 
       <div className="tx-sheet__section">
-        <Field id={FIELD_ID.date} label={installments ? 'Data da primeira parcela' : 'Data'} type="date" value={values.date} onChange={(event) => set('date', event.target.value)} error={errors.date} />
+        <DateField id={FIELD_ID.date} label={installments ? 'Data da primeira parcela' : 'Data'} value={values.date} onChange={(iso) => set('date', iso)} error={errors.date} />
         <div className="tile-row tile-row--chips" role="radiogroup" aria-label="Atalhos de data">
           <OptionTile compact selected={values.date === today} onClick={() => set('date', today)}>
             Hoje

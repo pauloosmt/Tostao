@@ -15,6 +15,7 @@ import {
 } from '../validation/recurrenceForm'
 import { NOTES_MAX, TRANSACTION_TYPE_OPTIONS, withType } from '../validation/transactionForm'
 import { AmountField } from '../ui/AmountField'
+import { DateField } from '../ui/DateField'
 import { CheckboxField } from '../ui/CheckboxField'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { SelectField } from '../ui/SelectField'
@@ -128,14 +129,13 @@ export function RecurrenceForm({ reference, onSubmit, onClose }: RecurrenceFormP
       </div>
 
       <div className="form-row">
-        <Field id={FIELD_ID.date} label="Começa em" type="date" value={values.date} onChange={(event) => set('date', event.target.value)} error={errors.date} />
-        <Field
+        <DateField id={FIELD_ID.date} label="Começa em" value={values.date} onChange={(iso) => set('date', iso)} error={errors.date} />
+        <DateField
           id={FIELD_ID.endOn}
           label="Termina em (opcional)"
-          type="date"
           hint="Vazio: repete sem fim."
           value={values.endOn}
-          onChange={(event) => set('endOn', event.target.value)}
+          onChange={(iso) => set('endOn', iso)}
           error={errors.endOn}
         />
       </div>

@@ -155,3 +155,15 @@ describe('o orçamento de tamanho', () => {
     })
   })
 })
+
+describe('o calendário do sistema em telas pequenas', () => {
+  const css = readFileSync(join(root, 'src/design-system/src/components.css'), 'utf8')
+
+  it('a largura é limitada pela janela, a grade é fixa e os alvos de toque têm pelo menos 36 px', () => {
+    assert.match(css, /\.tx-cal \{[^}]*width: min\(20rem, calc\(100vw - 2rem\)\)/)
+    assert.match(css, /\.tx-cal__grid \{[^}]*table-layout: fixed/)
+    assert.match(css, /\.tx-cal__day \{[^}]*min-height: 38px/)
+    assert.match(css, /@media \(max-width: 360px\) \{ \.tx-cal \{[^}]*\} \.tx-cal__day \{ min-height: 36px/)
+    assert.match(css, /\.tx-datefield__toggle \{[^}]*min-width: 40px; min-height: 40px/)
+  })
+})
