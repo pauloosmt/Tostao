@@ -1,0 +1,3 @@
+# Scripts de shell e o wrapper do Maven precisam de quebra de linha LF, em qualquer sistema
+*.sh text eol=lf
+mvnw text eol=lf
