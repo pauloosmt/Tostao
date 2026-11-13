@@ -35,6 +35,16 @@ final class BudgetTracking {
 	}
 
 	static Result track(List<Limit> limits, List<Spent> spent) {
+		return track(limits, spent, 0);
+	}
+
+	/**
+	 * Como {@link #track(List, List)}, mas o limite geral consome a movimentação do período: as despesas que ele
+	 * cobre menos as entradas efetivadas ({@code incomeCents}), nunca abaixo de zero. Limites de categoria
+	 * continuam só com as despesas da categoria (categoria de despesa não recebe entrada). O total gasto e o
+	 * gasto fora dos limites seguem sendo só despesas.
+	 */
+	static Result track(List<Limit> limits, List<Spent> spent, long incomeCents) {
 		long total = BudgetRules.sumExact(spent.stream().map(Spent::cents).toList());
 		List<UUID> categoryLimits = limits.stream().map(Limit::categoryId).filter(Objects::nonNull).toList();
 		long outside = BudgetRules.sumExact(spent.stream()
@@ -46,6 +56,9 @@ final class BudgetTracking {
 			long spentCents = BudgetRules.sumExact(spent.stream()
 					.filter(s -> BudgetRules.covers(limit.categoryId(), s.categoryId(), s.parentId()))
 					.map(Spent::cents).toList());
+			if (limit.categoryId() == null) {
+				spentCents = Math.max(0, Math.subtractExact(spentCents, incomeCents));
+			}
 			items.add(new BudgetItem(limit.id(), limit.categoryId(), limit.categoryName(), limit.archived(),
 					limit.amountCents(), spentCents, BudgetRules.remaining(spentCents, limit.amountCents()),
 					BudgetRules.percent(spentCents, limit.amountCents()),

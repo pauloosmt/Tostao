@@ -80,6 +80,18 @@ public class BudgetService {
 			group by t.category_id, c.parent_id
 			""";
 
+	/**
+	 * Entradas (receitas) efetivadas de um período, em centavos positivos, sem excluídas nem transferências. Abatem
+	 * o gasto do limite geral: é a movimentação do período (gasto menos entrada) que o limite geral consome.
+	 */
+	static final String PERIOD_INCOME_SQL = """
+			select coalesce(sum(t.amount_cents), 0)::bigint as income_cents
+			from transactions t
+			where t.workspace_id = :workspaceId and t.deleted_at is null and t.status = 'CLEARED'
+			  and t.type = 'INCOME'
+			  and t.occurred_on between :start and :end
+			""";
+
 	private final JdbcClient jdbc;
 
 	public BudgetService(JdbcClient jdbc) {
@@ -189,8 +201,14 @@ public class BudgetService {
 				.query((rs, i) -> new Spent(rs.getObject("category_id", UUID.class), rs.getObject("parent_id", UUID.class),
 						rs.getLong("spent_cents")))
 				.list();
+		long income = jdbc.sql(PERIOD_INCOME_SQL)
+				.param("workspaceId", workspaceId)
+				.param("start", week.start())
+				.param("end", week.end())
+				.query(Long.class)
+				.single();
 
-		BudgetTracking.Result result = BudgetTracking.track(limits, spent);
+		BudgetTracking.Result result = BudgetTracking.track(limits, spent, income);
 		return new WeekBudgetResponse(new WeekInfo(week.id(), week.start(), week.end()), result.totalSpentCents(),
 				result.spentOutsideCategoryLimitsCents(), result.items());
 	}

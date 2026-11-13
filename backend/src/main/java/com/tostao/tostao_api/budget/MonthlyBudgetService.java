@@ -176,8 +176,14 @@ public class MonthlyBudgetService {
 				.query((rs, i) -> new Spent(rs.getObject("category_id", UUID.class), rs.getObject("parent_id", UUID.class),
 						rs.getLong("spent_cents")))
 				.list();
+		long income = jdbc.sql(BudgetService.PERIOD_INCOME_SQL)
+				.param("workspaceId", workspaceId)
+				.param("start", month.start())
+				.param("end", month.end())
+				.query(Long.class)
+				.single();
 
-		BudgetTracking.Result result = BudgetTracking.track(limits, spent);
+		BudgetTracking.Result result = BudgetTracking.track(limits, spent, income);
 		return new MonthBudgetResponse(new MonthInfo(month.id(), month.start(), month.end()),
 				result.totalSpentCents(), result.spentOutsideCategoryLimitsCents(), result.items());
 	}

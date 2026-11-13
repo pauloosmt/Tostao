@@ -94,6 +94,12 @@ class BudgetRandomDataTest {
 				.query((rs, i) -> new Spend(rs.getObject("category_id", UUID.class), rs.getLong("cents"),
 						rs.getObject("occurred_on", LocalDate.class)))
 				.list();
+		List<Spend> incomes = owner.client().sql("""
+				select category_id, amount_cents as cents, occurred_on from transactions
+				where workspace_id = :w and type = 'INCOME' and deleted_at is null""").param("w", w)
+				.query((rs, i) -> new Spend(rs.getObject("category_id", UUID.class), rs.getLong("cents"),
+						rs.getObject("occurred_on", LocalDate.class)))
+				.list();
 		List<Limit> limits = owner.client().sql("""
 				select id, week_start, category_id, amount_cents from weekly_budgets where workspace_id = :w""")
 				.param("w", w).query((rs, i) -> {
@@ -118,8 +124,12 @@ class BudgetRandomDataTest {
 
 			Map<UUID, Expected> expected = new HashMap<>();
 			for (Limit l : weekLimits) {
-				long spent = inWeek.stream().filter(s -> l.category() == null || l.category().equals(s.category())
+				long gross = inWeek.stream().filter(s -> l.category() == null || l.category().equals(s.category())
 						|| l.category().equals(parentOf.get(s.category()))).mapToLong(Spend::amount).sum();
+				// o limite geral consome a movimentação: despesas menos receitas do período, nunca abaixo de zero
+				long income = l.category() != null ? 0 : incomes.stream().filter(s -> !s.date().isBefore(monday) && !s.date().isAfter(sunday))
+						.mapToLong(Spend::amount).sum();
+				long spent = Math.max(0, gross - income);
 				BigDecimal percent = l.amount() == 0 ? null : BigDecimal.valueOf(spent).multiply(BigDecimal.valueOf(100))
 						.divide(BigDecimal.valueOf(l.amount()), 2, RoundingMode.HALF_UP);
 				String statusName;

@@ -96,7 +96,7 @@ class BudgetConsistencyTest {
 				rootsSum += spent;
 			}
 		}
-		assertThat(general).as("o limite geral soma todas as despesas da semana").isEqualTo(total);
+		assertThat(general).as("o limite geral soma as despesas da semana menos a receita de 4000").isEqualTo(total - 4_000);
 		// as três categorias principais com limite não se sobrepõem: o total é a soma delas mais o resto
 		assertThat(rootsSum + outside).as("soma das categorias + fora dos limites").isEqualTo(total);
 	}

@@ -24,7 +24,7 @@ import com.tostao.tostao_api.support.WorkspaceFixtures.Fixture;
  * <ul>
  * <li>despesas de 40000 (01/11, primeiro dia, Alimentação direto), 20000 (15/11, Mercado), 36000 (10/11,
  * Transporte) e 8000 (30/11, último dia, Lazer) — dentro do mês 2026-11;</li>
- * <li>receita de 500000 (05/11) e transferência de 30000 (06/11) — nunca contam como gasto;</li>
+ * <li>receita de 20000 (05/11), que abate o limite geral, e transferência de 30000 (06/11), que nunca conta;</li>
  * <li>despesa de 7777 em 04/11 já excluída;</li>
  * <li>despesas de 99999 em 31/10 e de 4000 em 01/12, em Alimentação — fora do mês.</li>
  * </ul>
@@ -55,7 +55,7 @@ public record MonthlyBudgetScenario(Fixture owner, UUID checking, UUID savings, 
 				LocalDate.of(2026, 11, 10), "Combustível", false);
 		fixtures.insertLedgerTransaction(w, checking, fx.userId(), leisure, "EXPENSE", 8_000,
 				LocalDate.of(2026, 11, 30), "Último dia", false);
-		fixtures.insertLedgerTransaction(w, checking, fx.userId(), salary, "INCOME", 500_000,
+		fixtures.insertLedgerTransaction(w, checking, fx.userId(), salary, "INCOME", 20_000,
 				LocalDate.of(2026, 11, 5), "Salário", false);
 		fixtures.insertTransferPair(w, checking, savings, fx.userId(), 30_000, LocalDate.of(2026, 11, 6), "Reserva");
 		fixtures.insertLedgerTransaction(w, checking, fx.userId(), food, "EXPENSE", 7_777, LocalDate.of(2026, 11, 4),

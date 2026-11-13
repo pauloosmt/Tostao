@@ -109,9 +109,9 @@ class MonthlyBudgetQuickstartTest {
 				.andExpect(jsonPath("$.budgets[2].percentUsed").value(100.0))
 				.andExpect(jsonPath("$.budgets[2].status").value("WARNING"))
 				.andExpect(jsonPath("$.budgets[3].categoryId").doesNotExist())
-				.andExpect(jsonPath("$.budgets[3].spentCents").value(104_000))
-				.andExpect(jsonPath("$.budgets[3].remainingCents").value(296_000))
-				.andExpect(jsonPath("$.budgets[3].percentUsed").value(26.0))
+				.andExpect(jsonPath("$.budgets[3].spentCents").value(84_000))
+				.andExpect(jsonPath("$.budgets[3].remainingCents").value(316_000))
+				.andExpect(jsonPath("$.budgets[3].percentUsed").value(21.0))
 				.andExpect(jsonPath("$.budgets[3].status").value("WITHIN"));
 
 		// primeiro e último dia contam; 31/10 e 01/12 não (o total já provou: 40000 de 01/11 e 8000 de 30/11)

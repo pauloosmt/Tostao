@@ -233,8 +233,8 @@ class UpdateDeleteBudgetTest {
 
 		String json = json(week(mvc, s.owner(), "week=2026-W45").andExpect(status().isOk()));
 		List<Number> spent = JsonPath.read(json, "$.budgets[*].spentCents");
-		assertThat(spent).extracting(Number::longValue).containsExactly(26_000L, 15_000L)
-				.as("o geral (26000 de 20000) estoura e vem primeiro");
+		assertThat(spent).extracting(Number::longValue).containsExactly(22_000L, 15_000L)
+				.as("o geral (22000 de 20000) estoura e vem primeiro");
 		assertThat(JsonPath.<String>read(json, "$.budgets[0].status")).isEqualTo("EXCEEDED");
 	}
 

@@ -71,7 +71,7 @@ class MonthlyBudgetTrackingTest {
 	void receiptsTransfersAndDeletedTransactionsNeverCountAndTheNeighbouringDaysAreOut() throws Exception {
 		MonthlyBudgetScenario s = seeded();
 
-		// o cenário tem receita de 500000, transferência de 30000, despesa excluída de 7777 e despesas em
+		// o cenário tem receita de 20000, transferência de 30000, despesa excluída de 7777 e despesas em
 		// 31/10 (99999) e 01/12 (4000): nenhuma entra. 01/11 (40000) e 30/11 (8000) entram
 		month(mvc, s.owner(), "month=2026-11").andExpect(jsonPath("$.totalSpentCents").value(104_000));
 		month(mvc, s.owner(), "month=2026-10").andExpect(jsonPath("$.totalSpentCents").value(99_999));
@@ -86,7 +86,7 @@ class MonthlyBudgetTrackingTest {
 
 		month(mvc, s.owner(), "month=2026-11").andExpect(jsonPath("$.totalSpentCents").value(104_500))
 				.andExpect(jsonPath("$.spentOutsideCategoryLimitsCents").value(8_500))
-				.andExpect(jsonPath("$.budgets[?(@.categoryName==null)].spentCents").value(104_500));
+				.andExpect(jsonPath("$.budgets[?(@.categoryName==null)].spentCents").value(84_500));
 	}
 
 	@Test

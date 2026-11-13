@@ -90,6 +90,21 @@ class BudgetTrackingUnitTest {
 	}
 
 	@Test
+	void onlyTheGeneralLimitConsumesTheMovementSpendingMinusIncomeNeverBelowZero() {
+		List<Limit> limits = List.of(limit(1, FOOD, "Alimentação", 64_000), limit(4, null, null, 400_000));
+
+		Result result = BudgetTracking.track(limits, spending(), 30_000);
+
+		assertThat(item(result, null).spentCents()).isEqualTo(74_500);
+		assertThat(item(result, FOOD).spentCents()).isEqualTo(60_000);
+		assertThat(result.totalSpentCents()).isEqualTo(104_500);
+		assertThat(BudgetTracking.track(limits, spending(), 9_999_999)).satisfies(r -> {
+			assertThat(item(r, null).spentCents()).isZero();
+			assertThat(item(r, null).status()).isEqualTo(BudgetStatus.WITHIN);
+		});
+	}
+
+	@Test
 	void aPrincipalLimitCoversDirectAndChildSpendingAndASubcategoryOnlyItsOwn() {
 		Result result = BudgetTracking.track(quickstartLimits(), spending());
 

@@ -97,9 +97,9 @@ class BudgetTrackingTest {
 				.andExpect(jsonPath("$.budgets[3].categoryId").value((Object) null))
 				.andExpect(jsonPath("$.budgets[3].categoryName").value((Object) null))
 				.andExpect(jsonPath("$.budgets[3].amountCents").value(100_000))
-				.andExpect(jsonPath("$.budgets[3].spentCents").value(26_000))
-				.andExpect(jsonPath("$.budgets[3].remainingCents").value(74_000))
-				.andExpect(jsonPath("$.budgets[3].percentUsed").value(26.0))
+				.andExpect(jsonPath("$.budgets[3].spentCents").value(22_000))
+				.andExpect(jsonPath("$.budgets[3].remainingCents").value(78_000))
+				.andExpect(jsonPath("$.budgets[3].percentUsed").value(22.0))
 				.andExpect(jsonPath("$.budgets[3].status").value("WITHIN"));
 	}
 
@@ -166,7 +166,7 @@ class BudgetTrackingTest {
 
 		assertThat(number(json, "$.totalSpentCents")).isEqualTo(26_700);
 		assertThat(number(json, "$.spentOutsideCategoryLimitsCents")).isEqualTo(2_700);
-		assertThat(first(json, "$.budgets[?(@.categoryName == null)].spentCents")).isEqualTo(26_700);
+		assertThat(first(json, "$.budgets[?(@.categoryName == null)].spentCents")).isEqualTo(22_700);
 		// os limites de categoria não enxergam a despesa sem categoria
 		assertThat(first(json, "$.budgets[?(@.categoryName == 'Alimentação')].spentCents")).isEqualTo(15_000);
 	}

@@ -24,7 +24,7 @@ import com.tostao.tostao_api.support.WorkspaceFixtures.Fixture;
  * <ul>
  * <li>despesas de 10000 (02/11, Alimentação direto), 5000 (03/11, Mercado), 9000 (04/11, Transporte) e 2000
  * (05/11, Lazer) — dentro da semana 2026-W45 (02/11 a 08/11);</li>
- * <li>receita de 250000 (05/11) e transferência de 30000 (06/11) — nunca contam como gasto;</li>
+ * <li>receita de 4000 (05/11), que abate o limite geral, e transferência de 30000 (06/11), que nunca conta;</li>
  * <li>despesa de 7777 em 04/11 já excluída;</li>
  * <li>despesas de 99999 em 01/11 (domingo anterior) e de 4000 em 09/11 (segunda seguinte), em Alimentação —
  * fora da semana.</li>
@@ -56,7 +56,7 @@ public record BudgetScenario(Fixture owner, UUID checking, UUID savings, UUID fo
 				LocalDate.of(2026, 11, 4), "Combustível", false);
 		fixtures.insertLedgerTransaction(w, checking, fx.userId(), leisure, "EXPENSE", 2_000, LocalDate.of(2026, 11, 5),
 				"Cinema", false);
-		fixtures.insertLedgerTransaction(w, checking, fx.userId(), salary, "INCOME", 250_000, LocalDate.of(2026, 11, 5),
+		fixtures.insertLedgerTransaction(w, checking, fx.userId(), salary, "INCOME", 4_000, LocalDate.of(2026, 11, 5),
 				"Salário", false);
 		fixtures.insertTransferPair(w, checking, savings, fx.userId(), 30_000, LocalDate.of(2026, 11, 6), "Reserva");
 		fixtures.insertLedgerTransaction(w, checking, fx.userId(), food, "EXPENSE", 7_777, LocalDate.of(2026, 11, 4),
