@@ -18,4 +18,4 @@ description: "Tarefas da feature 029-app-desktop"
 - [X] T001 O servidor local (estáticos com o fallback do SPA, proxy de `/api` com `Origin` reescrita, cookies sem `Domain` e `Secure`) e a configuração do endereço da API, com testes (`desktop/src/server.cjs`, `config.cjs`, `desktop/test/*`)
 - [X] T002 O shell Electron: janela, instância única, isolamento, navegação restrita, menu com "Configurar servidor…" e a janela de configuração (`desktop/src/main.cjs`, `preload.cjs`, `settings.html`)
 - [X] T003 O empacotamento (instalador e portátil) com o front compilado dentro; gerar e conferir o programa empacotado (`desktop/package.json`, `scripts/prepare.mjs`, `.gitignore`)
-- [ ] T004 Registro no `quickstart.md` (como gerar, abrir, configurar o servidor) e a conferência do executável contra a API
+- [X] T004 Registro no `quickstart.md` (como gerar, abrir, configurar o servidor) e a conferência do executável contra a API
