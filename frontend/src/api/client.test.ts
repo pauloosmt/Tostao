@@ -68,6 +68,20 @@ describe('o que o cliente envia', () => {
   })
 })
 
+describe('o envio de arquivo', () => {
+  it('um FormData vai como multipart: sem fixar o tipo do conteúdo (o navegador põe o limite), com o arquivo na parte', async () => {
+    const api = fakeApi({ 'POST /api/v1/envio': ok({ recebido: true }) })
+    const form = new FormData()
+    form.append('file', new File(['data;descricao;valor'], 'extrato.csv', { type: 'text/csv' }))
+
+    await request('POST', '/envio', { body: form })
+
+    expect(Object.keys(api.calls[0].headers)).toEqual(['accept']) // nada de content-type: ele leva o limite do multipart
+    expect(api.calls[0].body).toBeInstanceOf(FormData)
+    expect((api.calls[0].body as FormData).get('file')).toBeInstanceOf(File)
+  })
+})
+
 describe('o que o cliente devolve', () => {
   it('lê o JSON de uma resposta de sucesso', async () => {
     fakeApi({ 'GET /api/v1/me': ok(me) })

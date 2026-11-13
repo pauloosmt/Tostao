@@ -48,6 +48,8 @@ export async function request<T = void>(method: string, path: string, options: R
     throw new Error(`caminho de API inválido: ${path} (use um caminho relativo que comece com /)`)
   }
   const { body, notifyUnauthorized = true, timeoutMs = REQUEST_TIMEOUT_MS } = options
+  // Um arquivo (FormData) vai como multipart: o navegador escreve o tipo do conteúdo com o limite das partes, então nenhum é fixado aqui.
+  const multipart = typeof FormData !== 'undefined' && body instanceof FormData
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -60,9 +62,9 @@ export async function request<T = void>(method: string, path: string, options: R
       signal: controller.signal,
       headers: {
         Accept: 'application/json, application/problem+json',
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !multipart ? { 'Content-Type': 'application/json' } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : multipart ? (body as FormData) : JSON.stringify(body),
     })
     text = response.status === 204 ? '' : await response.text()
   }

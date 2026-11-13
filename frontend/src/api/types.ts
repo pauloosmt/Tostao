@@ -451,3 +451,48 @@ export interface AcceptedInvitation {
   name: string
   role: Role
 }
+
+// ---- Importação de extratos (spec 013) ----
+
+export interface ImportLinePreview {
+  /** O número da linha no arquivo. */
+  line: number
+  occurredOn: string | null
+  description: string
+  /** Com sinal: entrada positiva, saída negativa. Nulo quando não deu para ler. */
+  amountCents: number | null
+  type: TransactionType | null
+  /** A chave que identifica o movimento na conta; nula quando a linha tem problema. */
+  key: string | null
+  /** A chave já existe na conta (inclusive em lançamento excluído). */
+  existing: boolean
+  /** Há na conta um lançamento sem chave com a mesma data e o mesmo valor: só um aviso. */
+  possibleDuplicate: boolean
+  /** A categoria do último lançamento com a mesma descrição, se houver. */
+  suggestedCategoryId: string | null
+  problems: string[]
+}
+
+export interface ImportPreview {
+  format: 'OFX' | 'CSV' | 'PDF'
+  total: number
+  valid: number
+  existing: number
+  invalid: number
+  lines: ImportLinePreview[]
+}
+
+/** Uma linha da confirmação, como veio da prévia. */
+export interface ImportLineInput {
+  key: string
+  occurredOn: string
+  description: string
+  amountCents: number
+  categoryId?: string
+}
+
+export interface ImportConfirmResult {
+  created: Transaction[]
+  /** Quantas linhas já existiam na conta e foram ignoradas. */
+  skipped: number
+}

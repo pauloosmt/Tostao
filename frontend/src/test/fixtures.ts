@@ -1,5 +1,5 @@
 // Dados de teste: a pessoa com um papel no workspace, contas e categorias.
-import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, InstallmentPlan, Invitation, Invoice, Me, Member, MonthBudget, Recurrence, RecurrenceDetail, Role, Transaction, WeekBudget } from '../api/types'
+import type { Account, BalanceReport, BudgetItem, CardSummary, Category, CategoryTree, Dashboard, ImportLinePreview, ImportPreview, InstallmentPlan, Invitation, Invoice, Me, Member, MonthBudget, Recurrence, RecurrenceDetail, Role, Transaction, WeekBudget } from '../api/types'
 
 /** O workspace atual dos testes de tela. */
 export const WID = 'w-casa'
@@ -240,4 +240,28 @@ export function makeMember(extra: Partial<Member> = {}): Member {
 export function makeInvitation(extra: Partial<Invitation> = {}): Invitation {
   sequence += 1
   return { id: `inv-${sequence}`, email: `convidada${sequence}@exemplo.com`, role: 'VIEWER', createdBy: 'u-ana', createdAt: '2026-11-10T12:00:00Z', expiresAt: '2026-11-24T12:00:00Z', ...extra }
+}
+
+export function makeImportLine(extra: Partial<ImportLinePreview> = {}): ImportLinePreview {
+  sequence += 1
+  return {
+    line: sequence,
+    occurredOn: '2026-11-03',
+    description: `Movimento ${sequence}`,
+    amountCents: -3590,
+    type: 'EXPENSE',
+    key: `k-${sequence}`,
+    existing: false,
+    possibleDuplicate: false,
+    suggestedCategoryId: null,
+    problems: [],
+    ...extra,
+  }
+}
+
+/** A prévia coerente com as linhas dadas: as contagens saem delas. */
+export function makeImportPreview(lines: ImportLinePreview[] = [], extra: Partial<ImportPreview> = {}): ImportPreview {
+  const invalid = lines.filter((line) => line.problems.length > 0).length
+  const existing = lines.filter((line) => line.problems.length === 0 && line.existing).length
+  return { format: 'CSV', total: lines.length, valid: lines.length - invalid - existing, existing, invalid, lines, ...extra }
 }
