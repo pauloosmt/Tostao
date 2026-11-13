@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { AmountInput, Icon, type AmountInputProps } from '../design-system/src'
-import { formatReaisInput, parseReais } from '../money/reais'
+import { MAX_CENTS, formatReaisInput, parseReais } from '../money/reais'
 
 export interface AmountFieldProps extends Omit<AmountInputProps, 'value' | 'defaultValue' | 'onChange' | 'hint'> {
   /** O texto como a pessoa digitou (os reais, não os centavos). */
@@ -11,8 +11,22 @@ export interface AmountFieldProps extends Omit<AmountInputProps, 'value' | 'defa
 }
 
 /**
- * O valor em destaque (`AmountInput`) com o mesmo comportamento do `MoneyField`: guarda o texto digitado; ao sair do campo, um valor
- * válido é reescrito no formato do aplicativo (`50` vira `50,00`) e um inválido mostra a mensagem do `parseReais`. Vazio não é erro aqui.
+ * Texto novo do campo no estilo dos bancos: só os dígitos contam e eles entram pela direita, em centavos (`1` → `0,01`, depois `12` →
+ * `0,12`, `125` → `1,25`). Letras e símbolos não mudam nada; apagar tira o último dígito. `null` = descartar a digitação (passou do limite).
+ */
+export function nextAmountText(typed: string, previous = ''): string | null {
+  const all = typed.replace(/\D/g, '')
+  if (all === '') return ''
+  const digits = all.replace(/^0+/, '')
+  if (digits.length > 13 || Number(digits || 0) > MAX_CENTS) return null
+  // apagar até zerar volta ao campo vazio; digitar "0" num campo vazio mostra 0,00 (um limite de zero é válido)
+  if (digits === '' && typed.length < previous.length) return ''
+  return formatReaisInput(Number(digits || 0))
+}
+
+/**
+ * O valor em destaque (`AmountInput`): a digitação segue `nextAmountText` (centavos entrando pela direita, letras ignoradas). O texto
+ * guardado continua sendo os reais (`12,50`) para o resto da tela. Vazio não é erro aqui.
  */
 export function AmountField({ value, onChange, error, id, ...rest }: AmountFieldProps) {
   const auto = useId()
@@ -30,7 +44,11 @@ export function AmountField({ value, onChange, error, id, ...rest }: AmountField
         {...rest}
         id={inputId}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        inputMode="numeric"
+        onChange={(event) => {
+          const next = nextAmountText(event.target.value, value)
+          if (next !== null && next !== value) onChange(next)
+        }}
         onBlur={() => {
           setLeft(true)
           if (parsed !== null && 'cents' in parsed) onChange(formatReaisInput(parsed.cents))

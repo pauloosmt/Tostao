@@ -122,7 +122,7 @@ describe('definir, editar, remover e copiar', () => {
     api.on(PUT, problem(409, 'Conflito', { detail: 'A categoria está arquivada' }))
     await user.click(screen.getByRole('button', { name: 'Novo limite' }))
 
-    await user.type(await screen.findByLabelText('Limite do mês'), '10')
+    await user.type(await screen.findByLabelText('Limite do mês'), '1000')
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('A categoria está arquivada')
@@ -139,7 +139,7 @@ describe('definir, editar, remover e copiar', () => {
     const amount = await screen.findByLabelText('Limite do mês')
     expect(amount).toHaveValue('800,00')
     await user.clear(amount)
-    await user.type(amount, '900')
+    await user.type(amount, '90000')
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByText('Limite atualizado.')).toBeInTheDocument()
@@ -260,7 +260,7 @@ describe('os limites semanais', () => {
 
     await user.click(screen.getByRole('button', { name: 'Novo limite' }))
     await user.selectOptions(await screen.findByLabelText('Categoria'), 'c-mercado')
-    await user.type(screen.getByLabelText('Limite da semana'), '250')
+    await user.type(screen.getByLabelText('Limite da semana'), '25000')
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(await screen.findByText('Limite salvo.')).toBeInTheDocument()
     expect(api.callsTo(put)[0].body).toEqual({ week: SEMANA, categoryId: 'c-mercado', amountCents: 25000 })
