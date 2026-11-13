@@ -18,3 +18,6 @@ Thumbs.db
 
 # Config local do Claude Code (skills do Spec Kit)
 .claude/
+
+# App desktop: instaladores gerados
+desktop/release/
