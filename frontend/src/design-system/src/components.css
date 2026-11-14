@@ -312,7 +312,8 @@ button.tx-row:last-child { border-bottom: 0; }
 .tx-cal { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; box-sizing: border-box; width: min(20rem, calc(100vw - 2rem)); padding: var(--space-3); background: var(--surface-200); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-raised), 0 12px 32px rgba(0, 0, 0, 0.28); color: var(--ink); }
 .tx-cal--right { left: auto; right: 0; }
 .tx-cal__head { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-2); }
-.tx-cal__title { flex: 1; text-transform: capitalize; }
+.tx-cal__title { flex: 1; }
+.tx-cal__title::first-letter { text-transform: uppercase; }
 .tx-cal__grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .tx-cal__grid td { padding: 1px; text-align: center; }
 .tx-cal__weekday { padding: var(--space-1) 0; color: var(--muted); font-weight: 500; text-align: center; }
@@ -347,3 +348,22 @@ button.tx-row:last-child { border-bottom: 0; }
   .tx-nav--bottom { margin-left: var(--space-2); margin-right: var(--space-2); }
   .tx-nav--bottom .tx-nav__item { padding: var(--space-1); font-size: 10px; }
 }
+
+/* Cabeçalho de página: o que não cabe ao lado do título desce para a linha de baixo (e os botões também quebram) */
+.tx-ph { flex-wrap: wrap; }
+.tx-ph > div:first-child { min-width: 0; flex: 1 1 auto; }
+.tx-ph__title { overflow-wrap: anywhere; }
+.tx-ph__action { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+@media (max-width: 480px) { .tx-ph { align-items: flex-start; } .tx-ph__action { flex: 1 1 100%; } }
+
+/* Celulares: números grandes acompanham a largura da tela e o saldo da conta desce para a linha de baixo quando o nome é comprido */
+@media (max-width: 480px) {
+  .display-xl { font-size: clamp(30px, 10vw, 44px); line-height: 1.12; }
+  .display-lg { font-size: clamp(26px, 8.5vw, 34px); line-height: 1.15; }
+  .tx-account { flex-wrap: wrap; }
+  .tx-account__main { flex: 1 1 130px; overflow-wrap: anywhere; }
+  .tx-account__bal { flex: 0 1 auto; margin-left: auto; max-width: 100%; }
+}
+@media (max-width: 480px) { .amount-xl { font-size: clamp(26px, 8.6vw, 36px); line-height: 1.15; } .amount-lg { font-size: clamp(20px, 6.4vw, 24px); line-height: 1.3; } }
+.tx-coinpick { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+.tx-coinpick__name { max-width: 100%; overflow-wrap: anywhere; text-align: center; }

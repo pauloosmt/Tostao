@@ -79,6 +79,11 @@ export function DateField({ id, label, value, onChange, error, hint }: DateField
     popover.current?.querySelector<HTMLElement>(`[data-iso="${focusIso}"]`)?.focus()
   }, [open, focusIso])
 
+  // Na folha de baixo do celular o calendário nasce mais baixo que a parte visível: rola até ele aparecer inteiro.
+  useEffect(() => {
+    if (open) popover.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [open])
+
   // Se o calendário não cabe à direita do campo (campos lado a lado, tela estreita), abre alinhado à direita.
   useLayoutEffect(() => {
     if (!open || !root.current) return

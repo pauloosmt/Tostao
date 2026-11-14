@@ -241,7 +241,7 @@ h1, h2, h3, p { margin: 0; }
 .member-list, .import-list, .profile-workspaces, .installment-list, .password-field { grid-template-columns: minmax(0, 1fr); }
 .page-header > *, .list-toolbar > * { min-width: 0; }
 .tx-tile { min-width: 0; }
-.tx-tile .text-label { overflow-wrap: anywhere; }
+.tx-tile .text-label { overflow-wrap: break-word; }
 
 /* Celulares */
 @media (max-width: 480px) {
@@ -250,7 +250,7 @@ h1, h2, h3, p { margin: 0; }
   .page-header .tx-btn, .list-toolbar .tx-btn { flex: 1 1 auto; justify-content: center; }
   .item-actions { justify-content: flex-start; }
   .tx-tile { padding: 10px; gap: 6px; }
-  .tx-tile .text-label { font-size: 14px; }
+  .tx-tile .text-label { font-size: 14px; overflow-wrap: break-word; }
   .profile-data { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .profile-data dd { margin-bottom: var(--space-2); }
   .category-tree__subs { padding-left: var(--space-3); }
@@ -259,3 +259,13 @@ h1, h2, h3, p { margin: 0; }
 @media (max-width: 380px) {
   .auth-page { padding: var(--space-4) var(--space-3); }
 }
+
+/* Painéis centralizados: a coluna é a largura da tela (menos o respiro), nunca a do conteúdo mais largo */
+.screen-center, .auth-page__panel, .auth-page__brand { grid-template-columns: minmax(0, 1fr); }
+.auth-page__panel > *, .screen-center > * { min-width: 0; }
+
+@media (max-width: 480px) {
+  .home-pending .text-body-sm { flex: 1 1 150px; }
+  .home-pending { gap: var(--space-2) var(--space-3); }
+}
+@media (max-width: 360px) { .tx-tile .text-label { font-size: 12.5px; letter-spacing: -0.01em; } .tx-tile { padding: 10px 8px; } }
