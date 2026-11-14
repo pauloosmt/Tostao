@@ -16,9 +16,9 @@ const CATEGORIES: NavItem = { id: 'categorias', label: 'Categorias', icon: 'tag'
 const PROFILE: NavItem = { id: 'perfil', label: 'Perfil', icon: 'user', href: '/perfil' }
 
 // No menu lateral o Perfil é o rodapé (o usuário); na barra de baixo cabem quatro itens e o botão de lançar no meio, e as categorias
-// os orçamentos e as recorrências ficam num atalho dentro de Contas.
+// as contas, as recorrências e as categorias ficam em atalhos dentro de Orçamentos.
 const SIDE_ITEMS: NavItem[] = [HOME, TRANSACTIONS, ACCOUNTS, BUDGETS, RECURRENCES, CATEGORIES]
-const BOTTOM_ITEMS: NavItem[] = [HOME, TRANSACTIONS, ACCOUNTS, PROFILE]
+const BOTTOM_ITEMS: NavItem[] = [HOME, TRANSACTIONS, BUDGETS, PROFILE]
 const PATH_OF: Record<string, string> = { inicio: '/', lancamentos: '/lancamentos', contas: '/contas', orcamentos: '/orcamentos', recorrencias: '/recorrencias', categorias: '/categorias', perfil: '/perfil' }
 
 /**

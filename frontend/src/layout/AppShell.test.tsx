@@ -24,7 +24,7 @@ describe('a navegação', () => {
     await open(500)
 
     expect(nav()).toHaveClass('tx-nav--bottom')
-    expect(within(nav()).getAllByRole('link').map((link) => link.textContent)).toEqual(['Início', 'Lançamentos', 'Contas', 'Perfil'])
+    expect(within(nav()).getAllByRole('link').map((link) => link.textContent)).toEqual(['Início', 'Lançamentos', 'Orçamentos', 'Perfil'])
     expect(screen.getByRole('button', { name: 'Novo lançamento' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page')
   })

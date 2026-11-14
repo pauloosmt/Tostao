@@ -13,6 +13,8 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { ErrorNotice } from '../ui/ErrorNotice'
 import { LoadingNote } from '../ui/LoadingNote'
 import { buildReference } from '../transactions/reference'
+import { useMediaQuery } from '../layout/useMediaQuery'
+import { ButtonLink } from '../ui/ButtonLink'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { BudgetSheet } from './BudgetSheet'
 import { CopySheet } from './CopySheet'
@@ -30,6 +32,8 @@ const WORDS = {
 
 export function BudgetsPage() {
   const { current } = useWorkspace()
+  // Na barra de baixo (celular) não cabem Contas, Recorrências e Categorias: os atalhos ficam aqui. No menu lateral eles já existem.
+  const wide = useMediaQuery('(min-width: 960px)')
   // O período escolhido (mensal ou semanal) e o mês e a semana de cada um ficam só na memória da tela.
   const [kind, setKind] = useState<BudgetPeriodKind>('month')
   const [month, setMonth] = useState(() => currentMonth())
@@ -55,6 +59,13 @@ export function BudgetsPage() {
           )
         }
       />
+      {wide ? null : (
+        <div className="profile-actions">
+          <ButtonLink variant="secondary" to="/contas">Contas</ButtonLink>
+          <ButtonLink variant="secondary" to="/recorrencias">Recorrências</ButtonLink>
+          <ButtonLink variant="secondary" to="/categorias">Categorias</ButtonLink>
+        </div>
+      )}
       <Segmented label="Período" value={kind} options={KINDS} onChange={(value) => setKind(value as BudgetPeriodKind)} />
       {current ? <BudgetsOf workspaceId={current.id} kind={kind} period={period} periodLabel={label} /> : <Card><p className="text-body">Você não participa de nenhum workspace.</p></Card>}
     </>
