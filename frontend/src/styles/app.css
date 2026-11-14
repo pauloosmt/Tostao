@@ -4,6 +4,9 @@
 
 html { background: var(--surface-100); }
 
+/* Rede de segurança: nada deixa a página mais larga que a tela (cada tela ainda precisa caber por conta própria). */
+html, body { max-width: 100%; overflow-x: clip; }
+
 body {
   margin: 0;
   min-height: 100svh;
@@ -39,6 +42,7 @@ h1, h2, h3, p { margin: 0; }
 .auth-page {
   min-height: 100svh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* sem isto a coluna cresce até o conteúdo mais largo e passa da tela do celular */
   place-items: center;
   padding: var(--space-5) var(--space-4);
 }
@@ -63,11 +67,13 @@ h1, h2, h3, p { margin: 0; }
 .app-shell--side > .tx-nav { position: sticky; top: 0; align-self: flex-start; min-height: 100svh; flex-shrink: 0; }
 .app-shell__main {
   flex: 1;
+  min-width: 0;
   width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--space-5);
 }
@@ -100,7 +106,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* Perfil */
 .profile-id { margin-bottom: var(--space-4); }
-.profile-data { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-4); margin: 0; }
+.profile-data { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: 0; }
 .profile-data dd { margin: 0; overflow-wrap: anywhere; }
 .profile-workspaces { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); }
 .profile-workspaces__item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
@@ -188,7 +194,7 @@ h1, h2, h3, p { margin: 0; }
 .launch-dialog--bottom .launch-form { height: auto; max-height: 92svh; }
 
 /* Escolhas lado a lado dentro da folha (tipo, atalhos de data) */
-.tile-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.tile-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
 .tile-row--chips { display: flex; flex-wrap: wrap; }
 
 /* As parcelas de uma compra parcelada, na folha do lançamento */
@@ -213,9 +219,9 @@ h1, h2, h3, p { margin: 0; }
 /* Membros */
 .member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .member-row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface-200); }
-.member-row__main { flex: 1; min-width: 200px; }
+.member-row__main { flex: 1; min-width: min(200px, 100%); }
 .member-row__main p { margin: 0; }
-.tile-row--two { grid-template-columns: repeat(2, 1fr); }
+.tile-row--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .invite-code { margin: 0; padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-300); overflow-wrap: anywhere; }
 .invite-code code { font: 600 18px/26px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; color: var(--ink); user-select: all; }
 
@@ -226,6 +232,30 @@ h1, h2, h3, p { margin: 0; }
 .import-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface-200); }
 .import-row.is-off { opacity: .75; }
 .import-row__check { width: 20px; height: 20px; flex: none; accent-color: var(--brand); }
-.import-row__main { flex: 1; min-width: 220px; }
+.import-row__main { flex: 1; min-width: min(220px, 100%); }
 .import-row__problem { margin: 0 0 var(--space-2); color: var(--danger); }
 .import-row__category { max-width: 240px; min-height: var(--control-md); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-200); }
+
+/* Grades de uma coluna: a coluna nunca passa da largura disponível (o texto longo quebra ou reticencia em vez de alargar a página) */
+.stack, .account-list, .account-list__item, .category-tree, .category-tree__subs, .home-categories, .transaction-list, .day-group,
+.member-list, .import-list, .profile-workspaces, .installment-list, .password-field { grid-template-columns: minmax(0, 1fr); }
+.page-header > *, .list-toolbar > * { min-width: 0; }
+.tx-tile { min-width: 0; }
+.tx-tile .text-label { overflow-wrap: anywhere; }
+
+/* Celulares */
+@media (max-width: 480px) {
+  .app-shell__main { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
+  .page-header h1, .list-toolbar h1 { overflow-wrap: anywhere; }
+  .page-header .tx-btn, .list-toolbar .tx-btn { flex: 1 1 auto; justify-content: center; }
+  .item-actions { justify-content: flex-start; }
+  .tx-tile { padding: 10px; gap: 6px; }
+  .tx-tile .text-label { font-size: 14px; }
+  .profile-data { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .profile-data dd { margin-bottom: var(--space-2); }
+  .category-tree__subs { padding-left: var(--space-3); }
+  .import-row__category { max-width: 100%; width: 100%; }
+}
+@media (max-width: 380px) {
+  .auth-page { padding: var(--space-4) var(--space-3); }
+}
